@@ -1,90 +1,111 @@
 import React from 'react';
 import GuestLayout from '../Layouts/GuestLayout';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 
 export default function Home() {
     return (
         <GuestLayout>
-            <Head title="Welcome" />
+            <Head title="Premium Photography" />
 
-            <div className="relative min-h-screen bg-gray-900 overflow-hidden selection:bg-red-500 selection:text-white text-white">
-                {/* Background Blobs */}
-                <div className="absolute top-0 left-1/2 w-96 h-96 bg-purple-500/30 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
-                <div className="absolute bottom-0 right-0 w-96 h-96 bg-red-500/20 rounded-full blur-3xl translate-x-1/3 translate-y-1/3 pointer-events-none"></div>
+            {/* Hero Section */}
+            <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+                {/* Background Patterns */}
+                <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
+                    <div className="absolute inset-0 bg-brand-black/60"></div>
+                    <div className="absolute inset-0 bg-linear-to-b from-brand-black via-transparent to-brand-black"></div>
+                </div>
 
-                <div className="relative max-w-7xl mx-auto px-6 lg:px-8 pt-20 pb-16">
-                    {/* Hero Section */}
-                    <div className="text-center mb-16">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-sm mb-6 backdrop-blur-sm">
-                            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                            <span>System Status: Operational</span>
+                <div className="relative z-10 text-center px-6 max-w-5xl">
+                    <h2 className="text-brand-gold font-medium uppercase tracking-[0.2em] sm:tracking-[0.4em] mb-4 text-xs sm:text-sm animate-fade-in">
+                        AFstudio Professional Photography
+                    </h2>
+                    <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-black text-brand-white mb-6 sm:mb-8 tracking-tighter uppercase leading-[0.9]">
+                        Capture <span className="text-brand-red">Your</span> <br className="hidden sm:block" />
+                        <span className="italic font-serif normal-case font-light text-brand-gold">Perfect</span> Story
+                    </h1>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
+                        <Link
+                            href="/selector-photo"
+                            className="bg-brand-red hover:bg-red-800 text-brand-white px-8 sm:px-12 py-3 sm:py-4 rounded-full font-bold uppercase tracking-widest text-[10px] sm:text-xs transition-all duration-300 hover:scale-105 shadow-2xl shadow-brand-red/20"
+                        >
+                            Pilih Foto Anda
+                        </Link>
+                        <Link
+                            href="/price-list"
+                            className="text-brand-white hover:text-brand-gold px-8 sm:px-12 py-3 sm:py-4 rounded-full font-bold uppercase tracking-widest text-[10px] sm:text-xs transition-all duration-300 border border-white/20 hover:border-brand-gold"
+                        >
+                            Lihat Paket
+                        </Link>
+                    </div>
+                </div>
+
+                {/* Floating Elements */}
+                <div className="absolute bottom-10 left-10 hidden lg:block animate-bounce opacity-20">
+                    <div className="w-0.5 h-20 bg-linear-to-b from-brand-gold to-transparent"></div>
+                </div>
+            </section>
+
+            {/* Featured Categories */}
+            <section className="py-20 sm:py-32 px-6">
+                <div className="max-w-7xl mx-auto">
+                    <div className="flex flex-col md:flex-row justify-between items-end mb-12 sm:mb-20 gap-6">
+                        <div className="max-w-xl">
+                            <span className="text-brand-red text-xs font-bold uppercase tracking-widest block mb-4">Layanan Kami</span>
+                            <h2 className="text-3xl sm:text-5xl font-black text-brand-white uppercase leading-tight">
+                                Dedikasi <span className="italic font-serif text-brand-gold normal-case font-light">untuk</span> <br />
+                                Seni Visual Premium
+                            </h2>
                         </div>
-
-                        <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-8 bg-clip-text text-transparent bg-gradient-to-r from-red-500 via-orange-400 to-yellow-400 pb-2">
-                            Laravel + Inertia
-                        </h1>
-                        <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-                            Currently running on <span className="text-yellow-400 font-semibold">Vite</span> with <span className="text-cyan-400 font-semibold">React</span> and styled with <span className="text-sky-400 font-semibold">Tailwind CSS</span>.
-                            A modern, full-stack foundation for your next big idea.
+                        <p className="text-brand-white/40 text-sm sm:text-base max-w-sm mb-2">
+                            Kami mengubah momen-momen berharga menjadi karya seni abadi yang akan dikenang selamanya.
                         </p>
-
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                            <a href="https://laravel.com/docs" target="_blank" className="px-8 py-3 rounded-full bg-red-600 hover:bg-red-700 text-white font-medium transition-all shadow-lg shadow-red-500/30 hover:shadow-red-500/50 hover:scale-105 active:scale-95">
-                                Documentation
-                            </a>
-                            <a href="https://github.com/check" target="_blank" className="px-8 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 backdrop-blur-sm transition-all hover:scale-105 active:scale-95">
-                                Github Repo
-                            </a>
-                        </div>
                     </div>
 
-                    {/* Features Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {/* Feature 1 */}
-                        <div className="group p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-red-500/50 transition-all hover:bg-white/10">
-                            <div className="w-12 h-12 rounded-lg bg-red-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
+                        {[
+                            { title: 'Wedding', desc: 'Momen sakral penuh cinta.', image: 'https://picsum.photos/seed/wedding/800/1000' },
+                            { title: 'Portrait', desc: 'Menonjolkan karakter unik Anda.', image: 'https://picsum.photos/seed/portrait/800/1000' },
+                            { title: 'Commercial', desc: 'Visual profesional untuk bisnis.', image: 'https://picsum.photos/seed/commercial/800/1000' },
+                        ].map((cat, i) => (
+                            <div key={i} className="group relative aspect-4/5 overflow-hidden rounded-2xl bg-white/5 border border-white/5">
+                                <img
+                                    src={cat.image}
+                                    alt={cat.title}
+                                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110 opacity-50 group-hover:opacity-100"
+                                />
+                                <div className="absolute inset-0 bg-linear-to-t from-brand-black via-brand-black/20 to-transparent p-6 sm:p-10 flex flex-col justify-end">
+                                    <h3 className="text-2xl sm:text-3xl font-black text-brand-white uppercase mb-2 group-hover:text-brand-gold transition-colors">{cat.title}</h3>
+                                    <p className="text-brand-white/60 text-xs sm:text-sm font-medium">{cat.desc}</p>
+                                </div>
                             </div>
-                            <h3 className="text-xl font-bold mb-2 text-white">Backend Power</h3>
-                            <p className="text-gray-400 text-sm">
-                                Built on Laravel 11. Robust, secure, and developer-friendly.
-                            </p>
-                        </div>
-
-                        {/* Feature 2 */}
-                        <div className="group p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-cyan-500/50 transition-all hover:bg-white/10">
-                            <div className="w-12 h-12 rounded-lg bg-cyan-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                <svg className="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                            </div>
-                            <h3 className="text-xl font-bold mb-2 text-white">Fast Refresh</h3>
-                            <p className="text-gray-400 text-sm">
-                                Instant feedback with Vite and React Fast Refresh.
-                            </p>
-                        </div>
-
-                        {/* Feature 3 */}
-                        <div className="group p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-purple-500/50 transition-all hover:bg-white/10">
-                            <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path></svg>
-                            </div>
-                            <h3 className="text-xl font-bold mb-2 text-white">Modern UI</h3>
-                            <p className="text-gray-400 text-sm">
-                                Composable interfaces with React and Inertia linkage.
-                            </p>
-                        </div>
+                        ))}
                     </div>
                 </div>
+            </section>
 
-                <div className="border-t border-white/5 mt-20">
-                    <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <p className="text-gray-500 text-sm">© 2024 Your Company. All rights reserved.</p>
-                        <div className="flex gap-6 text-sm font-medium text-gray-400">
-                            <span className="hover:text-white cursor-pointer transition-colors">Privacy</span>
-                            <span className="hover:text-white cursor-pointer transition-colors">Terms</span>
-                        </div>
+            {/* Experience Section */}
+            <section className="py-20 sm:py-32 bg-white/[0.02] border-y border-white/5 px-6">
+                <div className="max-w-4xl mx-auto text-center">
+                    <div className="w-16 h-16 bg-brand-red/10 rounded-full flex items-center justify-center mx-auto mb-10">
+                        <svg className="w-8 h-8 text-brand-red" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                        </svg>
                     </div>
+                    <h2 className="text-3xl sm:text-5xl md:text-6xl font-black text-brand-white uppercase mb-8 leading-tight">
+                        Siap Memulai <br className="sm:block hidden" />
+                        <span className="text-brand-gold italic font-serif normal-case font-light underline decoration-brand-red underline-offset-8">Cerita</span> Anda?
+                    </h2>
+                    <p className="text-brand-white/50 text-base sm:text-lg mb-12 max-w-2xl mx-auto font-medium">
+                        Konsultasikan kebutuhan fotografi Anda dengan tim ahli kami dan dapatkan hasil yang melampaui ekspektasi.
+                    </p>
+                    <Link
+                        href="/selector-photo"
+                        className="inline-block bg-brand-white text-brand-black hover:bg-brand-gold hover:text-brand-black px-10 sm:px-16 py-4 sm:py-5 rounded-full font-bold uppercase tracking-widest text-xs sm:text-sm transition-all duration-500 shadow-xl"
+                    >
+                        Pilih Koleksi Foto
+                    </Link>
                 </div>
-            </div>
+            </section>
         </GuestLayout>
     );
 }

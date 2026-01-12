@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+@theme {
+  --color-brand-red: #8B0000;
+  --color-brand-white: #FFFFFF;
+  --color-brand-black: #1F1F1F;
+  --color-brand-gold: #F2C94C;
+}
+
+@layer base {
+  body {
+    @apply bg-brand-black text-brand-white;
+  }
+}
+
