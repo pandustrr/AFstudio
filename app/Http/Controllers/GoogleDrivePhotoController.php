@@ -2,11 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PhotoSelection;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use Google\Client;
+use Google\Service\Drive;
+use Illuminate\Support\Facades\Log;
 
 class GoogleDrivePhotoController extends Controller
 {
+    private function getDriveService()
+    {
+        $client = new Client();
+        $client->setAuthConfig(storage_path('app/google/drive.json'));
+        $client->addScope(Drive::DRIVE_READONLY);
+        return new Drive($client);
+    }
+
     /**
      * Get list of photos from Google Drive folder
      *
@@ -22,97 +33,72 @@ class GoogleDrivePhotoController extends Controller
         }
 
         try {
-            // Get Google Drive API key from environment
-            $apiKey = env('GOOGLE_DRIVE_API_KEY');
+            $service = $this->getDriveService();
 
-            if (!$apiKey) {
-                return response()->json(['error' => 'Google Drive API key not configured'], 500);
-            }
+            $optParams = [
+                'pageSize' => 1000,
+                'fields' => 'nextPageToken, files(id, name, thumbnailLink, webContentLink)',
+                'q' => "'{$folderId}' in parents and trashed = false and (mimeType contains 'image/')"
+            ];
 
-            // Call Google Drive API to list files in folder
-            $response = Http::get('https://www.googleapis.com/drive/v3/files', [
-                'q' => "'{$folderId}' in parents and (mimeType contains 'image/' or fileExtension='jpg' or fileExtension='jpeg' or fileExtension='png')",
-                'key' => $apiKey,
-                'fields' => 'files(id, name, mimeType, thumbnailLink, webContentLink)',
-                'pageSize' => 1000
-            ]);
+            $results = $service->files->listFiles($optParams);
+            $files = $results->getFiles();
 
-            if ($response->failed()) {
-                return response()->json([
-                    'error' => 'Failed to fetch photos from Google Drive',
-                    'details' => $response->json()
-                ], $response->status());
-            }
-
-            $files = $response->json()['files'] ?? [];
-
-            // Transform the data to include thumbnail URLs
             $photos = collect($files)->map(function ($file) {
                 return [
-                    'id' => $file['id'],
-                    'name' => $file['name'],
-                    'mimeType' => $file['mimeType'] ?? 'image/jpeg',
-                    'thumbnail' => $file['thumbnailLink'] ?? null,
-                    'downloadLink' => "https://drive.google.com/uc?export=download&id={$file['id']}",
-                    'viewLink' => "https://drive.google.com/file/d/{$file['id']}/view"
+                    'id' => $file->id,
+                    'name' => $file->name,
+                    'thumbnail' => $file->thumbnailLink,
+                    'downloadLink' => $file->webContentLink,
                 ];
-            })->toArray();
+            });
 
             return response()->json([
                 'success' => true,
                 'count' => count($photos),
                 'photos' => $photos
             ]);
-
         } catch (\Exception $e) {
+            Log::error('Google Drive Error: ' . $e->getMessage());
             return response()->json([
-                'error' => 'An error occurred while fetching photos',
+                'error' => 'Gagal mengambil foto dari Google Drive',
                 'message' => $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Get direct image URL for a specific file
+     * Store photo selection from user
      *
-     * @param string $fileId
+     * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getFileUrl($fileId)
+    public function storeSelection(Request $request)
     {
+        $validated = $request->validate([
+            'uid' => 'required|string',
+            'driveType' => 'required|string',
+            'selectedPhotos' => 'required|array',
+            'review' => 'nullable|string',
+        ]);
+
         try {
-            $apiKey = env('GOOGLE_DRIVE_API_KEY');
-
-            if (!$apiKey) {
-                return response()->json(['error' => 'Google Drive API key not configured'], 500);
-            }
-
-            // Get file metadata
-            $response = Http::get("https://www.googleapis.com/drive/v3/files/{$fileId}", [
-                'key' => $apiKey,
-                'fields' => 'id, name, mimeType, thumbnailLink, webContentLink, webViewLink'
+            $selection = PhotoSelection::create([
+                'uid' => $validated['uid'],
+                'drive_type' => $validated['driveType'],
+                'selected_photos' => $validated['selectedPhotos'],
+                'review' => $validated['review'],
             ]);
-
-            if ($response->failed()) {
-                return response()->json(['error' => 'File not found'], 404);
-            }
-
-            $file = $response->json();
 
             return response()->json([
                 'success' => true,
-                'file' => [
-                    'id' => $file['id'],
-                    'name' => $file['name'],
-                    'thumbnail' => $file['thumbnailLink'] ?? null,
-                    'downloadLink' => "https://drive.google.com/uc?export=download&id={$file['id']}",
-                    'viewLink' => $file['webViewLink'] ?? null
-                ]
+                'message' => 'Pilihan foto berhasil disimpan',
+                'data' => $selection
             ]);
-
         } catch (\Exception $e) {
+            Log::error('Store Selection Error: ' . $e->getMessage());
             return response()->json([
-                'error' => 'An error occurred',
+                'error' => 'Gagal menyimpan pilihan foto',
                 'message' => $e->getMessage()
             ], 500);
         }

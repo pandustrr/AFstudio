@@ -7,9 +7,27 @@
   --color-brand-gold: #F2C94C;
 }
 
+/* Enable class-based dark mode */
+@variant dark (&:where(.dark, .dark *));
+
 @layer base {
+  :root {
+    --bg-primary: #FFFFFF;
+    --text-primary: #1F1F1F;
+    --text-secondary: rgba(31, 31, 31, 0.4);
+    --border-color: rgba(31, 31, 31, 0.05);
+  }
+
+  .dark {
+    --bg-primary: #1F1F1F;
+    --text-primary: #FFFFFF;
+    --text-secondary: rgba(255, 255, 255, 0.4);
+    --border-color: rgba(255, 255, 255, 0.05);
+  }
+
   body {
-    @apply bg-brand-black text-brand-white;
+    @apply transition-colors duration-300;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
   }
 }
-

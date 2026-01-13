@@ -15,5 +15,5 @@ Route::get('/selector-photo', function () {
 // Google Drive API routes
 Route::prefix('api/google-drive')->group(function () {
     Route::get('/photos', [GoogleDrivePhotoController::class, 'index'])->name('google-drive.photos');
-    Route::get('/file/{fileId}', [GoogleDrivePhotoController::class, 'getFileUrl'])->name('google-drive.file');
+    Route::post('/selections', [GoogleDrivePhotoController::class, 'storeSelection'])->name('google-drive.selections');
 });
