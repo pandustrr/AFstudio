@@ -13,7 +13,33 @@ export default function SelectorPhoto() {
     const [error, setError] = useState(null);
     const [previewIndex, setPreviewIndex] = useState(null);
     const [sessionData, setSessionData] = useState(null);
-    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [isSelectionMode, setIsSelectionMode] = useState(true);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+    // Swipe State
+    const [touchStart, setTouchStart] = useState(null);
+    const [touchEnd, setTouchEnd] = useState(null);
+    const minSwipeDistance = 50;
+
+    const onTouchStart = (e) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+
+    const onTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+        if (isLeftSwipe) {
+            setPreviewIndex(prev => (prev < drivePhotos.length - 1 ? prev + 1 : 0));
+        }
+        if (isRightSwipe) {
+            setPreviewIndex(prev => (prev > 0 ? prev - 1 : drivePhotos.length - 1));
+        }
+    };
 
     // Validate UID
     const validateUid = async () => {
@@ -73,10 +99,6 @@ export default function SelectorPhoto() {
             if (isSelected) {
                 return prev.filter(p => p.id !== photo.id);
             } else {
-                if (prev.length >= (sessionData?.max_edit_requests || 20)) {
-                    alert(`Maksimal pilihan foto adalah ${sessionData?.max_edit_requests || 20}`);
-                    return prev;
-                }
                 return [...prev, { id: photo.id, name: photo.name }];
             }
         });
@@ -93,16 +115,33 @@ export default function SelectorPhoto() {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
                 },
                 body: JSON.stringify({
-                    selectedPhotos: selectedPhotos.map(p => p.name), // Send filenames
+                    selectedPhotos: selectedPhotos, // Send full objects {id, name}
                 }),
             });
 
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Gagal mengirim pilihan');
+            if (response.status === 419) {
+                alert('Sesi Anda telah berakhir, halaman akan dimuat ulang.');
+                window.location.reload();
+                return;
+            }
 
-            alert(data.message || 'Pilihan foto berhasil dikirim!');
-            resetFlow();
+            const data = await response.json();
+            if (!response.ok) {
+                console.error('API Error:', data);
+                throw new Error(data.error || data.message || 'Gagal mengirim pilihan');
+            }
+
+            // Sync session data with updated info from server
+            if (data.session) {
+                setSessionData(prev => ({
+                    ...prev,
+                    ...data.session
+                }));
+            }
+
+            setShowSuccessModal(true);
         } catch (err) {
+            console.error('Submission Catch:', err);
             alert('Error: ' + err.message);
         } finally {
             setLoading(false);
@@ -124,6 +163,12 @@ export default function SelectorPhoto() {
                 }),
             });
 
+            if (response.status === 419) {
+                alert('Sesi Anda telah berakhir, halaman akan dimuat ulang.');
+                window.location.reload();
+                return;
+            }
+
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Gagal mengirim ulasan');
 
@@ -136,15 +181,16 @@ export default function SelectorPhoto() {
         }
     };
 
-    const resetFlow = () => {
-        setStep(1);
-        setUid('');
+    const resetFlow = (toStep = 1) => {
+        setStep(toStep);
+        if (toStep === 1) {
+            setUid('');
+            setSessionData(null);
+        }
         setDriveType('');
         setSelectedPhotos([]);
         setReview('');
-        setReview('');
-        setSessionData(null);
-        setIsSelectionMode(false);
+        setIsSelectionMode(true);
     };
 
     const handleDownloadAll = () => {
@@ -221,18 +267,18 @@ export default function SelectorPhoto() {
         <GuestLayout>
             <Head title="Selector Photo" />
 
-            <div className="pt-32 pb-20 px-6 min-h-screen transition-colors">
-                <div className={`mx-auto transition-all duration-500 ${step >= 3 ? 'max-w-2xl' : 'max-w-md'}`}>
+            <div className="relative z-10 pt-24 md:pt-32 pb-20 px-6 min-h-screen transition-colors">
+                <div className={`relative z-10 mx-auto transition-all duration-500 ${step >= 3 ? 'max-w-2xl' : 'max-w-md'}`}>
                     {/* Stepper */}
                     <div className="mb-12">
                         <div className="flex justify-between items-center relative px-2">
                             <div className="absolute top-1/2 left-0 w-full h-0.5 bg-black/5 dark:bg-white/5 -translate-y-1/2 z-0"></div>
                             <div
                                 className="absolute top-1/2 left-0 h-0.5 bg-brand-red -translate-y-1/2 z-0 transition-all duration-500"
-                                style={{ width: `${((step - 1) / 3) * 100}%` }}
+                                style={{ width: `${((step - 1) / ((driveType === 'Mentahan' ? 3 : 4) - 1)) * 100}%` }}
                             ></div>
 
-                            {[1, 2, 3, 4].map((i) => (
+                            {[1, 2, 3, 4].slice(0, driveType === 'Mentahan' ? 3 : 4).map((i) => (
                                 <div key={i} className="relative z-10 flex flex-col items-center">
                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-500 ${step >= i
                                         ? 'bg-brand-red text-white scale-110 shadow-lg shadow-brand-red/20'
@@ -242,7 +288,7 @@ export default function SelectorPhoto() {
                                     </div>
                                     <span className={`absolute -bottom-6 text-[7px] font-black uppercase tracking-widest whitespace-nowrap transition-colors ${step >= i ? 'text-brand-red' : 'text-brand-black/20 dark:text-brand-white/20'
                                         }`}>
-                                        {['UID', 'Akses', 'Galeri', 'Pesan'][i - 1]}
+                                        {['UID', 'Akses', 'Galeri', 'Ulasan'][i - 1]}
                                     </span>
                                 </div>
                             ))}
@@ -250,12 +296,13 @@ export default function SelectorPhoto() {
                     </div>
 
                     {/* Content Card */}
-                    <div className="bg-white dark:bg-white/3 border border-black/5 dark:border-white/5 rounded-3xl p-8 sm:p-10 shadow-2xl transition-all duration-500">
+                    <div className="bg-white dark:bg-white/3 border border-black/5 dark:border-white/5 rounded-2xl p-8 sm:p-10 shadow-2xl transition-all duration-500">
                         {step === 1 && (
                             <div className="space-y-8 animate-fade-in">
                                 <div className="text-center">
-                                    <h2 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase mb-2">Identitas Anda</h2>
-                                    <p className="text-brand-black/40 dark:text-brand-white/40 text-xs font-medium">Masukkan UID untuk mengakses koleksi foto Anda.</p>
+                                    <h2 className="text-3xl font-black text-brand-black dark:text-brand-white uppercase mb-2 tracking-tighter">Masukkan UID</h2>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-red mb-1">Diberikan setelah Booking</p>
+                                    <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-bold uppercase tracking-widest">Masukkan kode unik untuk mengakses koleksi foto Anda.</p>
                                 </div>
                                 <div className="space-y-4">
                                     <label className="block text-[10px] uppercase font-black tracking-widest text-brand-black/60 dark:text-brand-white/60">User ID (UID)</label>
@@ -263,7 +310,7 @@ export default function SelectorPhoto() {
                                         type="text"
                                         value={uid}
                                         onChange={(e) => setUid(e.target.value)}
-                                        placeholder="Contoh: AF-TEST-001"
+                                        placeholder="Contoh: nama-angka"
                                         className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-6 py-4 text-brand-black dark:text-brand-white focus:outline-none focus:border-brand-red transition-all font-mono"
                                     />
                                     {error && <p className="text-red-500 text-[10px] font-bold uppercase tracking-tight">{error}</p>}
@@ -282,7 +329,14 @@ export default function SelectorPhoto() {
                             <div className="space-y-8 animate-fade-in">
                                 <div className="text-center">
                                     <h2 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase mb-2">Pilih Aksi</h2>
-                                    <p className="text-brand-black/40 dark:text-brand-white/40 text-xs font-medium">Silakan pilih folder atau layanan yang ingin Anda akses.</p>
+                                    <div className="flex flex-col items-center gap-1 mb-4">
+                                        <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest leading-none">Silakan pilih folder atau layanan yang ingin Anda akses.</p>
+                                        <div className="bg-brand-gold/10 border border-brand-gold/20 rounded-full px-4 py-1 mt-2">
+                                            <p className="text-brand-gold text-[9px] font-black uppercase tracking-widest">
+                                                Status Kuota: {sessionData?.requested_count} / {sessionData?.max_edit_requests} Foto
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="grid grid-cols-1 gap-4">
                                     <button
@@ -329,22 +383,7 @@ export default function SelectorPhoto() {
                                         {driveType === 'Mentahan' ? 'Galeri Mentahan' : `Galeri ${driveType}`}
                                     </h2>
                                     <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-medium">
-                                        <div className="flex justify-center gap-2 mt-2">
-                                            {driveType === 'Mentahan' && (
-                                                <button
-                                                    onClick={() => setIsSelectionMode(!isSelectionMode)}
-                                                    className={`px-3 py-1.5 rounded-lg font-bold uppercase tracking-widest text-[9px] transition-all border ${isSelectionMode ? 'bg-brand-red text-white border-brand-red' : 'bg-transparent text-brand-black dark:text-brand-white border-black/10 dark:border-white/10 hover:bg-black/5'}`}
-                                                >
-                                                    {isSelectionMode ? 'Selesai Memilih' : 'Pilih Foto'}
-                                                </button>
-                                            )}
-                                            <button
-                                                onClick={handleDownloadAll}
-                                                className="px-3 py-1.5 rounded-lg font-bold uppercase tracking-widest text-[9px] transition-all border border-black/10 dark:border-white/10 hover:bg-black/5 text-brand-black dark:text-brand-white"
-                                            >
-                                                Download Folder
-                                            </button>
-                                        </div>
+
                                     </p>
                                 </div>
 
@@ -357,20 +396,18 @@ export default function SelectorPhoto() {
                                     <>
                                         <div className="flex justify-between items-center mb-2 px-1">
                                             <p className="text-[9px] text-brand-black/40 dark:text-brand-white/40 uppercase font-bold tracking-widest">{drivePhotos.length} Foto</p>
-                                            {isSelectionMode && (
-                                                <p className="text-[9px] text-brand-gold uppercase font-bold tracking-widest">{selectedPhotos.length} / {sessionData?.max_edit_requests || 20} Terpilih</p>
-                                            )}
+
                                         </div>
-                                        <div className="grid grid-cols-4 gap-2 mb-6 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
                                             {drivePhotos.map((photo, index) => {
                                                 const isSelected = selectedPhotos.some(p => p.id === photo.id);
                                                 return (
                                                     <div key={photo.id} className="group relative aspect-square">
                                                         <div
-                                                            onClick={() => isSelectionMode ? togglePhoto(photo) : window.open(photo.downloadLink, '_blank')}
+                                                            onClick={() => togglePhoto(photo)}
                                                             className={`w-full h-full rounded-lg overflow-hidden cursor-pointer transition-all border-2 ${isSelected ? 'border-brand-red ring-2 ring-brand-red/20' : 'border-transparent hover:border-black/20 dark:hover:border-white/20'}`}
                                                         >
-                                                            <img src={photo.thumbnail} alt={photo.name} className="w-full h-full object-cover" />
+                                                            <img src={photo.thumbnail} alt={photo.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                                                             {isSelected && (
                                                                 <div className="absolute top-2 right-2 w-5 h-5 bg-brand-red rounded-full flex items-center justify-center z-10">
                                                                     <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>
@@ -396,7 +433,14 @@ export default function SelectorPhoto() {
                                         <div className="flex gap-4">
                                             <button onClick={() => setStep(2)} className="flex-1 text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest border border-black/10 dark:border-white/10 rounded-xl hover:bg-black/5">Kembali</button>
 
-                                            {isSelectionMode && selectedPhotos.length > 0 && (
+                                            <button
+                                                onClick={handleDownloadAll}
+                                                className="flex-1 bg-black/5 dark:bg-white/10 hover:bg-black/10 text-brand-black dark:text-brand-white font-black py-4 rounded-xl uppercase tracking-widest text-[10px] shadow-sm border border-black/5"
+                                            >
+                                                Download All ({drivePhotos.length})
+                                            </button>
+
+                                            {selectedPhotos.length > 0 && (
                                                 <button
                                                     onClick={handleDownloadSelected}
                                                     className="flex-1 bg-black/5 dark:bg-white/10 hover:bg-black/10 text-brand-black dark:text-brand-white font-black py-4 rounded-xl uppercase tracking-widest text-[10px] shadow-sm border border-black/5"
@@ -406,12 +450,18 @@ export default function SelectorPhoto() {
                                             )}
 
                                             <button
-                                                onClick={() => setStep(4)}
-                                                disabled={driveType === 'Mentahan' && (!isSelectionMode || selectedPhotos.length === 0)}
-                                                className={`flex-2 bg-brand-gold hover:bg-yellow-600 text-brand-black font-black py-4 rounded-xl uppercase tracking-widest text-xs shadow-xl disabled:opacity-50 ${driveType === 'Mentahan' && !isSelectionMode ? 'hidden' : ''}`}
+                                                onClick={() => driveType === 'Mentahan' ? handleSendEditRequest() : setStep(4)}
+                                                disabled={sessionData?.remaining_limit === 0 || (driveType === 'Mentahan' && (selectedPhotos.length === 0 || selectedPhotos.length > (sessionData?.remaining_limit || 20)))}
+                                                className="flex-2 bg-brand-gold hover:brightness-90 text-brand-black font-black py-4 rounded-xl uppercase tracking-widest text-xs shadow-xl disabled:opacity-50 transition-all font-black"
                                             >
                                                 {driveType === 'Mentahan'
-                                                    ? `Lanjut Request (${selectedPhotos.length})`
+                                                    ? (sessionData?.remaining_limit === 0
+                                                        ? 'Kuota Habis'
+                                                        : (selectedPhotos.length > (sessionData?.remaining_limit || 20)
+                                                            ? `Kelebihan (${selectedPhotos.length}/${sessionData?.remaining_limit})`
+                                                            : (selectedPhotos.length === 0
+                                                                ? `Sisa Kuota: ${sessionData?.remaining_limit}`
+                                                                : `Kirim Request (${selectedPhotos.length}/${sessionData?.remaining_limit})`)))
                                                     : 'Lanjut ke Review'}
                                             </button>
                                         </div>
@@ -440,34 +490,36 @@ export default function SelectorPhoto() {
                                         <div className="grid grid-cols-5 gap-2 max-h-24 overflow-y-auto scrollbar-none">
                                             {selectedPhotos.map((photo, i) => (
                                                 <div key={i} className="aspect-square bg-black/20 rounded-md overflow-hidden opacity-50">
-                                                    <img src={drivePhotos.find(p => p.id === photo.id)?.thumbnail} alt="" className="w-full h-full object-cover" />
+                                                    <img src={drivePhotos.find(p => p.id === photo.id)?.thumbnail} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
                                 )}
 
-                                <div className="space-y-4">
-                                    <label className="block text-[10px] uppercase font-black tracking-widest text-brand-black/60 dark:text-brand-white/60">
-                                        {selectedPhotos.length > 0 ? 'Pesan Tambahan (Opsional)' : 'Ulasan Anda'}
-                                    </label>
-                                    <textarea
-                                        value={review}
-                                        onChange={(e) => setReview(e.target.value)}
-                                        placeholder={selectedPhotos.length > 0 ? "Catatan untuk editor..." : "Tulis pengalaman Anda..."}
-                                        rows="4"
-                                        className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl px-6 py-4 text-brand-black dark:text-brand-white focus:outline-none focus:border-brand-gold transition-all text-sm font-medium"
-                                    />
-                                    <div className="flex gap-4">
-                                        <button onClick={() => setStep(3)} className="flex-1 text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest border border-black/10 dark:border-white/10 rounded-xl">Kembali</button>
-                                        <button
-                                            onClick={selectedPhotos.length > 0 ? handleSendEditRequest : handleSendReview}
-                                            disabled={loading || (selectedPhotos.length === 0 && !review)}
-                                            className="flex-2 bg-brand-gold hover:bg-brand-red hover:text-white text-brand-black font-black py-4 uppercase tracking-widest transition-all rounded-xl disabled:opacity-50 text-xs shadow-xl shadow-brand-gold/20"
-                                        >
-                                            {loading ? 'Mengirim...' : 'Kirim'}
-                                        </button>
+                                {!(driveType === 'Mentahan' && selectedPhotos.length > 0) && (
+                                    <div className="space-y-4">
+                                        <label className="block text-[10px] uppercase font-black tracking-widest text-brand-black/60 dark:text-brand-white/60">
+                                            {selectedPhotos.length > 0 ? 'Pesan Tambahan (Opsional)' : 'Ulasan Anda'}
+                                        </label>
+                                        <textarea
+                                            value={review}
+                                            onChange={(e) => setReview(e.target.value)}
+                                            placeholder={selectedPhotos.length > 0 ? "Catatan untuk editor..." : "Tulis pengalaman Anda..."}
+                                            rows="4"
+                                            className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl px-6 py-4 text-brand-black dark:text-brand-white focus:outline-none focus:border-brand-gold transition-all text-sm font-medium"
+                                        />
                                     </div>
+                                )}
+                                <div className="flex gap-4">
+                                    <button onClick={() => setStep(3)} className="flex-1 text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest border border-black/10 dark:border-white/10 rounded-xl">Kembali</button>
+                                    <button
+                                        onClick={selectedPhotos.length > 0 ? handleSendEditRequest : handleSendReview}
+                                        disabled={loading || (selectedPhotos.length === 0 && !review)}
+                                        className="flex-2 bg-brand-gold hover:bg-brand-red hover:text-white text-brand-black font-black py-4 uppercase tracking-widest transition-all rounded-xl disabled:opacity-50 text-xs shadow-xl shadow-brand-gold/20"
+                                    >
+                                        {loading ? 'Mengirim...' : 'Kirim'}
+                                    </button>
                                 </div>
                             </div>
                         )}
@@ -484,20 +536,21 @@ export default function SelectorPhoto() {
                                 <p className="text-brand-black dark:text-brand-white text-[10px] font-black">WhatsApp Admin: +62 812-3456-7890</p>
                             </div>
                         </div>
-                        <div className="text-center sm:text-right">
-                            <p className="text-brand-black/40 dark:text-brand-white/40 text-[8px] font-black uppercase tracking-widest mb-1">Status Keamanan</p>
-                            <div className="flex items-center justify-center sm:justify-end space-x-2">
-                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                                <span className="text-brand-black/60 dark:text-brand-white/60 text-[10px] font-black uppercase tracking-[0.2em]">Encrypted Connection</span>
-                            </div>
-                        </div>
+
                     </div>
                 </div>
             </div>
 
             {/* Preview Modal */}
             {previewIndex !== null && (
-                <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/95 backdrop-blur-sm" onClick={closePreview}>
+                <div
+                    className="fixed inset-0 z-100 flex items-center justify-center bg-black/95 backdrop-blur-sm"
+                    onClick={closePreview}
+                    onTouchStart={onTouchStart}
+                    onTouchMove={onTouchMove}
+                    onTouchEnd={onTouchEnd}
+                    style={{ touchAction: 'none' }}
+                >
                     <button onClick={closePreview} className="fixed top-6 right-6 p-4 text-white hover:text-brand-red z-110">
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
@@ -506,6 +559,7 @@ export default function SelectorPhoto() {
                         <img
                             src={drivePhotos[previewIndex].thumbnail.replace('s220', 's0')}
                             alt={drivePhotos[previewIndex].name}
+                            referrerPolicy="no-referrer"
                             className="max-w-5xl max-h-[80vh] object-contain rounded-lg shadow-2xl"
                         />
                         <div className="mt-8 text-center bg-black/40 px-6 py-3 rounded-full border border-white/10">
@@ -514,6 +568,29 @@ export default function SelectorPhoto() {
                         </div>
                     </div>
                     <button onClick={handleNext} className="fixed right-6 p-4 text-white hover:text-brand-gold z-110 bg-white/5 rounded-full"><svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg></button>
+                </div>
+            )}
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white dark:bg-brand-black border border-black/10 dark:border-white/10 rounded-3xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl space-y-6">
+                        <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <span className="text-3xl">✅</span>
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-brand-black dark:text-brand-white uppercase mb-2">Permintaan Terkirim!</h3>
+                            <p className="text-brand-black/60 dark:text-brand-white/60 text-xs font-medium leading-relaxed">
+                                Mohon tunggu proses editing sekitar 7-14 hari.<br />
+                                Silakan cek lagi dengan memasukkan UID yang sama nanti.
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => { setShowSuccessModal(false); resetFlow(2); }}
+                            className="w-full bg-brand-gold hover:brightness-90 text-brand-black font-black py-4 rounded-xl uppercase tracking-widest text-xs shadow-xl transition-all"
+                        >
+                            Oke, Mengerti
+                        </button>
+                    </div>
                 </div>
             )}
         </GuestLayout>

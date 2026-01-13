@@ -21,8 +21,27 @@ trait HandledGoogleDrive
         }
     }
 
+    protected function extractFolderId($input)
+    {
+        if (empty($input)) return null;
+
+        // If it looks like a full URL with /folders/ID
+        if (preg_match('/folders\/([a-zA-Z0-9-_]+)/', $input, $matches)) {
+            return $matches[1];
+        }
+
+        // If it's a sharing link like drive.google.com/.../ID
+        if (str_contains($input, 'drive.google.com')) {
+            $parts = explode('/', rtrim($input, '/'));
+            return end($parts);
+        }
+
+        return $input;
+    }
+
     protected function listPhotosFromFolder($folderId)
     {
+        $folderId = $this->extractFolderId($folderId);
         $service = $this->getDriveService();
 
         $optParams = [

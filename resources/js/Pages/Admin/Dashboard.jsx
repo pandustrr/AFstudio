@@ -52,8 +52,8 @@ export default function Dashboard() {
                             Mulai mengelola akses gallery, memantau request edit dari user, dan melihat ulasan yang dikirimkan pelanggan.
                         </p>
                         <Link
-                            href="/admin/sessions"
-                            className="inline-block bg-brand-black dark:bg-brand-red text-white dark:text-white px-10 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all hover:scale-105 shadow-xl"
+                            href="/admin/photo-editing"
+                            className="inline-block bg-brand-black dark:bg-brand-gold text-white px-10 py-4 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all hover:scale-105 shadow-xl"
                         >
                             Buka Manajemen Sesi
                         </Link>

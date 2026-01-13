@@ -1,9 +1,12 @@
 import React from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { ChartBarIcon, CameraIcon, StarIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import ThemeToggle from './ThemeToggle';
+import { useTheme } from '../Contexts/ThemeContext';
 
 export default function AdminSidebar({ isOpen, toggleSidebar }) {
     const { url } = usePage();
+    const { theme, toggleTheme } = useTheme();
 
     const menuItems = [
         { label: 'Dashboard', href: '/admin/dashboard', icon: ChartBarIcon },
@@ -52,7 +55,11 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                     })}
                 </div>
 
-                <div className="mt-auto">
+                <div className="mt-auto space-y-2">
+                    <div className="px-4 py-3 flex items-center justify-between bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 shadow-sm">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Theme</span>
+                        <ThemeToggle theme={theme} toggleTheme={toggleTheme} className="scale-75 origin-right" />
+                    </div>
                     <Link
                         href="/admin/logout"
                         method="post"

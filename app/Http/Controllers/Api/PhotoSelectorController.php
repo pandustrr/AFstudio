@@ -19,7 +19,7 @@ class PhotoSelectorController extends Controller
      */
     public function show(Request $request, $uid)
     {
-        $session = PhotoEditing::where('uid', $uid)->first();
+        $session = PhotoEditing::where('uid', $uid)->with('editRequests')->first();
 
         if (!$session) {
             return response()->json([
@@ -27,6 +27,11 @@ class PhotoSelectorController extends Controller
                 'message' => 'UID tidak ditemukan. Silakan cek kembali atau hubungi admin.'
             ], 404);
         }
+
+        // Calculate total photos already requested
+        $requestedCount = $session->editRequests->sum(function ($request) {
+            return count($request->selected_photos ?? []);
+        });
 
         return response()->json([
             'success' => true,
@@ -37,6 +42,8 @@ class PhotoSelectorController extends Controller
                 'has_edited' => !empty($session->edited_folder_id),
                 'status' => $session->status,
                 'max_edit_requests' => $session->max_edit_requests,
+                'requested_count' => $requestedCount,
+                'remaining_limit' => max(0, $session->max_edit_requests - $requestedCount),
             ]
         ]);
     }
@@ -79,7 +86,7 @@ class PhotoSelectorController extends Controller
      */
     public function storeEditRequest(Request $request, $uid)
     {
-        $session = PhotoEditing::where('uid', $uid)->first();
+        $session = PhotoEditing::where('uid', $uid)->with('editRequests')->first();
 
         if (!$session) {
             return response()->json(['error' => 'Session not found'], 404);
@@ -89,26 +96,54 @@ class PhotoSelectorController extends Controller
             'selectedPhotos' => 'required|array',
         ]);
 
-        if (count($validated['selectedPhotos']) > $session->max_edit_requests) {
+        // Calculate total photos already requested
+        $previousRequestedCount = $session->editRequests->sum(function ($request) {
+            return count($request->selected_photos ?? []);
+        });
+
+        $newCount = count($validated['selectedPhotos']);
+        $totalCount = $previousRequestedCount + $newCount;
+
+        if ($totalCount > $session->max_edit_requests) {
+            $remaining = max(0, $session->max_edit_requests - $previousRequestedCount);
             return response()->json([
-                'error' => "Maksimal pilihan foto adalah {$session->max_edit_requests}"
+                'error' => "Batas total adalah {$session->max_edit_requests} foto. Anda sudah me-request {$previousRequestedCount} foto, sisa kuota Anda adalah {$remaining} foto."
             ], 422);
         }
 
         try {
+            // Debugging: Log the incoming photo data
+            \Illuminate\Support\Facades\Log::info("Incoming Edit Request for Session: {$session->uid}", [
+                'photos_count' => $newCount,
+                'total_new_count' => $totalCount,
+            ]);
+
             $editRequest = EditRequest::create([
                 'photo_session_id' => $session->id,
                 'selected_photos' => $validated['selectedPhotos'],
                 'status' => 'pending',
             ]);
 
-            // Update session status if needed
-            $session->update(['status' => 'processing']);
+            // Ensure status is processing
+            if ($session->status === 'pending') {
+                $session->update(['status' => 'processing']);
+            }
+
+            // Refresh session to get updated counts
+            $session->load('editRequests');
+            $refreshedRequestedCount = $session->editRequests->sum(function ($request) {
+                return count($request->selected_photos ?? []);
+            });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Permintaan edit sedang diproses (estimasi 7–14 hari kerja)',
-                'data' => $editRequest
+                'data' => $editRequest,
+                'session' => [
+                    'requested_count' => $refreshedRequestedCount,
+                    'remaining_limit' => max(0, $session->max_edit_requests - $refreshedRequestedCount),
+                    'status' => $session->status,
+                ]
             ]);
         } catch (\Exception $e) {
             return response()->json([
