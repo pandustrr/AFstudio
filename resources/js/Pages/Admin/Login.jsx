@@ -21,7 +21,7 @@ export default function Login() {
     const { theme, toggleTheme } = useTheme();
 
     return (
-        <AdminLayout showToggle={false}>
+        <AdminLayout showToggle={false} showSidebar={false}>
             <Head title="Admin Login" />
 
             <div className="min-h-screen flex items-center justify-center p-6 bg-linear-to-br from-brand-red/5 via-transparent to-brand-gold/5 transition-all duration-300">

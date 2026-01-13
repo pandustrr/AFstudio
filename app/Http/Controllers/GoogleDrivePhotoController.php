@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PhotoSelection;
+use App\Models\PhotoEditing;
+use App\Models\EditRequest;
+use App\Models\Review;
 use Illuminate\Http\Request;
 use Google\Client;
 use Google\Service\Drive;
@@ -16,6 +18,51 @@ class GoogleDrivePhotoController extends Controller
         $client->setAuthConfig(storage_path('app/google/drive.json'));
         $client->addScope(Drive::DRIVE_READONLY);
         return new Drive($client);
+    }
+
+    /**
+     * Validate UID and get photo session data
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function validateUid(Request $request)
+    {
+        $validated = $request->validate([
+            'uid' => 'required|string',
+        ]);
+
+        try {
+            $photoSession = PhotoEditing::where('uid', $validated['uid'])->first();
+
+            if (!$photoSession) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'UID tidak ditemukan'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'UID valid',
+                'data' => [
+                    'uid' => $photoSession->uid,
+                    'customer_name' => $photoSession->customer_name,
+                    'raw_folder_id' => $photoSession->raw_folder_id,
+                    'edited_folder_id' => $photoSession->edited_folder_id,
+                    'max_edit_requests' => $photoSession->max_edit_requests,
+                    'status' => $photoSession->status,
+                    'has_edited_photos' => !empty($photoSession->edited_folder_id),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Validate UID Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat validasi UID',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -68,38 +115,153 @@ class GoogleDrivePhotoController extends Controller
     }
 
     /**
-     * Store photo selection from user
+     * Store edit request from user
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function storeSelection(Request $request)
+    public function storeEditRequest(Request $request)
     {
         $validated = $request->validate([
             'uid' => 'required|string',
-            'driveType' => 'required|string',
-            'selectedPhotos' => 'required|array',
-            'review' => 'nullable|string',
+            'selected_photos' => 'required|array',
+            'selected_photos.*' => 'string',
         ]);
 
         try {
-            $selection = PhotoSelection::create([
-                'uid' => $validated['uid'],
-                'drive_type' => $validated['driveType'],
-                'selected_photos' => $validated['selectedPhotos'],
-                'review' => $validated['review'],
+            // Find photo session by UID
+            $photoSession = PhotoEditing::where('uid', $validated['uid'])->first();
+
+            if (!$photoSession) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'UID tidak ditemukan'
+                ], 404);
+            }
+
+            // Check if selected photos exceed max limit
+            $maxLimit = $photoSession->max_edit_requests;
+            if (count($validated['selected_photos']) > $maxLimit) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Maksimal foto yang dapat dipilih adalah {$maxLimit} foto"
+                ], 422);
+            }
+
+            // Create edit request
+            $editRequest = EditRequest::create([
+                'photo_session_id' => $photoSession->id,
+                'selected_photos' => $validated['selected_photos'],
+                'status' => 'pending',
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Pilihan foto berhasil disimpan',
-                'data' => $selection
+                'message' => 'Permintaan edit berhasil dikirim. Estimasi pengerjaan 7-14 hari kerja.',
+                'data' => [
+                    'edit_request_id' => $editRequest->id,
+                    'selected_count' => count($validated['selected_photos']),
+                    'status' => $editRequest->status,
+                ]
             ]);
         } catch (\Exception $e) {
-            Log::error('Store Selection Error: ' . $e->getMessage());
+            Log::error('Store Edit Request Error: ' . $e->getMessage());
             return response()->json([
-                'error' => 'Gagal menyimpan pilihan foto',
-                'message' => $e->getMessage()
+                'success' => false,
+                'message' => 'Gagal menyimpan permintaan edit',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store review from user
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function storeReview(Request $request)
+    {
+        $validated = $request->validate([
+            'uid' => 'required|string',
+            'review_text' => 'required|string',
+            'rating' => 'nullable|integer|min:1|max:5',
+        ]);
+
+        try {
+            // Find photo session by UID
+            $photoSession = PhotoEditing::where('uid', $validated['uid'])->first();
+
+            if (!$photoSession) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'UID tidak ditemukan'
+                ], 404);
+            }
+
+            // Create review
+            $review = Review::create([
+                'photo_session_id' => $photoSession->id,
+                'review_text' => $validated['review_text'],
+                'rating' => $validated['rating'] ?? null,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Terima kasih atas review Anda!',
+                'data' => [
+                    'review_id' => $review->id,
+                    'rating' => $review->rating,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Store Review Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan review',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Check if edited photos are available
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkEditedPhotosStatus(Request $request)
+    {
+        $validated = $request->validate([
+            'uid' => 'required|string',
+        ]);
+
+        try {
+            $photoSession = PhotoEditing::where('uid', $validated['uid'])->first();
+
+            if (!$photoSession) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'UID tidak ditemukan'
+                ], 404);
+            }
+
+            $isAvailable = !empty($photoSession->edited_folder_id);
+
+            return response()->json([
+                'success' => true,
+                'is_available' => $isAvailable,
+                'message' => $isAvailable
+                    ? 'Foto hasil edit tersedia'
+                    : 'Foto hasil edit belum tersedia',
+                'edited_folder_id' => $isAvailable ? $photoSession->edited_folder_id : null,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Check Edited Photos Status Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan',
+                'error' => $e->getMessage()
             ], 500);
         }
     }

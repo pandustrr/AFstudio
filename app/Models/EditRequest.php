@@ -4,16 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class PhotoSelection extends Model
+class EditRequest extends Model
 {
     protected $fillable = [
-        'uid',
-        'drive_type',
+        'photo_session_id',
         'selected_photos',
-        'review',
+        'status',
     ];
 
     protected $casts = [
         'selected_photos' => 'array',
     ];
+
+    public function photoEditing()
+    {
+        return $this->belongsTo(PhotoEditing::class, 'photo_session_id');
+    }
 }
