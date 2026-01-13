@@ -1,47 +1,56 @@
 import React, { useState } from 'react';
 import GuestLayout from '../Layouts/GuestLayout';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 
 export default function SelectorPhoto() {
     const [step, setStep] = useState(1);
     const [uid, setUid] = useState('');
-    const [driveType, setDriveType] = useState(''); // 'Mentahan' or 'Result'
-    const [selectedPhotos, setSelectedPhotos] = useState([]);
+    const [driveType, setDriveType] = useState(''); // 'Mentahan', 'Result', or 'RequestEdit'
+    const [selectedPhotos, setSelectedPhotos] = useState([]); // Array of objects {id, name}
     const [review, setReview] = useState('');
-    const [showGallery, setShowGallery] = useState(false);
     const [drivePhotos, setDrivePhotos] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [previewIndex, setPreviewIndex] = useState(null);
+    const [sessionData, setSessionData] = useState(null);
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
 
-    // Configuration for Google Drive folders
-    const driveFolders = {
-        Mentahan: '19nSDsv01kEKec8aMTG3rw7NHUtLTxHYI',
-        Result: '' // Add Result folder ID when available
-    };
-
-    const driveLinks = {
-        Mentahan: 'https://drive.google.com/drive/folders/19nSDsv01kEKec8aMTG3rw7NHUtLTxHYI?usp=sharing',
-        Result: '#'
-    };
-
-    // Fetch photos from Google Drive
-    const fetchPhotosFromDrive = async (folderType) => {
-        const folderId = driveFolders[folderType];
-
-        if (!folderId) {
-            setError('Folder ID belum dikonfigurasi untuk ' + folderType);
-            return;
-        }
-
+    // Validate UID
+    const validateUid = async () => {
+        if (!uid) return;
         setLoading(true);
         setError(null);
-
         try {
-            const response = await fetch(`/api/google-drive/photos?folderId=${folderId}`);
+            const response = await fetch(`/api/photo-selector/sessions/${uid}`);
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Gagal mengambil foto dari Google Drive');
+                throw new Error(data.message || 'UID tidak valid');
+            }
+
+            setSessionData(data.data);
+            setStep(2);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Fetch photos from drive
+    const fetchPhotosFromDrive = async (folderType) => {
+        setLoading(true);
+        setError(null);
+
+        // Map folderType to backend type
+        const type = (folderType === 'Mentahan' || folderType === 'RequestEdit') ? 'raw' : 'edited';
+
+        try {
+            const response = await fetch(`/api/photo-selector/sessions/${uid}/photos?type=${type}`);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Gagal mengambil foto');
             }
 
             if (data.success && data.photos) {
@@ -58,346 +67,453 @@ export default function SelectorPhoto() {
         }
     };
 
-    const nextStep = () => setStep(step + 1);
-    const prevStep = () => setStep(step - 1);
-
-    const togglePhoto = (photoId) => {
-        setSelectedPhotos(prev =>
-            prev.includes(photoId)
-                ? prev.filter(p => p !== photoId)
-                : [...prev, photoId]
-        );
-    };
-
-    const handleDownloadSelected = () => {
-        if (selectedPhotos.length === 0) return;
-
-        // Download each selected photo
-        selectedPhotos.forEach(photoId => {
-            const photo = drivePhotos.find(p => p.id === photoId);
-            if (photo && photo.downloadLink) {
-                window.open(photo.downloadLink, '_blank');
+    const togglePhoto = (photo) => {
+        setSelectedPhotos(prev => {
+            const isSelected = prev.some(p => p.id === photo.id);
+            if (isSelected) {
+                return prev.filter(p => p.id !== photo.id);
+            } else {
+                if (prev.length >= (sessionData?.max_edit_requests || 20)) {
+                    alert(`Maksimal pilihan foto adalah ${sessionData?.max_edit_requests || 20}`);
+                    return prev;
+                }
+                return [...prev, { id: photo.id, name: photo.name }];
             }
         });
     };
 
-    const handleDownloadAll = () => {
-        // Open Google Drive folder link in new tab
-        window.open(driveLinks[driveType], '_blank');
+    const handleSendEditRequest = async () => {
+        setLoading(true);
+        try {
+            const response = await fetch(`/api/photo-selector/sessions/${uid}/edit-request`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                },
+                body: JSON.stringify({
+                    selectedPhotos: selectedPhotos.map(p => p.name), // Send filenames
+                }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Gagal mengirim pilihan');
+
+            alert(data.message || 'Pilihan foto berhasil dikirim!');
+            resetFlow();
+        } catch (err) {
+            alert('Error: ' + err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleSend = () => {
-        const data = {
-            uid,
-            driveType,
-            selectedPhotos,
-            review,
-        };
+    const handleSendReview = async () => {
+        setLoading(true);
+        try {
+            const response = await fetch(`/api/photo-selector/sessions/${uid}/review`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                },
+                body: JSON.stringify({
+                    reviewText: review,
+                }),
+            });
 
-        if (driveType === 'Mentahan') {
-            console.log('Sending to Admin:', data);
-            alert('Data berhasil dikirim ke Admin!');
-        } else {
-            console.log('Review Result finished:', data);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Gagal mengirim ulasan');
+
+            alert(data.message || 'Terima kasih atas ulasan Anda!');
+            resetFlow();
+        } catch (err) {
+            alert('Error: ' + err.message);
+        } finally {
+            setLoading(false);
         }
+    };
 
-        // Reset flow to UID step
+    const resetFlow = () => {
         setStep(1);
         setUid('');
         setDriveType('');
         setSelectedPhotos([]);
         setReview('');
+        setReview('');
+        setSessionData(null);
+        setIsSelectionMode(false);
     };
+
+    const handleDownloadAll = () => {
+        const folderId = driveType === 'Mentahan' ? sessionData?.raw_folder_id : sessionData?.edited_folder_id;
+        if (folderId) {
+            window.open(`https://drive.google.com/drive/folders/${folderId}`, '_blank');
+        }
+    };
+
+    const handleDownloadSelected = () => {
+        if (selectedPhotos.length === 0) return;
+
+        let count = 0;
+        const maxBatch = 5; // Prevent browser blocking too many popups
+
+        const processBatch = () => {
+            const batch = selectedPhotos.slice(count, count + maxBatch);
+            batch.forEach(photo => {
+                const photoData = drivePhotos.find(p => p.id === photo.id);
+                if (photoData) window.open(photoData.downloadLink, '_blank');
+            });
+
+            count += maxBatch;
+            if (count < selectedPhotos.length) {
+                setTimeout(processBatch, 1000); // Delay between batches
+            }
+        };
+
+        processBatch();
+        alert(`Sedang mendownload ${selectedPhotos.length} foto... Jika popup terblokir, izinkan situs ini.`);
+    };
+
+    const handleDriveSelection = (folderType) => {
+        const hasFolder = (folderType === 'Mentahan' || folderType === 'RequestEdit')
+            ? sessionData?.has_raw
+            : sessionData?.has_edited;
+
+        if (!hasFolder) {
+            alert(`${folderType} belum tersedia untuk UID ini.`);
+            return;
+        }
+
+        setDriveType(folderType);
+        setSelectedPhotos([]); // Clear selections when switching folders
+        setStep(3);
+        fetchPhotosFromDrive(folderType);
+    };
+
+    const handlePrev = (e) => {
+        e.stopPropagation();
+        setPreviewIndex(prev => (prev > 0 ? prev - 1 : drivePhotos.length - 1));
+    };
+
+    const handleNext = (e) => {
+        e.stopPropagation();
+        setPreviewIndex(prev => (prev < drivePhotos.length - 1 ? prev + 1 : 0));
+    };
+
+    const closePreview = () => setPreviewIndex(null);
+
+    // Keyboard navigation
+    React.useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (previewIndex === null) return;
+            if (e.key === 'ArrowLeft') handlePrev(e);
+            if (e.key === 'ArrowRight') handleNext(e);
+            if (e.key === 'Escape') closePreview();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [previewIndex]);
 
     return (
         <GuestLayout>
             <Head title="Selector Photo" />
 
-            <div className="min-h-[80vh] flex items-center justify-center py-20 px-4">
-                <div className="max-w-xl w-full">
-                    {/* Stepper Indicator */}
-                    <div className="flex justify-between mb-12 relative px-4">
-                        <div className="absolute top-1/2 left-0 w-full h-0.5 bg-white/5 -translate-y-1/2 z-0"></div>
-                        {[1, 2, 3].map((s) => (
+            <div className="pt-32 pb-20 px-6 min-h-screen transition-colors">
+                <div className={`mx-auto transition-all duration-500 ${step >= 3 ? 'max-w-2xl' : 'max-w-md'}`}>
+                    {/* Stepper */}
+                    <div className="mb-12">
+                        <div className="flex justify-between items-center relative px-2">
+                            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-black/5 dark:bg-white/5 -translate-y-1/2 z-0"></div>
                             <div
-                                key={s}
-                                className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all duration-500 ${step >= s ? 'bg-brand-red text-white' : 'bg-brand-black border border-white/10 text-white/30'
-                                    }`}
-                            >
-                                {s}
-                            </div>
-                        ))}
+                                className="absolute top-1/2 left-0 h-0.5 bg-brand-red -translate-y-1/2 z-0 transition-all duration-500"
+                                style={{ width: `${((step - 1) / 3) * 100}%` }}
+                            ></div>
+
+                            {[1, 2, 3, 4].map((i) => (
+                                <div key={i} className="relative z-10 flex flex-col items-center">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-500 ${step >= i
+                                        ? 'bg-brand-red text-white scale-110 shadow-lg shadow-brand-red/20'
+                                        : 'bg-white dark:bg-brand-black border-2 border-black/10 dark:border-white/10 text-brand-black/40 dark:text-brand-white/40'
+                                        }`}>
+                                        {i}
+                                    </div>
+                                    <span className={`absolute -bottom-6 text-[7px] font-black uppercase tracking-widest whitespace-nowrap transition-colors ${step >= i ? 'text-brand-red' : 'text-brand-black/20 dark:text-brand-white/20'
+                                        }`}>
+                                        {['UID', 'Akses', 'Galeri', 'Pesan'][i - 1]}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
-                    {/* Step 1: UID Input */}
-                    {step === 1 && (
-                        <div className="bg-white/5 border border-white/10 p-8 rounded-2xl backdrop-blur-sm animate-fade-in">
-                            <h2 className="text-2xl font-bold text-brand-white mb-2 uppercase tracking-tight">Halaman UID</h2>
-                            <p className="text-brand-white/50 text-sm mb-8">Masukkan UID yang Anda terima dari AFstudio.</p>
-
-                            <div className="space-y-6">
-                                <div>
-                                    <label className="block text-xs font-bold text-brand-gold uppercase tracking-widest mb-2">UID Pelanggan</label>
+                    {/* Content Card */}
+                    <div className="bg-white dark:bg-white/3 border border-black/5 dark:border-white/5 rounded-3xl p-8 sm:p-10 shadow-2xl transition-all duration-500">
+                        {step === 1 && (
+                            <div className="space-y-8 animate-fade-in">
+                                <div className="text-center">
+                                    <h2 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase mb-2">Identitas Anda</h2>
+                                    <p className="text-brand-black/40 dark:text-brand-white/40 text-xs font-medium">Masukkan UID untuk mengakses koleksi foto Anda.</p>
+                                </div>
+                                <div className="space-y-4">
+                                    <label className="block text-[10px] uppercase font-black tracking-widest text-brand-black/60 dark:text-brand-white/60">User ID (UID)</label>
                                     <input
                                         type="text"
                                         value={uid}
                                         onChange={(e) => setUid(e.target.value)}
-                                        placeholder="Contoh: AF-2024-XXXX"
-                                        className="w-full bg-brand-black border border-white/10 rounded-sm px-4 py-4 text-brand-white focus:border-brand-red focus:outline-none transition-colors"
+                                        placeholder="Contoh: AF-TEST-001"
+                                        className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-6 py-4 text-brand-black dark:text-brand-white focus:outline-none focus:border-brand-red transition-all font-mono"
                                     />
+                                    {error && <p className="text-red-500 text-[10px] font-bold uppercase tracking-tight">{error}</p>}
+                                    <button
+                                        onClick={validateUid}
+                                        disabled={!uid || loading}
+                                        className="w-full bg-brand-red hover:brightness-90 text-white font-bold py-4 rounded-xl uppercase tracking-widest text-xs transition-all disabled:opacity-20 shadow-xl shadow-brand-red/20"
+                                    >
+                                        {loading ? 'Memvalidasi...' : 'Lanjutkan'}
+                                    </button>
                                 </div>
-                                <button
-                                    disabled={!uid}
-                                    onClick={nextStep}
-                                    className="w-full bg-brand-red hover:bg-red-800 disabled:opacity-50 text-white font-bold py-4 uppercase tracking-widest transition-all rounded-sm"
-                                >
-                                    Selanjutnya
-                                </button>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* Step 2: Drive Selection */}
-                    {step === 2 && (
-                        <div className="bg-white/5 border border-white/10 p-8 rounded-2xl backdrop-blur-sm animate-fade-in text-center">
-                            <h2 className="text-2xl font-bold text-brand-white mb-2 uppercase tracking-tight">Pilih Akses Drive</h2>
-                            <p className="text-brand-white/50 text-sm mb-8">Silakan pilih folder foto yang ingin Anda akses.</p>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                                <button
-                                    onClick={() => {
-                                        setDriveType('Mentahan');
-                                        fetchPhotosFromDrive('Mentahan');
-                                        nextStep();
-                                    }}
-                                    className="p-8 border border-white/10 rounded-xl hover:border-brand-red hover:bg-brand-red/5 transition-all group"
-                                >
-                                    <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-red/10">
-                                        <svg className="w-6 h-6 text-brand-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                    </div>
-                                    <h3 className="font-bold text-brand-white font-sans">Drive Mentahan</h3>
-                                </button>
-
-                                <button
-                                    onClick={() => {
-                                        setDriveType('Result');
-                                        fetchPhotosFromDrive('Result');
-                                        nextStep();
-                                    }}
-                                    className="p-8 border border-white/10 rounded-xl hover:border-brand-gold hover:bg-brand-gold/5 transition-all group"
-                                >
-                                    <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-gold/10">
-                                        <svg className="w-6 h-6 text-brand-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                                    </div>
-                                    <h3 className="font-bold text-brand-white font-sans">Drive Result (Editing)</h3>
-                                </button>
-                            </div>
-
-                            <div className="p-4 bg-brand-gold/10 border border-brand-gold/20 rounded-lg">
-                                <p className="text-[10px] text-brand-gold uppercase tracking-widest font-bold mb-1">PENTING / DISCLAIMER</p>
-                                <p className="text-brand-white/70 text-xs italic">
-                                    "File pada Google Drive ini bersifat sementara dan akan otomatis dihapus setelah 7 hari."
-                                </p>
-                            </div>
-
-                            <button onClick={prevStep} className="mt-8 text-brand-white/30 text-xs uppercase tracking-widest hover:text-brand-white font-bold transition-colors">Kembali ke UID</button>
-                        </div>
-                    )}
-
-                    {/* Step 3: Flow Selection based on Drive Type */}
-                    {step === 3 && (
-                        <div className="space-y-6 animate-fade-in">
-                            {/* Folder Info Header */}
-                            <div className="flex items-center justify-between px-2">
-                                <span className={`px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-full ${driveType === 'Mentahan' ? 'bg-brand-red/20 text-brand-red' : 'bg-brand-gold/20 text-brand-gold'}`}>
-                                    Folder {driveType}
-                                </span>
-                                <button onClick={prevStep} className="text-brand-white/40 hover:text-brand-gold text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-2">
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
-                                    Ganti Drive
-                                </button>
-                            </div>
-
-                            {/* Section 1: Pemilihan Foto (Shared between both for showing Gallery) */}
-                            <div className="bg-white/5 border border-white/10 p-8 rounded-2xl backdrop-blur-sm">
-                                <h2 className="text-xl font-bold text-brand-white mb-2 uppercase tracking-tight font-sans">{driveType === 'Result' ? 'Download Hasil' : 'Pemilihan Foto'}</h2>
-                                <p className="text-brand-white/50 text-xs mb-6">
-                                    {driveType === 'Result' ? 'Buka galeri untuk melihat dan mendownload foto Anda.' : 'Pilih satu atau beberapa foto dari galeri drive.'}
-                                </p>
-
-                                <button
-                                    onClick={() => setShowGallery(true)}
-                                    className={`w-full flex items-center justify-between p-4 bg-brand-black border border-white/10 rounded-sm group transition-all ${driveType === 'Result' ? 'hover:border-brand-gold' : 'hover:border-brand-red'}`}
-                                >
-                                    <div className="flex items-center gap-4 text-left">
-                                        <div className={`w-8 h-8 bg-white/5 rounded flex items-center justify-center transition-all ${driveType === 'Result' ? 'group-hover:bg-brand-gold/10' : 'group-hover:bg-brand-red/10'}`}>
-                                            <svg className="w-4 h-4 text-brand-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={driveType === 'Result' ? "M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" : "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"}></path></svg>
+                        {step === 2 && (
+                            <div className="space-y-8 animate-fade-in">
+                                <div className="text-center">
+                                    <h2 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase mb-2">Pilih Aksi</h2>
+                                    <p className="text-brand-black/40 dark:text-brand-white/40 text-xs font-medium">Silakan pilih folder atau layanan yang ingin Anda akses.</p>
+                                </div>
+                                <div className="grid grid-cols-1 gap-4">
+                                    <button
+                                        onClick={() => handleDriveSelection('Mentahan')}
+                                        className="group relative h-28 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl p-6 overflow-hidden transition-all hover:border-brand-gold hover:scale-[1.02]"
+                                    >
+                                        <div className="relative z-10 h-full flex items-center space-x-6 text-left">
+                                            <span className="text-3xl group-hover:scale-110 transition-transform">📂</span>
+                                            <div>
+                                                <h3 className="text-brand-black dark:text-brand-white font-black uppercase text-xs tracking-widest">Foto Mentahan</h3>
+                                                <p className="text-brand-black/40 dark:text-brand-white/40 text-[9px] font-bold">Lihat & Download foto original.</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span className="block text-brand-white text-xs font-bold uppercase tracking-wide font-sans">{driveType === 'Result' ? 'Lihat & Download' : 'Pilih Foto'}</span>
-                                            <span className="block text-brand-white/30 text-[9px] uppercase font-bold tracking-widest mt-0.5">
-                                                {driveType === 'Result' ? 'Semua foto siap didownload' : (selectedPhotos.length > 0 ? `${selectedPhotos.length} Foto Dipilih` : 'Belum ada foto dipilih')}
-                                            </span>
+                                    </button>
+
+
+
+                                    <button
+                                        onClick={() => handleDriveSelection('Result')}
+                                        disabled={!sessionData?.has_edited}
+                                        className={`group relative h-28 border rounded-2xl p-6 overflow-hidden transition-all ${sessionData?.has_edited
+                                            ? 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 hover:border-green-500 hover:scale-[1.02]'
+                                            : 'bg-black/5 dark:bg-white/2 opacity-30 cursor-not-allowed border-transparent'}`}
+                                    >
+                                        <div className="relative z-10 h-full flex items-center space-x-6 text-left">
+                                            <span className="text-3xl group-hover:scale-110 transition-transform">{sessionData?.has_edited ? '✨' : '🔒'}</span>
+                                            <div>
+                                                <h3 className="text-brand-black dark:text-brand-white font-black uppercase text-xs tracking-widest">Foto Hasil Edit</h3>
+                                                <p className="text-brand-black/40 dark:text-brand-white/40 text-[9px] font-bold">
+                                                    {sessionData?.has_edited ? 'Hasil foto siap di-download.' : 'Sedang diproses editor.'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                                <button onClick={() => setStep(1)} className="w-full text-brand-black/40 dark:text-brand-white/40 text-[10px] font-bold uppercase tracking-widest hover:text-brand-red transition-colors text-center">Kembali ke UID</button>
+                            </div>
+                        )}
+
+                        {step === 3 && (
+                            <div className="space-y-6 animate-fade-in">
+                                <div className="text-center">
+                                    <h2 className="text-xl font-black text-brand-black dark:text-brand-white uppercase mb-2">
+                                        {driveType === 'Mentahan' ? 'Galeri Mentahan' : `Galeri ${driveType}`}
+                                    </h2>
+                                    <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-medium">
+                                        <div className="flex justify-center gap-2 mt-2">
+                                            {driveType === 'Mentahan' && (
+                                                <button
+                                                    onClick={() => setIsSelectionMode(!isSelectionMode)}
+                                                    className={`px-3 py-1.5 rounded-lg font-bold uppercase tracking-widest text-[9px] transition-all border ${isSelectionMode ? 'bg-brand-red text-white border-brand-red' : 'bg-transparent text-brand-black dark:text-brand-white border-black/10 dark:border-white/10 hover:bg-black/5'}`}
+                                                >
+                                                    {isSelectionMode ? 'Selesai Memilih' : 'Pilih Foto'}
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={handleDownloadAll}
+                                                className="px-3 py-1.5 rounded-lg font-bold uppercase tracking-widest text-[9px] transition-all border border-black/10 dark:border-white/10 hover:bg-black/5 text-brand-black dark:text-brand-white"
+                                            >
+                                                Download Folder
+                                            </button>
+                                        </div>
+                                    </p>
+                                </div>
+
+                                {loading ? (
+                                    <div className="flex flex-col items-center justify-center py-10 space-y-4">
+                                        <div className="w-8 h-8 border-4 border-brand-red/20 border-t-brand-red rounded-full animate-spin"></div>
+                                        <p className="text-brand-black/50 dark:text-brand-white/50 text-[10px] font-bold uppercase tracking-widest">Memuat Galeri...</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="flex justify-between items-center mb-2 px-1">
+                                            <p className="text-[9px] text-brand-black/40 dark:text-brand-white/40 uppercase font-bold tracking-widest">{drivePhotos.length} Foto</p>
+                                            {isSelectionMode && (
+                                                <p className="text-[9px] text-brand-gold uppercase font-bold tracking-widest">{selectedPhotos.length} / {sessionData?.max_edit_requests || 20} Terpilih</p>
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-4 gap-2 mb-6 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
+                                            {drivePhotos.map((photo, index) => {
+                                                const isSelected = selectedPhotos.some(p => p.id === photo.id);
+                                                return (
+                                                    <div key={photo.id} className="group relative aspect-square">
+                                                        <div
+                                                            onClick={() => isSelectionMode ? togglePhoto(photo) : window.open(photo.downloadLink, '_blank')}
+                                                            className={`w-full h-full rounded-lg overflow-hidden cursor-pointer transition-all border-2 ${isSelected ? 'border-brand-red ring-2 ring-brand-red/20' : 'border-transparent hover:border-black/20 dark:hover:border-white/20'}`}
+                                                        >
+                                                            <img src={photo.thumbnail} alt={photo.name} className="w-full h-full object-cover" />
+                                                            {isSelected && (
+                                                                <div className="absolute top-2 right-2 w-5 h-5 bg-brand-red rounded-full flex items-center justify-center z-10">
+                                                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>
+                                                                </div>
+                                                            )}
+                                                            <div className="absolute inset-x-0 bottom-0 p-2 bg-black/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all">
+                                                                <p className="text-[8px] text-white truncate font-mono font-bold">{photo.name}</p>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); setPreviewIndex(index); }}
+                                                            className="absolute top-2 left-2 w-6 h-6 bg-black/40 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all z-10 hover:bg-brand-red"
+                                                        >
+                                                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <div className="flex gap-4">
+                                            <button onClick={() => setStep(2)} className="flex-1 text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest border border-black/10 dark:border-white/10 rounded-xl hover:bg-black/5">Kembali</button>
+
+                                            {isSelectionMode && selectedPhotos.length > 0 && (
+                                                <button
+                                                    onClick={handleDownloadSelected}
+                                                    className="flex-1 bg-black/5 dark:bg-white/10 hover:bg-black/10 text-brand-black dark:text-brand-white font-black py-4 rounded-xl uppercase tracking-widest text-[10px] shadow-sm border border-black/5"
+                                                >
+                                                    Download ({selectedPhotos.length})
+                                                </button>
+                                            )}
+
+                                            <button
+                                                onClick={() => setStep(4)}
+                                                disabled={driveType === 'Mentahan' && (!isSelectionMode || selectedPhotos.length === 0)}
+                                                className={`flex-2 bg-brand-gold hover:bg-yellow-600 text-brand-black font-black py-4 rounded-xl uppercase tracking-widest text-xs shadow-xl disabled:opacity-50 ${driveType === 'Mentahan' && !isSelectionMode ? 'hidden' : ''}`}
+                                            >
+                                                {driveType === 'Mentahan'
+                                                    ? `Lanjut Request (${selectedPhotos.length})`
+                                                    : 'Lanjut ke Review'}
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        {step === 4 && (
+                            <div className="space-y-8 animate-fade-in">
+                                <div className="text-center">
+                                    <h2 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase mb-2">
+                                        {selectedPhotos.length > 0 ? 'Finalisasi Request' : 'Kirim Ulasan'}
+                                    </h2>
+                                    <p className="text-brand-black/40 dark:text-brand-white/40 text-xs font-medium">
+                                        {selectedPhotos.length > 0 ? 'Cek kembali foto pilihan Anda.' : 'Feedback Anda sangat berarti bagi kami.'}
+                                    </p>
+                                </div>
+
+                                {selectedPhotos.length > 0 && (
+                                    <div className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl p-6">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="text-[10px] font-black uppercase tracking-widest text-brand-gold">Ringkasan Pilihan</h3>
+                                            <span className="text-[10px] font-bold text-brand-red">{selectedPhotos.length} Foto</span>
+                                        </div>
+                                        <div className="grid grid-cols-5 gap-2 max-h-24 overflow-y-auto scrollbar-none">
+                                            {selectedPhotos.map((photo, i) => (
+                                                <div key={i} className="aspect-square bg-black/20 rounded-md overflow-hidden opacity-50">
+                                                    <img src={drivePhotos.find(p => p.id === photo.id)?.thumbnail} alt="" className="w-full h-full object-cover" />
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
-                                    <svg className={`w-4 h-4 text-white/20 transition-all ${driveType === 'Result' ? 'group-hover:text-brand-gold' : 'group-hover:text-brand-red'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
-                                </button>
-                            </div>
+                                )}
 
-                            {/* Section 2: Form Review (Unified for both as per user request) */}
-                            <div className="bg-white/5 border border-white/10 p-8 rounded-2xl backdrop-blur-sm">
-                                <h2 className="text-xl font-bold text-brand-white mb-2 uppercase tracking-tight font-sans">{driveType === 'Result' ? 'Review Layanan' : 'Catatan (opsional)'}</h2>
-                                <p className="text-brand-white/50 text-xs mb-8">
-                                    {driveType === 'Result' ? 'Berikan ulasan Anda tentang hasil pemotretan ini.' : 'Berikan catatan perbaikan atau retouch untuk admin.'}
-                                </p>
-
-                                <div className="space-y-6 text-left">
-
-
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-brand-gold uppercase tracking-[0.2em] mb-4">{driveType === 'Result' ? 'Ulasan Anda' : 'Catatan Khusus'}</label>
-                                        <textarea
-                                            rows="3"
-                                            value={review}
-                                            onChange={(e) => setReview(e.target.value)}
-                                            placeholder={driveType === 'Result' ? "Bagaimana hasil fotonya? Kami sangat menghargai masukan Anda..." : "Misal: Perbaikan warna, retouch kulit, atau crop..."}
-                                            className="w-full bg-brand-black/50 border border-white/10 rounded-sm px-4 py-3 text-brand-white focus:border-brand-red focus:outline-none transition-colors text-sm placeholder:text-white/10"
-                                        ></textarea>
-                                    </div>
-
-                                    <div className="text-center">
+                                <div className="space-y-4">
+                                    <label className="block text-[10px] uppercase font-black tracking-widest text-brand-black/60 dark:text-brand-white/60">
+                                        {selectedPhotos.length > 0 ? 'Pesan Tambahan (Opsional)' : 'Ulasan Anda'}
+                                    </label>
+                                    <textarea
+                                        value={review}
+                                        onChange={(e) => setReview(e.target.value)}
+                                        placeholder={selectedPhotos.length > 0 ? "Catatan untuk editor..." : "Tulis pengalaman Anda..."}
+                                        rows="4"
+                                        className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl px-6 py-4 text-brand-black dark:text-brand-white focus:outline-none focus:border-brand-gold transition-all text-sm font-medium"
+                                    />
+                                    <div className="flex gap-4">
+                                        <button onClick={() => setStep(3)} className="flex-1 text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest border border-black/10 dark:border-white/10 rounded-xl">Kembali</button>
                                         <button
-                                            onClick={handleSend}
-                                            disabled={driveType === 'Mentahan' && selectedPhotos.length === 0}
-                                            className={`px-12 py-3.5 rounded-sm font-bold uppercase tracking-[0.2em] text-[10px] transition-all shadow-xl font-sans disabled:opacity-30 ${driveType === 'Result'
-                                                ? 'bg-white/10 border border-white/10 hover:bg-white/20 text-brand-white'
-                                                : 'bg-brand-gold text-brand-black hover:bg-brand-red hover:text-white shadow-brand-gold/10'
-                                                }`}
+                                            onClick={selectedPhotos.length > 0 ? handleSendEditRequest : handleSendReview}
+                                            disabled={loading || (selectedPhotos.length === 0 && !review)}
+                                            className="flex-2 bg-brand-gold hover:bg-brand-red hover:text-white text-brand-black font-black py-4 uppercase tracking-widest transition-all rounded-xl disabled:opacity-50 text-xs shadow-xl shadow-brand-gold/20"
                                         >
-                                            {driveType === 'Result' ? 'Selesai & Kembali' : 'Kirim ke Admin'}
+                                            {loading ? 'Mengirim...' : 'Kirim'}
                                         </button>
                                     </div>
                                 </div>
                             </div>
+                        )}
+                    </div>
+
+                    {/* Footer Info */}
+                    <div className="mt-12 flex flex-col sm:flex-row justify-between items-center gap-6 px-4">
+                        <div className="flex items-center space-x-4">
+                            <div className="w-10 h-10 bg-brand-red/10 rounded-full flex items-center justify-center">
+                                <span className="text-brand-red text-xs">📞</span>
+                            </div>
+                            <div>
+                                <p className="text-brand-black/40 dark:text-brand-white/40 text-[8px] font-black uppercase tracking-widest">Butuh Bantuan?</p>
+                                <p className="text-brand-black dark:text-brand-white text-[10px] font-black">WhatsApp Admin: +62 812-3456-7890</p>
+                            </div>
                         </div>
-                    )}
+                        <div className="text-center sm:text-right">
+                            <p className="text-brand-black/40 dark:text-brand-white/40 text-[8px] font-black uppercase tracking-widest mb-1">Status Keamanan</p>
+                            <div className="flex items-center justify-center sm:justify-end space-x-2">
+                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                <span className="text-brand-black/60 dark:text-brand-white/60 text-[10px] font-black uppercase tracking-[0.2em]">Encrypted Connection</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Gallery Modal */}
-            {showGallery && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-10">
-                    <div className="absolute inset-0 bg-brand-black/95 backdrop-blur-xl" onClick={() => setShowGallery(false)}></div>
-                    <div className="relative w-full max-w-5xl h-full max-h-[90vh] bg-brand-black border border-white/10 rounded-2xl flex flex-col overflow-hidden animate-slide-up">
-                        {/* Modal Header */}
-                        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/5">
-                            <div>
-                                <h3 className="text-xl font-bold text-brand-white uppercase">Drive {driveType}</h3>
-                                <p className="text-brand-white/50 text-xs">
-                                    {driveType === 'Result'
-                                        ? 'Lihat dan download hasil foto anda'
-                                        : `Pilih foto yang ingin diproses (${selectedPhotos.length} terpilih)`
-                                    }
-                                </p>
-                            </div>
-                            <button onClick={() => setShowGallery(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-white hover:bg-brand-red transition-all">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                        </div>
-
-                        {/* Modal Body: Gallery Grid */}
-                        <div className="flex-grow overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white/10">
-                            {loading ? (
-                                <div className="flex flex-col items-center justify-center h-full space-y-4">
-                                    <div className="w-12 h-12 border-4 border-brand-red/20 border-t-brand-red rounded-full animate-spin"></div>
-                                    <p className="text-brand-white/50 text-sm">Memuat foto dari Google Drive...</p>
-                                </div>
-                            ) : error ? (
-                                <div className="flex flex-col items-center justify-center h-full space-y-4">
-                                    <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center">
-                                        <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                    </div>
-                                    <p className="text-red-400 text-sm font-bold">Error: {error}</p>
-                                    <button
-                                        onClick={() => fetchPhotosFromDrive(driveType)}
-                                        className="px-4 py-2 bg-brand-red text-white rounded-sm text-xs font-bold uppercase tracking-widest hover:bg-red-700 transition-all"
-                                    >
-                                        Coba Lagi
-                                    </button>
-                                </div>
-                            ) : drivePhotos.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-full space-y-4">
-                                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center">
-                                        <svg className="w-8 h-8 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                        </svg>
-                                    </div>
-                                    <p className="text-brand-white/50 text-sm">Tidak ada foto di folder ini</p>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                                    {drivePhotos.map((photo) => {
-                                        const isSelected = selectedPhotos.includes(photo.id);
-                                        return (
-                                            <div
-                                                key={photo.id}
-                                                onClick={() => togglePhoto(photo.id)}
-                                                className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer transition-all ${isSelected ? 'ring-4 ring-brand-red scale-[0.98]' : 'hover:scale-[1.02]'}`}
-                                            >
-                                                <img
-                                                    src={photo.thumbnail || `https://drive.google.com/thumbnail?id=${photo.id}&sz=w400-h400`}
-                                                    alt={photo.name}
-                                                    className="w-full h-full object-cover"
-                                                    onError={(e) => {
-                                                        // Fallback if thumbnail fails
-                                                        e.target.src = `https://via.placeholder.com/400x400/1a1a1a/666666?text=${encodeURIComponent(photo.name.substring(0, 10))}`;
-                                                    }}
-                                                />
-                                                <div className={`absolute inset-0 flex flex-col justify-end p-2 sm:p-4 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity ${isSelected ? 'opacity-100' : ''}`}>
-                                                    <span className="text-[10px] text-white font-bold truncate">{photo.name}</span>
-                                                </div>
-                                                {isSelected && (
-                                                    <div className="absolute top-2 right-2 w-6 h-6 bg-brand-red rounded-full flex items-center justify-center text-white shadow-lg">
-                                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Modal Footer */}
-                        <div className="p-6 bg-white/5 border-t border-white/10 flex justify-between items-center gap-4">
-                            {driveType === 'Result' ? (
-                                <>
-                                    <button
-                                        onClick={handleDownloadAll}
-                                        className="bg-white/10 text-white px-6 py-3 font-bold uppercase tracking-widest text-[10px] hover:bg-white/20 transition-all rounded-sm"
-                                    >
-                                        Download Semua
-                                    </button>
-                                    <button
-                                        onClick={() => { handleDownloadSelected(); setShowGallery(false); }}
-                                        disabled={selectedPhotos.length === 0}
-                                        className="bg-brand-gold text-brand-black px-6 py-3 font-bold uppercase tracking-widest text-[10px] hover:bg-brand-red hover:text-white disabled:opacity-50 transition-all rounded-sm"
-                                    >
-                                        Download Terpilih ({selectedPhotos.length})
-                                    </button>
-                                </>
-                            ) : (
-                                <button
-                                    onClick={() => setShowGallery(false)}
-                                    className="ml-auto bg-brand-red text-white px-10 py-3 font-bold uppercase tracking-widest text-xs hover:bg-red-800 transition-all shadow-lg shadow-brand-red/20"
-                                >
-                                    Simpan Pilihan
-                                </button>
-                            )}
+            {/* Preview Modal */}
+            {previewIndex !== null && (
+                <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/95 backdrop-blur-sm" onClick={closePreview}>
+                    <button onClick={closePreview} className="fixed top-6 right-6 p-4 text-white hover:text-brand-red z-110">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                    <button onClick={handlePrev} className="fixed left-6 p-4 text-white hover:text-brand-gold z-110 bg-white/5 rounded-full"><svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg></button>
+                    <div className="w-full h-full flex flex-col items-center justify-center p-4" onClick={e => e.stopPropagation()}>
+                        <img
+                            src={drivePhotos[previewIndex].thumbnail.replace('s220', 's0')}
+                            alt={drivePhotos[previewIndex].name}
+                            className="max-w-5xl max-h-[80vh] object-contain rounded-lg shadow-2xl"
+                        />
+                        <div className="mt-8 text-center bg-black/40 px-6 py-3 rounded-full border border-white/10">
+                            <p className="text-white font-mono text-xs mb-1 uppercase tracking-widest">{drivePhotos[previewIndex].name}</p>
+                            <p className="text-white/40 text-[10px] font-bold">{previewIndex + 1} / {drivePhotos.length}</p>
                         </div>
                     </div>
+                    <button onClick={handleNext} className="fixed right-6 p-4 text-white hover:text-brand-gold z-110 bg-white/5 rounded-full"><svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg></button>
                 </div>
             )}
         </GuestLayout>
