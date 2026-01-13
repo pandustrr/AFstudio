@@ -93,7 +93,7 @@ export default function Index({ reviews }) {
                                     <div className="flex flex-col gap-2">
                                         <Link
                                             href={`/admin/reviews/${review.id}`}
-                                            className="px-4 py-2 bg-brand-red/10 text-brand-red rounded-lg font-black text-xs uppercase tracking-wider hover:bg-brand-red hover:text-white transition-all text-center"
+                                            className="px-4 py-2 bg-black/5 dark:bg-white/5 text-brand-black/60 dark:text-brand-white/60 rounded-lg font-black text-xs uppercase tracking-wider hover:bg-black hover:text-white dark:hover:bg-brand-gold transition-all text-center"
                                         >
                                             Detail
                                         </Link>

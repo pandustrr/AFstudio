@@ -13,7 +13,11 @@ class PhotoEditingController extends Controller
 {
     public function index()
     {
-        $sessions = PhotoEditing::latest()->get();
+        $sessions = PhotoEditing::with(['editRequests'])
+            ->withCount(['editRequests', 'reviews'])
+            ->latest()
+            ->get();
+
         return Inertia::render('Admin/PhotoEditing/Index', [
             'sessions' => $sessions
         ]);
@@ -21,22 +25,17 @@ class PhotoEditingController extends Controller
 
     // Create & Store methods removed as per user request
 
-    public function show(PhotoEditing $session)
+    public function show(PhotoEditing $photoEditing)
     {
-        $session->load(['editRequests', 'reviews']);
-        return Inertia::render('Admin/PhotoEditing/Show', [
-            'session' => $session
-        ]);
+        return redirect()->route('admin.photo-editing.index');
     }
 
-    public function edit(PhotoEditing $session)
+    public function edit(PhotoEditing $photoEditing)
     {
-        return Inertia::render('Admin/PhotoEditing/Edit', [
-            'session' => $session
-        ]);
+        return redirect()->route('admin.photo-editing.index');
     }
 
-    public function update(Request $request, PhotoEditing $session)
+    public function update(Request $request, PhotoEditing $photoEditing)
     {
         $validated = $request->validate([
             'customer_name' => 'required|string|max:255',
@@ -46,14 +45,14 @@ class PhotoEditingController extends Controller
             'status' => 'required|in:pending,processing,done,cancelled',
         ]);
 
-        $session->update($validated);
+        $photoEditing->update($validated);
 
         return redirect()->route('admin.photo-editing.index')->with('success', 'Photo Request updated successfully.');
     }
 
-    public function destroy(PhotoEditing $session)
+    public function destroy(PhotoEditing $photoEditing)
     {
-        $session->delete();
+        $photoEditing->delete();
         return redirect()->route('admin.photo-editing.index')->with('success', 'Photo Request deleted successfully.');
     }
 }

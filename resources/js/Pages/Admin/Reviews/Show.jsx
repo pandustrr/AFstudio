@@ -96,7 +96,7 @@ export default function Show({ review }) {
                     <div className="flex gap-3 pt-6 border-t border-black/5 dark:border-white/5">
                         <Link
                             href={`/admin/photo-editing/${review.session.id}`}
-                            className="px-6 py-3 bg-brand-red text-white rounded-xl font-black text-sm uppercase tracking-wider hover:bg-brand-red/90 transition-all"
+                            className="px-6 py-3 bg-brand-gold hover:bg-black hover:text-white text-brand-black rounded-xl font-black text-sm uppercase tracking-wider transition-all"
                         >
                             Lihat Request
                         </Link>

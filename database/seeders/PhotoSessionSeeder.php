@@ -12,8 +12,8 @@ class PhotoSessionSeeder extends Seeder
      */
     public function run(): void
     {
-        \App\Models\PhotoSession::updateOrCreate(
-            ['uid' => 'AF-TEST-001'],
+        \App\Models\PhotoEditing::updateOrCreate(
+            ['uid' => 'TES'],
             [
                 'customer_name' => 'User Dummy',
                 'raw_folder_id' => '19nSDsv01kEKec8aMTG3rw7NHUtLTxHYI', // Test folder
