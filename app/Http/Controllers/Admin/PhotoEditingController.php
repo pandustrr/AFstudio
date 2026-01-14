@@ -11,15 +11,23 @@ use Illuminate\Support\Str;
 
 class PhotoEditingController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $status = $request->input('status');
+
         $sessions = PhotoEditing::with(['editRequests'])
             ->withCount(['editRequests', 'reviews'])
+            ->when($status, function ($query, $status) {
+                return $query->where('status', $status);
+            })
             ->latest()
             ->get();
 
         return Inertia::render('Admin/PhotoEditing/Index', [
-            'sessions' => $sessions
+            'sessions' => $sessions,
+            'filters' => [
+                'status' => $status ?? 'all'
+            ]
         ]);
     }
 

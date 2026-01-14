@@ -7,11 +7,26 @@ import ViewModal from './ViewModal';
 import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
 
 
-export default function Index({ sessions }) {
+export default function Index({ sessions, filters }) {
     const [viewSession, setViewSession] = useState(null);
     const [editSession, setEditSession] = useState(null);
     const [deleteSession, setDeleteSession] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    const statuses = [
+        { id: 'all', label: 'Semua', color: 'bg-black/5' },
+        { id: 'pending', label: 'Pending', color: 'bg-yellow-500/10 text-yellow-600' },
+        { id: 'processing', label: 'Processing', color: 'bg-blue-500/10 text-blue-600' },
+        { id: 'done', label: 'Selesai', color: 'bg-green-500/10 text-green-600' },
+        { id: 'cancelled', label: 'Dibatalkan', color: 'bg-red-500/10 text-red-600' },
+    ];
+
+    const handleFilter = (status) => {
+        router.get('/admin/photo-editing',
+            status === 'all' ? {} : { status },
+            { preserveState: true, preserveScroll: true }
+        );
+    };
 
     const handleDelete = () => {
         if (!deleteSession) return;
@@ -31,10 +46,25 @@ export default function Index({ sessions }) {
             <Head title="Manage Requests" />
 
             <div className="pt-12 lg:pt-20 pb-20 px-6 max-w-7xl mx-auto">
-                <div className="flex justify-between items-center mb-12">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
                     <div>
                         <h1 className="text-4xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-2">Daftar Request</h1>
                         <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest">Kelola akses gallery dan request user.</p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                        {statuses.map((status) => (
+                            <button
+                                key={status.id}
+                                onClick={() => handleFilter(status.id)}
+                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${filters.status === status.id
+                                    ? 'bg-brand-black text-white dark:bg-brand-gold dark:text-brand-black shadow-lg scale-105'
+                                    : 'bg-black/5 dark:bg-white/5 text-brand-black/40 dark:text-brand-white/40 hover:bg-black/10 dark:hover:bg-white/10'
+                                    }`}
+                            >
+                                {status.label}
+                            </button>
+                        ))}
                     </div>
                 </div>
 

@@ -10,6 +10,7 @@ class Review extends Model
         'photo_session_id',
         'review_text',
         'rating',
+        'photo_path',
     ];
 
     public function photoEditing()

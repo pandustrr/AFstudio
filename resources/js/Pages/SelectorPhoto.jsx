@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import GuestLayout from '../Layouts/GuestLayout';
 import { Head, router } from '@inertiajs/react';
+import { StarIcon, XMarkIcon, CameraIcon } from '@heroicons/react/24/solid';
+import { StarIcon as StarOutlineIcon } from '@heroicons/react/24/outline';
 
 export default function SelectorPhoto() {
     const [step, setStep] = useState(1);
@@ -8,6 +10,8 @@ export default function SelectorPhoto() {
     const [driveType, setDriveType] = useState(''); // 'Mentahan', 'Result', or 'RequestEdit'
     const [selectedPhotos, setSelectedPhotos] = useState([]); // Array of objects {id, name}
     const [review, setReview] = useState('');
+    const [rating, setRating] = useState(5);
+    const [reviewPhoto, setReviewPhoto] = useState(null);
     const [drivePhotos, setDrivePhotos] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -15,6 +19,7 @@ export default function SelectorPhoto() {
     const [sessionData, setSessionData] = useState(null);
     const [isSelectionMode, setIsSelectionMode] = useState(true);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [successType, setSuccessType] = useState('request');
 
     // Swipe State
     const [touchStart, setTouchStart] = useState(null);
@@ -140,6 +145,7 @@ export default function SelectorPhoto() {
                 }));
             }
 
+            setSuccessType('request');
             setShowSuccessModal(true);
         } catch (err) {
             console.error('Submission Catch:', err);
@@ -150,18 +156,23 @@ export default function SelectorPhoto() {
     };
 
     const handleSendReview = async () => {
+        if (loading) return;
         setLoading(true);
         try {
+            const formData = new FormData();
+            formData.append('reviewText', review);
+            formData.append('rating', rating);
+            if (reviewPhoto) {
+                formData.append('photo', reviewPhoto);
+            }
+
             const response = await fetch(`/api/photo-selector/sessions/${uid}/review`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
                 },
-                body: JSON.stringify({
-                    reviewText: review,
-                }),
+                body: formData,
             });
 
             if (response.status === 419) {
@@ -173,8 +184,10 @@ export default function SelectorPhoto() {
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Gagal mengirim ulasan');
 
-            alert(data.message || 'Terima kasih atas ulasan Anda!');
-            resetFlow();
+            // alert(data.message || 'Terima kasih atas ulasan Anda!');
+            // resetFlow();
+            setSuccessType('review');
+            setShowSuccessModal(true);
         } catch (err) {
             alert('Error: ' + err.message);
         } finally {
@@ -191,6 +204,8 @@ export default function SelectorPhoto() {
         setDriveType('');
         setSelectedPhotos([]);
         setReview('');
+        setRating(5);
+        setReviewPhoto(null);
         setIsSelectionMode(true);
     };
 
@@ -545,17 +560,81 @@ export default function SelectorPhoto() {
                                 )}
 
                                 {!(driveType === 'Mentahan' && selectedPhotos.length > 0) && (
-                                    <div className="space-y-4">
-                                        <label className="block text-[10px] uppercase font-black tracking-widest text-brand-black/60 dark:text-brand-white/60">
-                                            {driveType === 'Result' ? 'Ulasan Anda' : (selectedPhotos.length > 0 ? 'Pesan Tambahan (Opsional)' : 'Ulasan Anda')}
-                                        </label>
-                                        <textarea
-                                            value={review}
-                                            onChange={(e) => setReview(e.target.value)}
-                                            placeholder={selectedPhotos.length > 0 ? "Catatan untuk editor..." : "Tulis pengalaman Anda..."}
-                                            rows="4"
-                                            className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl px-6 py-4 text-brand-black dark:text-brand-white focus:outline-none focus:border-brand-gold transition-all text-sm font-medium"
-                                        />
+                                    <div className="space-y-6">
+                                        {/* Star Rating */}
+                                        <div className="flex flex-col items-center space-y-3">
+                                            <label className="text-[10px] uppercase font-black tracking-widest text-brand-black/40 dark:text-brand-white/40">Berikan Bintang</label>
+                                            <div className="flex gap-2">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <button
+                                                        key={star}
+                                                        onClick={() => setRating(star)}
+                                                        className="transition-all hover:scale-110 active:scale-90"
+                                                    >
+                                                        {rating >= star ? (
+                                                            <StarIcon className="w-8 h-8 text-brand-gold" />
+                                                        ) : (
+                                                            <StarOutlineIcon className="w-8 h-8 text-black/10 dark:text-white/10" />
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Photo Upload */}
+                                        <div className="space-y-3">
+                                            <label className="block text-[10px] uppercase font-black tracking-widest text-brand-black/60 dark:text-brand-white/60">Upload Foto Kenangan (Opsional)</label>
+                                            <div className="relative group">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => setReviewPhoto(e.target.files[0])}
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                                                />
+                                                <div className={`w-full bg-black/5 dark:bg-white/5 border-2 border-dashed ${reviewPhoto ? 'border-brand-gold bg-brand-gold/5' : 'border-black/10 dark:border-white/10 group-hover:border-brand-gold/40'} rounded-2xl p-4 transition-all overflow-hidden`}>
+                                                    {reviewPhoto ? (
+                                                        <div className="space-y-4">
+                                                            <div className="relative aspect-video w-full rounded-xl overflow-hidden shadow-lg border border-brand-gold/20">
+                                                                <img
+                                                                    src={URL.createObjectURL(reviewPhoto)}
+                                                                    alt="Preview"
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                                <button
+                                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setReviewPhoto(null); }}
+                                                                    className="absolute top-2 right-2 p-2 bg-brand-red text-white rounded-full shadow-xl hover:scale-110 active:scale-95 transition-all z-30"
+                                                                >
+                                                                    <XMarkIcon className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                            <div className="flex items-center justify-center space-x-2">
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-brand-gold truncate max-w-[150px]">{reviewPhoto.name}</span>
+                                                                <span className="text-[8px] font-bold text-brand-black/20 dark:text-brand-white/20">{(reviewPhoto.size / 1024 / 1024).toFixed(2)} MB</span>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="py-8 text-center">
+                                                            <CameraIcon className="w-8 h-8 mx-auto mb-2 text-brand-black/20 dark:text-brand-white/20" />
+                                                            <p className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Ambil Foto / Pilih File</p>
+                                                            <p className="text-[8px] font-bold text-brand-black/20 dark:text-brand-white/20 uppercase tracking-widest mt-1">Maksimal 5MB</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <label className="block text-[10px] uppercase font-black tracking-widest text-brand-black/60 dark:text-brand-white/60">
+                                                {driveType === 'Result' ? 'Ulasan Anda' : (selectedPhotos.length > 0 ? 'Pesan Tambahan (Opsional)' : 'Ulasan Anda')}
+                                            </label>
+                                            <textarea
+                                                value={review}
+                                                onChange={(e) => setReview(e.target.value)}
+                                                placeholder={selectedPhotos.length > 0 ? "Catatan untuk editor..." : "Tulis pengalaman Anda..."}
+                                                rows="4"
+                                                className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl px-6 py-4 text-brand-black dark:text-brand-white focus:outline-none focus:border-brand-gold transition-all text-sm font-medium"
+                                            />
+                                        </div>
                                     </div>
                                 )}
                                 <div className="flex gap-4">
@@ -625,10 +704,21 @@ export default function SelectorPhoto() {
                             <span className="text-3xl">✅</span>
                         </div>
                         <div>
-                            <h3 className="text-xl font-black text-brand-black dark:text-brand-white uppercase mb-2">Permintaan Terkirim!</h3>
+                            <h3 className="text-xl font-black text-brand-black dark:text-brand-white uppercase mb-2">
+                                {successType === 'request' ? 'Permintaan Terkirim!' : 'Ulasan Terkirim!'}
+                            </h3>
                             <p className="text-brand-black/60 dark:text-brand-white/60 text-xs font-medium leading-relaxed">
-                                Mohon tunggu proses editing sekitar 7-14 hari.<br />
-                                Silakan cek lagi dengan memasukkan UID yang sama nanti.
+                                {successType === 'request' ? (
+                                    <>
+                                        Mohon tunggu proses editing sekitar 7-14 hari.<br />
+                                        Silakan cek lagi dengan memasukkan UID yang sama nanti.
+                                    </>
+                                ) : (
+                                    <>
+                                        Terima kasih telah memberikan ulasan Anda.<br />
+                                        Review Anda sangat berarti bagi kami!
+                                    </>
+                                )}
                             </p>
                         </div>
                         <button

@@ -157,19 +157,26 @@ class PhotoSelectorController extends Controller
 
         $validated = $request->validate([
             'reviewText' => 'required|string',
-            'rating' => 'nullable|integer|min:1|max:5',
+            'rating' => 'required|integer|min:1|max:5',
+            'photo' => 'nullable|image|max:5120', // Max 5MB
         ]);
 
         try {
+            $photoPath = null;
+            if ($request->hasFile('photo')) {
+                $photoPath = $request->file('photo')->store('reviews', 'public');
+            }
+
             $review = Review::create([
                 'photo_session_id' => $session->id,
                 'review_text' => $validated['reviewText'],
                 'rating' => $validated['rating'],
+                'photo_path' => $photoPath,
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Terima kasih atas ulasan Anda!',
+                'message' => 'Terima kasih ulasannya!',
                 'data' => $review
             ]);
         } catch (\Exception $e) {
