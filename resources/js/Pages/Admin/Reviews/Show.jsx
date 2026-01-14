@@ -138,11 +138,11 @@ export default function Show({ review }) {
                                     <h3 className="text-[10px] font-black uppercase tracking-wider text-brand-black/40 dark:text-brand-white/40 mb-2">
                                         Foto Review
                                     </h3>
-                                    <div className="relative group rounded-xl overflow-hidden border border-black/5 dark:border-white/5">
+                                    <div className="relative group rounded-xl overflow-hidden border border-black/5 dark:border-white/5 w-fit">
                                         <img
                                             src={review.photo_url}
                                             alt="Review Memory"
-                                            className="w-full h-auto"
+                                            className="max-h-80 w-auto object-contain"
                                         />
                                         <a
                                             href={review.photo_url}

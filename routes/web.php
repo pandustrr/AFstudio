@@ -14,6 +14,8 @@ Route::get('/selector-photo', function () {
     return Inertia::render('SelectorPhoto');
 });
 
+Route::get('/about', [\App\Http\Controllers\Public\PageController::class, 'about'])->name('about');
+Route::get('/price-list', [\App\Http\Controllers\Public\PageController::class, 'pricelist'])->name('price-list');
 Route::get('/review', [\App\Http\Controllers\PublicReviewController::class, 'index']);
 
 // Photo Selector API routes
@@ -38,5 +40,10 @@ Route::prefix('admin')->group(function () {
         Route::resource('photo-editing', PhotoEditingController::class)->names('admin.photo-editing');
         Route::patch('/reviews/{review}/toggle', [\App\Http\Controllers\Admin\ReviewController::class, 'toggleVisibility'])->name('admin.reviews.toggle');
         Route::resource('reviews', ReviewController::class)->only(['index', 'show', 'destroy'])->names('admin.reviews');
+
+        // About & Pricelist
+        Route::get('/about', [\App\Http\Controllers\Admin\AboutController::class, 'index'])->name('admin.about.index');
+        Route::post('/about', [\App\Http\Controllers\Admin\AboutController::class, 'update'])->name('admin.about.update');
+        Route::resource('pricelist', \App\Http\Controllers\Admin\PricelistController::class)->names('admin.pricelist');
     });
 });
