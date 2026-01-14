@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Google\Client;
 use Google\Service\Drive;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class GoogleDrivePhotoController extends Controller
 {
@@ -50,7 +51,6 @@ class GoogleDrivePhotoController extends Controller
                     'customer_name' => $photoSession->customer_name,
                     'raw_folder_id' => $photoSession->raw_folder_id,
                     'edited_folder_id' => $photoSession->edited_folder_id,
-                    'max_edit_requests' => $photoSession->max_edit_requests,
                     'status' => $photoSession->status,
                     'has_edited_photos' => !empty($photoSession->edited_folder_id),
                 ]
@@ -79,25 +79,34 @@ class GoogleDrivePhotoController extends Controller
             return response()->json(['error' => 'Folder ID is required'], 400);
         }
 
+        $forceRefresh = $request->query('refresh') === 'true';
+        $cacheKey = "gdrive_photos_" . md5($folderId);
+
+        if ($forceRefresh) {
+            Cache::forget($cacheKey);
+        }
+
         try {
-            $service = $this->getDriveService();
+            $photos = Cache::remember($cacheKey, now()->addMinutes(30), function () use ($folderId) {
+                $service = $this->getDriveService();
 
-            $optParams = [
-                'pageSize' => 1000,
-                'fields' => 'nextPageToken, files(id, name, thumbnailLink, webContentLink)',
-                'q' => "'{$folderId}' in parents and trashed = false and (mimeType contains 'image/')"
-            ];
-
-            $results = $service->files->listFiles($optParams);
-            $files = $results->getFiles();
-
-            $photos = collect($files)->map(function ($file) {
-                return [
-                    'id' => $file->id,
-                    'name' => $file->name,
-                    'thumbnail' => $file->thumbnailLink,
-                    'downloadLink' => $file->webContentLink,
+                $optParams = [
+                    'pageSize' => 1000,
+                    'fields' => 'nextPageToken, files(id, name, thumbnailLink, webContentLink)',
+                    'q' => "'{$folderId}' in parents and trashed = false and (mimeType contains 'image/')"
                 ];
+
+                $results = $service->files->listFiles($optParams);
+                $files = $results->getFiles();
+
+                return collect($files)->map(function ($file) {
+                    return [
+                        'id' => $file->id,
+                        'name' => $file->name,
+                        'thumbnail' => $file->thumbnailLink,
+                        'downloadLink' => $file->webContentLink,
+                    ];
+                })->toArray();
             });
 
             return response()->json([
@@ -139,14 +148,6 @@ class GoogleDrivePhotoController extends Controller
                 ], 404);
             }
 
-            // Check if selected photos exceed max limit
-            $maxLimit = $photoSession->max_edit_requests;
-            if (count($validated['selected_photos']) > $maxLimit) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Maksimal foto yang dapat dipilih adalah {$maxLimit} foto"
-                ], 422);
-            }
 
             // Create edit request
             $editRequest = EditRequest::create([

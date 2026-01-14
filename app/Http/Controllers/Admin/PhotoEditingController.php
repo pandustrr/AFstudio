@@ -41,7 +41,6 @@ class PhotoEditingController extends Controller
             'customer_name' => 'required|string|max:255',
             'raw_folder_id' => 'required|string|max:255',
             'edited_folder_id' => 'nullable|string|max:255',
-            'max_edit_requests' => 'nullable|integer|min:1',
             'status' => 'required|in:pending,processing,done,cancelled',
         ]);
 

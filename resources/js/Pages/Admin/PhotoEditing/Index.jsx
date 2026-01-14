@@ -3,15 +3,27 @@ import AdminLayout from '../../../Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
 import { EyeIcon, PencilSquareIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import EditModal from './EditModal';
+import ViewModal from './ViewModal';
+import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
+
 
 export default function Index({ sessions }) {
     const [viewSession, setViewSession] = useState(null);
     const [editSession, setEditSession] = useState(null);
+    const [deleteSession, setDeleteSession] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
-    const handleDelete = (id) => {
-        if (confirm('Apakah Anda yakin ingin menghapus request ini?')) {
-            router.delete(`/admin/photo-editing/${id}`);
-        }
+    const handleDelete = () => {
+        if (!deleteSession) return;
+
+        setIsDeleting(true);
+        router.delete(`/admin/photo-editing/${deleteSession.id}`, {
+            onSuccess: () => {
+                setDeleteSession(null);
+                setIsDeleting(false);
+            },
+            onError: () => setIsDeleting(false)
+        });
     };
 
     return (
@@ -100,7 +112,7 @@ export default function Index({ sessions }) {
                                                 <PencilSquareIcon className="w-4 h-4" />
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(session.id)}
+                                                onClick={() => setDeleteSession(session)}
                                                 className="p-3 bg-black/5 dark:bg-white/5 hover:bg-brand-red hover:text-white rounded-lg transition-all"
                                                 title="Hapus"
                                             >
@@ -121,71 +133,28 @@ export default function Index({ sessions }) {
             </div>
 
             {/* View Modal */}
-            {viewSession && (
-                <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-                    <div className="absolute inset-0" onClick={() => setViewSession(null)}></div>
-                    <div className="relative bg-white dark:bg-brand-black border border-black/10 dark:border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] dark:shadow-[0_35px_60px_-15px_rgba(0,0,0,0.6)] animate-fade-in">
-                        <div className="sticky top-0 bg-white/80 dark:bg-brand-black/80 backdrop-blur-md px-8 py-6 border-b border-black/5 dark:border-white/5 flex justify-between items-center z-10">
-                            <div>
-                                <h2 className="text-xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter">Edit Requests: {viewSession.uid}</h2>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">{viewSession.customer_name}</p>
-                            </div>
-                            <button onClick={() => setViewSession(null)} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-all">
-                                <XMarkIcon className="w-6 h-6" />
-                            </button>
-                        </div>
+            <ViewModal
+                session={viewSession}
+                onClose={() => setViewSession(null)}
+            />
 
-                        <div className="p-8 space-y-6">
-                            {(viewSession.edit_requests || []).length > 0 ? (
-                                viewSession.edit_requests.map((request, idx) => {
-                                    const photos = request.selected_photos || [];
-                                    return (
-                                        <div key={idx} className="bg-black/2 dark:bg-white/2 border border-black/5 dark:border-white/5 rounded-2xl p-6">
-                                            <div className="flex justify-between items-start mb-4">
-                                                <div className="text-[10px] font-black uppercase tracking-widest text-brand-gold">Request #{idx + 1}</div>
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-[9px] font-bold text-brand-black/40 dark:text-brand-white/40">{new Date(request.created_at).toLocaleString()}</span>
-                                                    <button
-                                                        onClick={() => {
-                                                            const text = (photos).map(p => typeof p === 'object' ? (p.name || p.filename || 'No Name') : p).join('\n');
-                                                            navigator.clipboard.writeText(text);
-                                                            alert('Berhasil disalin!');
-                                                        }}
-                                                        className="px-3 py-1 bg-brand-gold text-brand-black rounded-lg text-[8px] font-black uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all"
-                                                    >
-                                                        Copy List
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                                {photos.map((photo, pIdx) => (
-                                                    <div key={pIdx} className="bg-white/50 dark:bg-white/5 p-2 rounded-lg border border-black/5 dark:border-white/5">
-                                                        <p className="text-[8px] font-mono font-bold text-brand-black/60 dark:text-brand-white/60 truncate">
-                                                            {typeof photo === 'object' ? (photo.name || photo.filename || 'Unnamed') : photo}
-                                                        </p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )
-                                })
-                            ) : (
-                                <div className="py-12 text-center border-2 border-dashed border-black/5 dark:border-white/5 rounded-2xl">
-                                    <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest">Belum ada request edit.</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Edit Modal Component */}
+            {/* Modal Edit Section */}
             {editSession && (
                 <EditModal
                     session={editSession}
                     onClose={() => setEditSession(null)}
                 />
             )}
+
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmModal
+                isOpen={!!deleteSession}
+                onClose={() => setDeleteSession(null)}
+                onConfirm={handleDelete}
+                processing={isDeleting}
+                title="Hapus Request"
+                message={`Apakah Anda yakin ingin menghapus request dari ${deleteSession?.customer_name}? Data foto dan seleksi akan ikut terhapus.`}
+            />
         </AdminLayout>
     );
 }

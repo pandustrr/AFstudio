@@ -41,9 +41,7 @@ class PhotoSelectorController extends Controller
                 'has_raw' => !empty($session->raw_folder_id),
                 'has_edited' => !empty($session->edited_folder_id),
                 'status' => $session->status,
-                'max_edit_requests' => $session->max_edit_requests,
                 'requested_count' => $requestedCount,
-                'remaining_limit' => max(0, $session->max_edit_requests - $requestedCount),
             ]
         ]);
     }
@@ -104,12 +102,6 @@ class PhotoSelectorController extends Controller
         $newCount = count($validated['selectedPhotos']);
         $totalCount = $previousRequestedCount + $newCount;
 
-        if ($totalCount > $session->max_edit_requests) {
-            $remaining = max(0, $session->max_edit_requests - $previousRequestedCount);
-            return response()->json([
-                'error' => "Batas total adalah {$session->max_edit_requests} foto. Anda sudah me-request {$previousRequestedCount} foto, sisa kuota Anda adalah {$remaining} foto."
-            ], 422);
-        }
 
         try {
             // Debugging: Log the incoming photo data
@@ -141,7 +133,6 @@ class PhotoSelectorController extends Controller
                 'data' => $editRequest,
                 'session' => [
                     'requested_count' => $refreshedRequestedCount,
-                    'remaining_limit' => max(0, $session->max_edit_requests - $refreshedRequestedCount),
                     'status' => $session->status,
                 ]
             ]);
