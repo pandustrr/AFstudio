@@ -36,7 +36,7 @@ export default function SubCategoryModal({ isOpen, onClose, subCategory, categor
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-brand-black/60" onClick={onClose}></div>
             <div className="relative bg-white dark:bg-brand-black w-full max-w-md rounded-3xl overflow-hidden shadow-[0_32px_64px_-15px_rgba(0,0,0,0.5)] border border-black/5 dark:border-white/5">
                 <div className="px-8 py-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between">

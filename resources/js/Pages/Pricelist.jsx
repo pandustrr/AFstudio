@@ -35,8 +35,8 @@ export default function Pricelist({ categories }) {
                             key={category.id}
                             onClick={() => setActiveCategoryId(category.id)}
                             className={`px-8 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeCategoryId === category.id
-                                    ? 'bg-brand-black text-white dark:bg-brand-gold dark:text-brand-black shadow-xl scale-105'
-                                    : 'text-brand-black/40 dark:text-brand-white/40 hover:text-brand-black dark:hover:text-brand-white'
+                                ? 'bg-brand-black text-white dark:bg-brand-gold dark:text-brand-black shadow-xl scale-105'
+                                : 'text-brand-black/40 dark:text-brand-white/40 hover:text-brand-black dark:hover:text-brand-white'
                                 }`}
                         >
                             {category.name}
@@ -56,13 +56,13 @@ export default function Pricelist({ categories }) {
                             <div className="w-12 h-1 bg-brand-gold rounded-full"></div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
+                        <div className="flex flex-wrap justify-center gap-6 items-stretch">
                             {sub.packages.map((pkg) => (
                                 <div
                                     key={pkg.id}
-                                    className={`relative group p-8 rounded-3xl border transition-all duration-500 flex flex-col ${pkg.is_popular
-                                            ? 'bg-brand-black text-white border-brand-black shadow-2xl shadow-brand-red/10 ring-4 ring-brand-red/5'
-                                            : 'bg-white dark:bg-white/5 border-black/5 dark:border-white/5 text-brand-black dark:text-brand-white'
+                                    className={`relative group p-8 rounded-3xl border transition-all duration-500 flex flex-col w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(33.333%-1.5rem)] xl:w-[calc(25%-1.5rem)] max-w-sm ${pkg.is_popular
+                                        ? 'bg-brand-black text-white border-brand-black shadow-2xl shadow-brand-red/10 ring-4 ring-brand-red/5'
+                                        : 'bg-white dark:bg-white/5 border-black/5 dark:border-white/5 text-brand-black dark:text-brand-white'
                                         } hover:-translate-y-2`}
                                 >
                                     {/* Popular Badge */}
@@ -93,8 +93,8 @@ export default function Pricelist({ categories }) {
                                         href={`https://wa.me/+6281234567890?text=Halo AF Studio! Saya tertarik dengan paket ${pkg.name} (${sub.name} - ${activeCategory.name}).`}
                                         target="_blank"
                                         className={`block w-full py-4 rounded-xl text-center text-[10px] font-black uppercase tracking-[0.2em] transition-all ${pkg.is_popular
-                                                ? 'bg-brand-red text-white hover:bg-brand-gold hover:text-brand-black shadow-lg shadow-brand-red/20'
-                                                : 'bg-black/5 dark:bg-white/10 text-brand-black dark:text-brand-white hover:bg-brand-black hover:text-white dark:hover:bg-brand-gold dark:hover:text-brand-black shadow-sm'
+                                            ? 'bg-brand-red text-white hover:bg-brand-gold hover:text-brand-black shadow-lg shadow-brand-red/20'
+                                            : 'bg-black/5 dark:bg-white/10 text-brand-black dark:text-brand-white hover:bg-brand-black hover:text-white dark:hover:bg-brand-gold dark:hover:text-brand-black shadow-sm'
                                             }`}
                                     >
                                         Pilih Paket
