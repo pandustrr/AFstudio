@@ -19,9 +19,9 @@ class PageController extends Controller
 
     public function pricelist()
     {
-        $pricelists = Pricelist::where('is_active', true)->orderBy('is_popular', 'desc')->get();
+        $categories = \App\Models\PricelistCategory::with(['subCategories.packages'])->get();
         return Inertia::render('Pricelist', [
-            'pricelists' => $pricelists
+            'categories' => $categories
         ]);
     }
 }
