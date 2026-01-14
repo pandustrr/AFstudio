@@ -14,6 +14,8 @@ Route::get('/selector-photo', function () {
     return Inertia::render('SelectorPhoto');
 });
 
+Route::get('/review', [\App\Http\Controllers\PublicReviewController::class, 'index']);
+
 // Photo Selector API routes
 Route::prefix('api/photo-selector')->group(function () {
     Route::get('/sessions/{uid}', [PhotoSelectorController::class, 'show']);

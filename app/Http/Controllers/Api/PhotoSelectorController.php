@@ -41,9 +41,7 @@ class PhotoSelectorController extends Controller
                 'has_raw' => !empty($session->raw_folder_id),
                 'has_edited' => !empty($session->edited_folder_id),
                 'status' => $session->status,
-                'max_edit_requests' => $session->max_edit_requests,
                 'requested_count' => $requestedCount,
-                'remaining_limit' => max(0, $session->max_edit_requests - $requestedCount),
             ]
         ]);
     }
@@ -104,12 +102,6 @@ class PhotoSelectorController extends Controller
         $newCount = count($validated['selectedPhotos']);
         $totalCount = $previousRequestedCount + $newCount;
 
-        if ($totalCount > $session->max_edit_requests) {
-            $remaining = max(0, $session->max_edit_requests - $previousRequestedCount);
-            return response()->json([
-                'error' => "Batas total adalah {$session->max_edit_requests} foto. Anda sudah me-request {$previousRequestedCount} foto, sisa kuota Anda adalah {$remaining} foto."
-            ], 422);
-        }
 
         try {
             // Debugging: Log the incoming photo data
@@ -141,7 +133,6 @@ class PhotoSelectorController extends Controller
                 'data' => $editRequest,
                 'session' => [
                     'requested_count' => $refreshedRequestedCount,
-                    'remaining_limit' => max(0, $session->max_edit_requests - $refreshedRequestedCount),
                     'status' => $session->status,
                 ]
             ]);
@@ -166,19 +157,26 @@ class PhotoSelectorController extends Controller
 
         $validated = $request->validate([
             'reviewText' => 'required|string',
-            'rating' => 'nullable|integer|min:1|max:5',
+            'rating' => 'required|integer|min:1|max:5',
+            'photo' => 'nullable|image|max:5120', // Max 5MB
         ]);
 
         try {
+            $photoPath = null;
+            if ($request->hasFile('photo')) {
+                $photoPath = $request->file('photo')->store('reviews', 'public');
+            }
+
             $review = Review::create([
                 'photo_session_id' => $session->id,
                 'review_text' => $validated['reviewText'],
                 'rating' => $validated['rating'],
+                'photo_path' => $photoPath,
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Terima kasih atas ulasan Anda!',
+                'message' => 'Terima kasih ulasannya!',
                 'data' => $review
             ]);
         } catch (\Exception $e) {

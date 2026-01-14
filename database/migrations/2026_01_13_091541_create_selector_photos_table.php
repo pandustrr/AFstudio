@@ -17,8 +17,7 @@ return new class extends Migration
             $table->string('customer_name');
             $table->string('raw_folder_id');
             $table->string('edited_folder_id')->nullable();
-            $table->integer('max_edit_requests')->default(20);
-            $table->string('status')->default('pending');
+            $table->enum('status', ['pending', 'processing', 'done', 'cancelled'])->default('pending');
             $table->timestamps();
         });
     }

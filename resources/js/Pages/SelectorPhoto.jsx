@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import GuestLayout from '../Layouts/GuestLayout';
 import { Head, router } from '@inertiajs/react';
+import { StarIcon, XMarkIcon, CameraIcon } from '@heroicons/react/24/solid';
+import { StarIcon as StarOutlineIcon } from '@heroicons/react/24/outline';
 
 export default function SelectorPhoto() {
     const [step, setStep] = useState(1);
@@ -8,6 +10,8 @@ export default function SelectorPhoto() {
     const [driveType, setDriveType] = useState(''); // 'Mentahan', 'Result', or 'RequestEdit'
     const [selectedPhotos, setSelectedPhotos] = useState([]); // Array of objects {id, name}
     const [review, setReview] = useState('');
+    const [rating, setRating] = useState(5);
+    const [reviewPhoto, setReviewPhoto] = useState(null);
     const [drivePhotos, setDrivePhotos] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -15,6 +19,7 @@ export default function SelectorPhoto() {
     const [sessionData, setSessionData] = useState(null);
     const [isSelectionMode, setIsSelectionMode] = useState(true);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [successType, setSuccessType] = useState('request');
 
     // Swipe State
     const [touchStart, setTouchStart] = useState(null);
@@ -64,15 +69,16 @@ export default function SelectorPhoto() {
     };
 
     // Fetch photos from drive
-    const fetchPhotosFromDrive = async (folderType) => {
+    const fetchPhotosFromDrive = async (folderType, isRefresh = false) => {
         setLoading(true);
         setError(null);
 
         // Map folderType to backend type
         const type = (folderType === 'Mentahan' || folderType === 'RequestEdit') ? 'raw' : 'edited';
+        const folderId = (folderType === 'Mentahan' || folderType === 'RequestEdit') ? sessionData?.raw_folder_id : sessionData?.edited_folder_id;
 
         try {
-            const response = await fetch(`/api/photo-selector/sessions/${uid}/photos?type=${type}`);
+            const response = await fetch(`/api/photo-selector/sessions/${uid}/photos?type=${type}${isRefresh ? '&refresh=true' : ''}`);
             const data = await response.json();
 
             if (!response.ok) {
@@ -139,6 +145,7 @@ export default function SelectorPhoto() {
                 }));
             }
 
+            setSuccessType('request');
             setShowSuccessModal(true);
         } catch (err) {
             console.error('Submission Catch:', err);
@@ -149,18 +156,23 @@ export default function SelectorPhoto() {
     };
 
     const handleSendReview = async () => {
+        if (loading) return;
         setLoading(true);
         try {
+            const formData = new FormData();
+            formData.append('reviewText', review);
+            formData.append('rating', rating);
+            if (reviewPhoto) {
+                formData.append('photo', reviewPhoto);
+            }
+
             const response = await fetch(`/api/photo-selector/sessions/${uid}/review`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
                 },
-                body: JSON.stringify({
-                    reviewText: review,
-                }),
+                body: formData,
             });
 
             if (response.status === 419) {
@@ -172,8 +184,10 @@ export default function SelectorPhoto() {
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Gagal mengirim ulasan');
 
-            alert(data.message || 'Terima kasih atas ulasan Anda!');
-            resetFlow();
+            // alert(data.message || 'Terima kasih atas ulasan Anda!');
+            // resetFlow();
+            setSuccessType('review');
+            setShowSuccessModal(true);
         } catch (err) {
             alert('Error: ' + err.message);
         } finally {
@@ -190,13 +204,37 @@ export default function SelectorPhoto() {
         setDriveType('');
         setSelectedPhotos([]);
         setReview('');
+        setRating(5);
+        setReviewPhoto(null);
         setIsSelectionMode(true);
     };
 
+    const triggerDownload = (id) => {
+        const photoData = drivePhotos.find(p => p.id === id);
+        if (photoData?.downloadLink) {
+            window.open(photoData.downloadLink, '_blank');
+        }
+    };
+
     const handleDownloadAll = () => {
-        const folderId = driveType === 'Mentahan' ? sessionData?.raw_folder_id : sessionData?.edited_folder_id;
-        if (folderId) {
-            window.open(`https://drive.google.com/drive/folders/${folderId}`, '_blank');
+        if (drivePhotos.length === 0) return;
+
+        if (confirm(`Download semua ${drivePhotos.length} foto secara individual?`)) {
+            let count = 0;
+            const maxBatch = 5;
+
+            const processBatch = () => {
+                const batch = drivePhotos.slice(count, count + maxBatch);
+                batch.forEach(photo => triggerDownload(photo.id));
+
+                count += maxBatch;
+                if (count < drivePhotos.length) {
+                    setTimeout(processBatch, 1500); // 1.5s delay to avoid browser blocking
+                }
+            };
+
+            processBatch();
+            alert(`Memulai download ${drivePhotos.length} foto... Harap izinkan popup jika diminta browser.`);
         }
     };
 
@@ -204,23 +242,20 @@ export default function SelectorPhoto() {
         if (selectedPhotos.length === 0) return;
 
         let count = 0;
-        const maxBatch = 5; // Prevent browser blocking too many popups
+        const maxBatch = 5;
 
         const processBatch = () => {
             const batch = selectedPhotos.slice(count, count + maxBatch);
-            batch.forEach(photo => {
-                const photoData = drivePhotos.find(p => p.id === photo.id);
-                if (photoData) window.open(photoData.downloadLink, '_blank');
-            });
+            batch.forEach(photo => triggerDownload(photo.id));
 
             count += maxBatch;
             if (count < selectedPhotos.length) {
-                setTimeout(processBatch, 1000); // Delay between batches
+                setTimeout(processBatch, 1500);
             }
         };
 
         processBatch();
-        alert(`Sedang mendownload ${selectedPhotos.length} foto... Jika popup terblokir, izinkan situs ini.`);
+        alert(`Mendownload ${selectedPhotos.length} foto... Jika proses terhenti, harap izinkan popup untuk situs ini.`);
     };
 
     const handleDriveSelection = (folderType) => {
@@ -319,7 +354,7 @@ export default function SelectorPhoto() {
                                         disabled={!uid || loading}
                                         className="w-full bg-brand-red hover:brightness-90 text-white font-bold py-4 rounded-xl uppercase tracking-widest text-xs transition-all disabled:opacity-20 shadow-xl shadow-brand-red/20"
                                     >
-                                        {loading ? 'Memvalidasi...' : 'Lanjutkan'}
+                                        {loading ? 'Memvalidasi...' : 'Next'}
                                     </button>
                                 </div>
                             </div>
@@ -331,9 +366,9 @@ export default function SelectorPhoto() {
                                     <h2 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase mb-2">Pilih Aksi</h2>
                                     <div className="flex flex-col items-center gap-1 mb-4">
                                         <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest leading-none">Silakan pilih folder atau layanan yang ingin Anda akses.</p>
-                                        <div className="bg-brand-gold/10 border border-brand-gold/20 rounded-full px-4 py-1 mt-2">
-                                            <p className="text-brand-gold text-[9px] font-black uppercase tracking-widest">
-                                                Status Kuota: {sessionData?.requested_count} / {sessionData?.max_edit_requests} Foto
+                                        <div className="bg-brand-gold/10 border-2 border-brand-gold/40 rounded-full px-6 py-1.5 mt-2 animate-pulse-subtle">
+                                            <p className="text-brand-gold text-[10px] font-black uppercase tracking-widest">
+                                                Kuota Editing: {sessionData?.requested_count || 0} / 20 Foto
                                             </p>
                                         </div>
                                     </div>
@@ -378,13 +413,17 @@ export default function SelectorPhoto() {
 
                         {step === 3 && (
                             <div className="space-y-6 animate-fade-in">
-                                <div className="text-center">
-                                    <h2 className="text-xl font-black text-brand-black dark:text-brand-white uppercase mb-2">
+                                <div className="flex flex-col items-center gap-1 mb-4">
+                                    <p className="text-brand-black/40 dark:text-brand-white/40 text-xs sm:text-sm font-black uppercase tracking-widest leading-none">
                                         {driveType === 'Mentahan' ? 'Galeri Mentahan' : `Galeri ${driveType}`}
-                                    </h2>
-                                    <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-medium">
-
                                     </p>
+                                    {driveType === 'Mentahan' && (
+                                        <div className="bg-brand-gold/10 border-2 border-brand-gold/40 rounded-full px-5 py-1 mt-1 mb-3">
+                                            <p className="text-brand-gold text-[9px] font-black uppercase tracking-widest leading-tight">
+                                                Kuota Editing: {sessionData?.requested_count || 0} / 20 Foto
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {loading ? (
@@ -392,11 +431,26 @@ export default function SelectorPhoto() {
                                         <div className="w-8 h-8 border-4 border-brand-red/20 border-t-brand-red rounded-full animate-spin"></div>
                                         <p className="text-brand-black/50 dark:text-brand-white/50 text-[10px] font-bold uppercase tracking-widest">Memuat Galeri...</p>
                                     </div>
+                                ) : drivePhotos.length === 0 ? (
+                                    <div className="py-20 text-center border-2 border-dashed border-black/5 dark:border-white/5 rounded-2xl animate-fade-in">
+                                        <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest">Foto masih belum di upload oleh admin</p>
+                                        <button onClick={() => setStep(2)} className="mt-4 text-[10px] font-black uppercase tracking-widest text-brand-red hover:underline">Kembali</button>
+                                    </div>
                                 ) : (
                                     <>
                                         <div className="flex justify-between items-center mb-2 px-1">
-                                            <p className="text-[9px] text-brand-black/40 dark:text-brand-white/40 uppercase font-bold tracking-widest">{drivePhotos.length} Foto</p>
-
+                                            <div className="flex items-center space-x-2">
+                                                <p className="text-[9px] text-brand-black/40 dark:text-brand-white/40 uppercase font-bold tracking-widest">{drivePhotos.length} Foto</p>
+                                                <button
+                                                    onClick={() => fetchPhotosFromDrive(driveType, true)}
+                                                    className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-all text-brand-black/20 hover:text-brand-gold"
+                                                    title="Refresh dari Drive"
+                                                >
+                                                    <svg className={`w-3 h-3 ${loading ? 'animate-spin text-brand-gold' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                    </svg>
+                                                </button>
+                                            </div>
                                         </div>
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
                                             {drivePhotos.map((photo, index) => {
@@ -407,7 +461,7 @@ export default function SelectorPhoto() {
                                                             onClick={() => togglePhoto(photo)}
                                                             className={`w-full h-full rounded-lg overflow-hidden cursor-pointer transition-all border-2 ${isSelected ? 'border-brand-red ring-2 ring-brand-red/20' : 'border-transparent hover:border-black/20 dark:hover:border-white/20'}`}
                                                         >
-                                                            <img src={photo.thumbnail} alt={photo.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                                                            <img src={photo.thumbnail?.replace('=s220', '=s300')} alt={photo.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                                                             {isSelected && (
                                                                 <div className="absolute top-2 right-2 w-5 h-5 bg-brand-red rounded-full flex items-center justify-center z-10">
                                                                     <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>
@@ -430,39 +484,47 @@ export default function SelectorPhoto() {
                                                 );
                                             })}
                                         </div>
-                                        <div className="flex gap-4">
-                                            <button onClick={() => setStep(2)} className="flex-1 text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest border border-black/10 dark:border-white/10 rounded-xl hover:bg-black/5">Kembali</button>
-
+                                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                                             <button
-                                                onClick={handleDownloadAll}
-                                                className="flex-1 bg-black/5 dark:bg-white/10 hover:bg-black/10 text-brand-black dark:text-brand-white font-black py-4 rounded-xl uppercase tracking-widest text-[10px] shadow-sm border border-black/5"
+                                                onClick={() => setStep(2)}
+                                                className="w-full sm:w-11 h-11 flex items-center justify-center text-brand-black/40 dark:text-brand-white/40 border border-black/10 dark:border-white/10 rounded-xl hover:bg-black/5 transition-all"
+                                                title="Kembali"
                                             >
-                                                Download All ({drivePhotos.length})
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
+                                                </svg>
                                             </button>
 
-                                            {selectedPhotos.length > 0 && (
+                                            <div className="flex gap-2 sm:gap-3 flex-1">
                                                 <button
-                                                    onClick={handleDownloadSelected}
-                                                    className="flex-1 bg-black/5 dark:bg-white/10 hover:bg-black/10 text-brand-black dark:text-brand-white font-black py-4 rounded-xl uppercase tracking-widest text-[10px] shadow-sm border border-black/5"
+                                                    onClick={handleDownloadAll}
+                                                    className="flex-1 bg-black/5 dark:bg-white/10 hover:bg-black/10 text-brand-black dark:text-brand-white font-black py-2.5 rounded-xl uppercase tracking-widest text-[8px] sm:text-[9px] shadow-sm border border-black/5"
                                                 >
-                                                    Download ({selectedPhotos.length})
+                                                    Download Semua
                                                 </button>
-                                            )}
+
+                                                {selectedPhotos.length > 0 && (
+                                                    <button
+                                                        onClick={handleDownloadSelected}
+                                                        className="flex-1 bg-black/5 dark:bg-white/10 hover:bg-black/10 text-brand-black dark:text-brand-white font-black py-2.5 rounded-xl uppercase tracking-widest text-[8px] sm:text-[9px] shadow-sm border border-black/5"
+                                                    >
+                                                        Download yang dipilih ({selectedPhotos.length})
+                                                    </button>
+                                                )}
+                                            </div>
 
                                             <button
                                                 onClick={() => driveType === 'Mentahan' ? handleSendEditRequest() : setStep(4)}
-                                                disabled={sessionData?.remaining_limit === 0 || (driveType === 'Mentahan' && (selectedPhotos.length === 0 || selectedPhotos.length > (sessionData?.remaining_limit || 20)))}
-                                                className="flex-2 bg-brand-gold hover:brightness-90 text-brand-black font-black py-4 rounded-xl uppercase tracking-widest text-xs shadow-xl disabled:opacity-50 transition-all font-black"
+                                                disabled={driveType === 'Mentahan' && (sessionData?.remaining_limit === 0 || selectedPhotos.length === 0 || selectedPhotos.length > (20 - (sessionData?.requested_count || 0)))}
+                                                className="w-full sm:flex-1 bg-brand-gold hover:brightness-90 text-brand-black font-black py-3 sm:py-2.5 rounded-xl uppercase tracking-widest text-[10px] shadow-xl disabled:opacity-50 transition-all font-black px-6"
                                             >
-                                                {driveType === 'Mentahan'
-                                                    ? (sessionData?.remaining_limit === 0
-                                                        ? 'Kuota Habis'
-                                                        : (selectedPhotos.length > (sessionData?.remaining_limit || 20)
-                                                            ? `Kelebihan (${selectedPhotos.length}/${sessionData?.remaining_limit})`
-                                                            : (selectedPhotos.length === 0
-                                                                ? `Sisa Kuota: ${sessionData?.remaining_limit}`
-                                                                : `Kirim Request (${selectedPhotos.length}/${sessionData?.remaining_limit})`)))
-                                                    : 'Lanjut ke Review'}
+                                                {driveType === 'Mentahan' ? (
+                                                    selectedPhotos.length > 0 ? (
+                                                        (selectedPhotos.length > (20 - (sessionData?.requested_count || 0)))
+                                                            ? `Kelebihan (${(sessionData?.requested_count || 0) + selectedPhotos.length} / 20)`
+                                                            : `Request Editing (${(sessionData?.requested_count || 0) + selectedPhotos.length} / 20)`
+                                                    ) : `Pilih Foto`
+                                                ) : `Lanjut Review`}
                                             </button>
                                         </div>
                                     </>
@@ -474,14 +536,14 @@ export default function SelectorPhoto() {
                             <div className="space-y-8 animate-fade-in">
                                 <div className="text-center">
                                     <h2 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase mb-2">
-                                        {selectedPhotos.length > 0 ? 'Finalisasi Request' : 'Kirim Ulasan'}
+                                        {driveType === 'Result' ? 'Kirim Ulasan' : (selectedPhotos.length > 0 ? 'Finalisasi Request' : 'Kirim Ulasan')}
                                     </h2>
                                     <p className="text-brand-black/40 dark:text-brand-white/40 text-xs font-medium">
-                                        {selectedPhotos.length > 0 ? 'Cek kembali foto pilihan Anda.' : 'Feedback Anda sangat berarti bagi kami.'}
+                                        {driveType === 'Result' ? 'Berikan ulasan untuk sesi foto Anda.' : (selectedPhotos.length > 0 ? 'Cek kembali foto pilihan Anda.' : 'Feedback Anda sangat berarti bagi kami.')}
                                     </p>
                                 </div>
 
-                                {selectedPhotos.length > 0 && (
+                                {selectedPhotos.length > 0 && driveType === 'Mentahan' && (
                                     <div className="bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl p-6">
                                         <div className="flex justify-between items-center mb-4">
                                             <h3 className="text-[10px] font-black uppercase tracking-widest text-brand-gold">Ringkasan Pilihan</h3>
@@ -498,24 +560,88 @@ export default function SelectorPhoto() {
                                 )}
 
                                 {!(driveType === 'Mentahan' && selectedPhotos.length > 0) && (
-                                    <div className="space-y-4">
-                                        <label className="block text-[10px] uppercase font-black tracking-widest text-brand-black/60 dark:text-brand-white/60">
-                                            {selectedPhotos.length > 0 ? 'Pesan Tambahan (Opsional)' : 'Ulasan Anda'}
-                                        </label>
-                                        <textarea
-                                            value={review}
-                                            onChange={(e) => setReview(e.target.value)}
-                                            placeholder={selectedPhotos.length > 0 ? "Catatan untuk editor..." : "Tulis pengalaman Anda..."}
-                                            rows="4"
-                                            className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl px-6 py-4 text-brand-black dark:text-brand-white focus:outline-none focus:border-brand-gold transition-all text-sm font-medium"
-                                        />
+                                    <div className="space-y-6">
+                                        {/* Star Rating */}
+                                        <div className="flex flex-col items-center space-y-3">
+                                            <label className="text-[10px] uppercase font-black tracking-widest text-brand-black/40 dark:text-brand-white/40">Berikan Bintang</label>
+                                            <div className="flex gap-2">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <button
+                                                        key={star}
+                                                        onClick={() => setRating(star)}
+                                                        className="transition-all hover:scale-110 active:scale-90"
+                                                    >
+                                                        {rating >= star ? (
+                                                            <StarIcon className="w-8 h-8 text-brand-gold" />
+                                                        ) : (
+                                                            <StarOutlineIcon className="w-8 h-8 text-black/10 dark:text-white/10" />
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Photo Upload */}
+                                        <div className="space-y-3">
+                                            <label className="block text-[10px] uppercase font-black tracking-widest text-brand-black/60 dark:text-brand-white/60">Upload Foto Kenangan (Opsional)</label>
+                                            <div className="relative group">
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => setReviewPhoto(e.target.files[0])}
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                                                />
+                                                <div className={`w-full bg-black/5 dark:bg-white/5 border-2 border-dashed ${reviewPhoto ? 'border-brand-gold bg-brand-gold/5' : 'border-black/10 dark:border-white/10 group-hover:border-brand-gold/40'} rounded-2xl p-4 transition-all overflow-hidden`}>
+                                                    {reviewPhoto ? (
+                                                        <div className="space-y-4">
+                                                            <div className="relative aspect-video w-full rounded-xl overflow-hidden shadow-lg border border-brand-gold/20">
+                                                                <img
+                                                                    src={URL.createObjectURL(reviewPhoto)}
+                                                                    alt="Preview"
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                                <button
+                                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setReviewPhoto(null); }}
+                                                                    className="absolute top-2 right-2 p-2 bg-brand-red text-white rounded-full shadow-xl hover:scale-110 active:scale-95 transition-all z-30"
+                                                                >
+                                                                    <XMarkIcon className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                            <div className="flex items-center justify-center space-x-2">
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-brand-gold truncate max-w-[150px]">{reviewPhoto.name}</span>
+                                                                <span className="text-[8px] font-bold text-brand-black/20 dark:text-brand-white/20">{(reviewPhoto.size / 1024 / 1024).toFixed(2)} MB</span>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="py-8 text-center">
+                                                            <CameraIcon className="w-8 h-8 mx-auto mb-2 text-brand-black/20 dark:text-brand-white/20" />
+                                                            <p className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Ambil Foto / Pilih File</p>
+                                                            <p className="text-[8px] font-bold text-brand-black/20 dark:text-brand-white/20 uppercase tracking-widest mt-1">Maksimal 5MB</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <label className="block text-[10px] uppercase font-black tracking-widest text-brand-black/60 dark:text-brand-white/60">
+                                                {driveType === 'Result' ? 'Ulasan Anda' : (selectedPhotos.length > 0 ? 'Pesan Tambahan (Opsional)' : 'Ulasan Anda')}
+                                            </label>
+                                            <textarea
+                                                value={review}
+                                                onChange={(e) => setReview(e.target.value)}
+                                                placeholder={selectedPhotos.length > 0 ? "Catatan untuk editor..." : "Tulis pengalaman Anda..."}
+                                                rows="4"
+                                                className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl px-6 py-4 text-brand-black dark:text-brand-white focus:outline-none focus:border-brand-gold transition-all text-sm font-medium"
+                                            />
+                                        </div>
                                     </div>
                                 )}
                                 <div className="flex gap-4">
                                     <button onClick={() => setStep(3)} className="flex-1 text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest border border-black/10 dark:border-white/10 rounded-xl">Kembali</button>
                                     <button
-                                        onClick={selectedPhotos.length > 0 ? handleSendEditRequest : handleSendReview}
-                                        disabled={loading || (selectedPhotos.length === 0 && !review)}
+                                        onClick={driveType === 'Mentahan' && selectedPhotos.length > 0 ? handleSendEditRequest : handleSendReview}
+                                        disabled={loading || (driveType === 'Result' && !review) || (driveType === 'Mentahan' && selectedPhotos.length === 0 && !review)}
                                         className="flex-2 bg-brand-gold hover:bg-brand-red hover:text-white text-brand-black font-black py-4 uppercase tracking-widest transition-all rounded-xl disabled:opacity-50 text-xs shadow-xl shadow-brand-gold/20"
                                     >
                                         {loading ? 'Mengirim...' : 'Kirim'}
@@ -578,10 +704,21 @@ export default function SelectorPhoto() {
                             <span className="text-3xl">✅</span>
                         </div>
                         <div>
-                            <h3 className="text-xl font-black text-brand-black dark:text-brand-white uppercase mb-2">Permintaan Terkirim!</h3>
+                            <h3 className="text-xl font-black text-brand-black dark:text-brand-white uppercase mb-2">
+                                {successType === 'request' ? 'Permintaan Terkirim!' : 'Ulasan Terkirim!'}
+                            </h3>
                             <p className="text-brand-black/60 dark:text-brand-white/60 text-xs font-medium leading-relaxed">
-                                Mohon tunggu proses editing sekitar 7-14 hari.<br />
-                                Silakan cek lagi dengan memasukkan UID yang sama nanti.
+                                {successType === 'request' ? (
+                                    <>
+                                        Mohon tunggu proses editing sekitar 7-14 hari.<br />
+                                        Silakan cek lagi dengan memasukkan UID yang sama nanti.
+                                    </>
+                                ) : (
+                                    <>
+                                        Terima kasih telah memberikan ulasan Anda.<br />
+                                        Review Anda sangat berarti bagi kami!
+                                    </>
+                                )}
                             </p>
                         </div>
                         <button

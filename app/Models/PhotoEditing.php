@@ -13,7 +13,6 @@ class PhotoEditing extends Model
         'customer_name',
         'raw_folder_id',
         'edited_folder_id',
-        'max_edit_requests',
         'status',
     ];
 

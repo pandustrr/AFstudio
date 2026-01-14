@@ -18,7 +18,6 @@ class PhotoSessionSeeder extends Seeder
                 'customer_name' => 'User Dummy',
                 'raw_folder_id' => '19nSDsv01kEKec8aMTG3rw7NHUtLTxHYI', // Test folder
                 'edited_folder_id' => null,
-                'max_edit_requests' => 20,
                 'status' => 'pending',
             ]
         );

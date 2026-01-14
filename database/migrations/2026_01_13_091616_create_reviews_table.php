@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('photo_session_id')->constrained('photo_sessions')->onDelete('cascade');
             $table->text('review_text');
-            $table->integer('rating')->nullable();
+            $table->integer('rating')->default(5);
+            $table->string('photo_path')->nullable();
             $table->timestamps();
         });
     }
