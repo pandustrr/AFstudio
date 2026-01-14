@@ -11,15 +11,29 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('pricelists', function (Blueprint $table) {
+        Schema::create('pricelist_categories', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->decimal('price', 12, 2);
-            $table->decimal('discount_price', 12, 2)->nullable();
-            $table->text('description')->nullable();
-            $table->json('features')->nullable(); // Arrays of strings
+            $table->string('slug')->unique();
+            $table->timestamps();
+        });
+
+        Schema::create('pricelist_sub_categories', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('category_id')->constrained('pricelist_categories')->onDelete('cascade');
+            $table->string('name');
+            $table->string('slug');
+            $table->timestamps();
+        });
+
+        Schema::create('pricelist_packages', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('sub_category_id')->constrained('pricelist_sub_categories')->onDelete('cascade');
+            $table->string('name');
+            $table->string('price_display');
+            $table->decimal('price_numeric', 12, 2)->nullable();
+            $table->json('features')->nullable();
             $table->boolean('is_popular')->default(false);
-            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
@@ -29,6 +43,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('pricelists');
+        Schema::dropIfExists('pricelist_packages');
+        Schema::dropIfExists('pricelist_sub_categories');
+        Schema::dropIfExists('pricelist_categories');
     }
 };
