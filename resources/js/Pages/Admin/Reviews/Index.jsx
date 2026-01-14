@@ -22,6 +22,27 @@ export default function Index({ reviews, averageRating, totalReviews, currentFil
         });
     };
 
+    const [localReviews, setLocalReviews] = useState(reviews);
+
+    React.useEffect(() => {
+        setLocalReviews(reviews);
+    }, [reviews]);
+
+    const handleToggle = (reviewId) => {
+        // Optimistic update
+        const updatedReviews = localReviews.map(r =>
+            r.id === reviewId ? { ...r, is_visible: !r.is_visible } : r
+        );
+        setLocalReviews(updatedReviews);
+
+        router.patch(`/admin/reviews/${reviewId}/toggle`, {}, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => { }, // State will naturally sync via props/useEffect
+            onError: () => setLocalReviews(reviews) // Revert on error
+        });
+    };
+
     const handleFilterChange = (filter) => {
         router.get('/admin/reviews', { filter }, { preserveState: true, preserveScroll: true });
     };
@@ -92,7 +113,7 @@ export default function Index({ reviews, averageRating, totalReviews, currentFil
                 </div>
 
                 {/* Reviews List */}
-                {reviews.length === 0 ? (
+                {localReviews.length === 0 ? (
                     <div className="bg-white dark:bg-brand-black/50 rounded-2xl border border-black/5 dark:border-white/5 p-12 text-center">
                         <div className="flex justify-center mb-4">
                             <StarIcon className="w-16 h-16 text-brand-black/20 dark:text-brand-white/20" />
@@ -103,7 +124,7 @@ export default function Index({ reviews, averageRating, totalReviews, currentFil
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {reviews.map((review) => (
+                        {localReviews.map((review) => (
                             <div
                                 key={review.id}
                                 className="bg-white dark:bg-brand-black/50 rounded-xl border border-black/5 dark:border-white/5 p-4 hover:shadow-md transition-all"
@@ -161,8 +182,25 @@ export default function Index({ reviews, averageRating, totalReviews, currentFil
                                             </div>
                                         )}
 
+                                        {/* Tampilkan Toggle */}
+                                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-black/5 dark:border-white/5">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
+                                                Tampilkan
+                                            </span>
+                                            <button
+                                                onClick={() => handleToggle(review.id)}
+                                                className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none ${review.is_visible ? 'bg-green-500' : 'bg-gray-200 dark:bg-white/10'
+                                                    }`}
+                                            >
+                                                <span
+                                                    className={`${review.is_visible ? 'translate-x-4' : 'translate-x-1'
+                                                        } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
+                                                />
+                                            </button>
+                                        </div>
+
                                         {/* Date */}
-                                        <p className="text-xs text-brand-black/40 dark:text-brand-white/40 flex items-center gap-1 mt-auto">
+                                        <p className="text-xs text-brand-black/40 dark:text-brand-white/40 flex items-center gap-1 mt-2">
                                             <CalendarIcon className="w-3 h-3" />
                                             <span>{review.created_at}</span>
                                         </p>

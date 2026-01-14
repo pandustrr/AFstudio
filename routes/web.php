@@ -36,6 +36,7 @@ Route::prefix('admin')->group(function () {
         })->name('admin.dashboard');
 
         Route::resource('photo-editing', PhotoEditingController::class)->names('admin.photo-editing');
+        Route::patch('/reviews/{review}/toggle', [\App\Http\Controllers\Admin\ReviewController::class, 'toggleVisibility'])->name('admin.reviews.toggle');
         Route::resource('reviews', ReviewController::class)->only(['index', 'show', 'destroy'])->names('admin.reviews');
     });
 });
