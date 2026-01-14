@@ -14,77 +14,79 @@ export default function Pricelist({ categories }) {
             <Navbar />
 
             {/* Header Section */}
-            <section className="pt-32 pb-12 px-6 text-center bg-linear-to-b from-brand-red/5 via-transparent to-transparent">
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-red/10 rounded-full mb-4">
-                    <SparklesIcon className="w-3.5 h-3.5 text-brand-red" />
-                    <span className="text-[9px] font-black uppercase tracking-widest text-brand-red">Pricing & Packages</span>
+            <section className="pt-20 md:pt-28 pb-6 md:pb-10 px-6 text-center bg-linear-to-b from-brand-red/5 via-transparent to-transparent">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-red/10 rounded-full mb-3">
+                    <SparklesIcon className="w-3 h-3 text-brand-red" />
+                    <span className="text-[8px] font-black uppercase tracking-widest text-brand-red">Pricing & Packages</span>
                 </div>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter italic mb-4">
+                <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter italic mb-3">
                     INVEST IN YOUR <span className="text-brand-gold">MEMORIES.</span>
                 </h1>
-                <p className="max-w-md mx-auto text-brand-black/60 dark:text-brand-white/60 text-xs md:text-sm font-bold uppercase tracking-wider">
+                <p className="max-w-sm mx-auto text-brand-black/60 dark:text-brand-white/60 text-[10px] md:text-[11px] font-bold uppercase tracking-wider leading-relaxed">
                     Profesional fotografi dengan hasil kualitas terbaik untuk setiap momen berharga Anda.
                 </p>
             </section>
 
             {/* Category Tabs */}
-            <section className="px-6 mb-16">
-                <div className="flex flex-wrap justify-center gap-2 max-w-4xl mx-auto p-2 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/5 dark:border-white/5">
-                    {categories.map((category) => (
-                        <button
-                            key={category.id}
-                            onClick={() => setActiveCategoryId(category.id)}
-                            className={`px-8 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeCategoryId === category.id
-                                ? 'bg-brand-black text-white dark:bg-brand-gold dark:text-brand-black shadow-xl scale-105'
-                                : 'text-brand-black/40 dark:text-brand-white/40 hover:text-brand-black dark:hover:text-brand-white'
-                                }`}
-                        >
-                            {category.name}
-                        </button>
-                    ))}
+            <section className="px-6 mb-10 sticky top-[4.5rem] md:top-20 z-10">
+                <div className="max-w-4xl mx-auto overflow-x-auto no-scrollbar scroll-smooth">
+                    <div className="inline-flex min-w-full md:flex md:flex-wrap md:justify-center gap-1.5 p-1.5 bg-white/50 dark:bg-black/50 backdrop-blur-md rounded-2xl border border-black/5 dark:border-white/5">
+                        {categories.map((category) => (
+                            <button
+                                key={category.id}
+                                onClick={() => setActiveCategoryId(category.id)}
+                                className={`whitespace-nowrap px-5 py-2.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeCategoryId === category.id
+                                    ? 'bg-brand-black text-white dark:bg-brand-gold dark:text-brand-black shadow-lg scale-105'
+                                    : 'text-brand-black/40 dark:text-brand-white/40 hover:text-brand-black dark:hover:text-brand-white'
+                                    }`}
+                            >
+                                {category.name}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </section>
 
             {/* Content Section */}
-            <section className="pb-24 px-6 max-w-7xl mx-auto space-y-24">
+            <section className="pb-20 px-4 md:px-6 max-w-7xl mx-auto space-y-16 md:space-y-24">
                 {activeCategory?.sub_categories.map((sub, sIdx) => (
-                    <div key={sub.id} className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: `${sIdx * 100}ms` }}>
+                    <div key={sub.id} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: `${sIdx * 100}ms` }}>
                         <div className="flex flex-col items-center text-center space-y-2">
-                            <h2 className="text-2xl md:text-3xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter italic">
+                            <h2 className="text-xl md:text-3xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter italic">
                                 {sub.name}
                             </h2>
-                            <div className="w-12 h-1 bg-brand-gold rounded-full"></div>
+                            <div className="w-10 h-0.5 md:w-12 md:h-1 bg-brand-gold rounded-full"></div>
                         </div>
 
-                        <div className="flex flex-wrap justify-center gap-6 items-stretch">
+                        <div className="flex flex-wrap justify-center gap-4 md:gap-6 items-stretch">
                             {sub.packages.map((pkg) => (
                                 <div
                                     key={pkg.id}
-                                    className={`relative group p-8 rounded-3xl border transition-all duration-500 flex flex-col w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(33.333%-1.5rem)] xl:w-[calc(25%-1.5rem)] max-w-sm ${pkg.is_popular
+                                    className={`relative group p-5 md:p-7 rounded-[2.5rem] md:rounded-3xl border transition-all duration-500 flex flex-col w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.5rem)] xl:w-[calc(25%-1.5rem)] max-w-sm ${pkg.is_popular
                                         ? 'bg-brand-black text-white border-brand-black shadow-2xl shadow-brand-red/10 ring-4 ring-brand-red/5'
                                         : 'bg-white dark:bg-white/5 border-black/5 dark:border-white/5 text-brand-black dark:text-brand-white'
                                         } hover:-translate-y-2`}
                                 >
                                     {/* Popular Badge */}
                                     {pkg.is_popular && (
-                                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-4 py-1.5 bg-brand-red text-white rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg">
-                                            <FireIcon className="w-3 h-3" />
+                                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-brand-red text-white rounded-full text-[7px] md:text-[8px] font-black uppercase tracking-widest shadow-lg">
+                                            <FireIcon className="w-2.5 h-2.5 md:w-3 md:h-3" />
                                             Most Popular
                                         </div>
                                     )}
 
-                                    <div className="mb-8">
-                                        <h3 className="text-xl font-black uppercase tracking-tighter mb-1">{pkg.name}</h3>
-                                        <div className="text-3xl font-black text-brand-gold tracking-tight italic">
+                                    <div className="mb-6 md:mb-8">
+                                        <h3 className="text-lg md:text-xl font-black uppercase tracking-tighter mb-0.5 md:mb-1">{pkg.name}</h3>
+                                        <div className="text-2xl md:text-3xl font-black text-brand-gold tracking-tight italic">
                                             {pkg.price_display}
                                         </div>
                                     </div>
 
-                                    <div className="space-y-4 mb-10 grow">
+                                    <div className="space-y-3 md:space-y-4 mb-8 md:mb-10 grow">
                                         {(pkg.features || []).map((feature, fIdx) => (
-                                            <div key={fIdx} className="flex items-start gap-3">
-                                                <CheckBadgeIcon className={`w-4 h-4 shrink-0 mt-0.5 ${pkg.is_popular ? 'text-brand-gold' : 'text-brand-red'}`} />
-                                                <span className="text-xs font-bold opacity-80 leading-tight">{feature}</span>
+                                            <div key={fIdx} className="flex items-start gap-2.5">
+                                                <CheckBadgeIcon className={`w-3.5 h-3.5 md:w-4 md:h-4 shrink-0 mt-0.5 ${pkg.is_popular ? 'text-brand-gold' : 'text-brand-red'}`} />
+                                                <span className="text-[10px] md:text-[11px] font-bold opacity-80 leading-tight uppercase tracking-tight">{feature}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -92,7 +94,7 @@ export default function Pricelist({ categories }) {
                                     <a
                                         href={`https://wa.me/+6281234567890?text=Halo AF Studio! Saya tertarik dengan paket ${pkg.name} (${sub.name} - ${activeCategory.name}).`}
                                         target="_blank"
-                                        className={`block w-full py-4 rounded-xl text-center text-[10px] font-black uppercase tracking-[0.2em] transition-all ${pkg.is_popular
+                                        className={`block w-full py-3.5 md:py-4 rounded-2xl md:rounded-xl text-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all ${pkg.is_popular
                                             ? 'bg-brand-red text-white hover:bg-brand-gold hover:text-brand-black shadow-lg shadow-brand-red/20'
                                             : 'bg-black/5 dark:bg-white/10 text-brand-black dark:text-brand-white hover:bg-brand-black hover:text-white dark:hover:bg-brand-gold dark:hover:text-brand-black shadow-sm'
                                             }`}
@@ -106,30 +108,30 @@ export default function Pricelist({ categories }) {
                 ))}
 
                 {activeCategory?.sub_categories.length === 0 && (
-                    <div className="text-center py-24 border-2 border-dashed border-black/5 dark:border-white/5 rounded-3xl">
-                        <p className="text-brand-black/20 dark:text-brand-white/20 font-black uppercase tracking-widest text-xs">Informasi paket belum tersedia untuk kategori ini.</p>
+                    <div className="text-center py-20 border-2 border-dashed border-black/5 dark:border-white/5 rounded-3xl">
+                        <p className="text-brand-black/20 dark:text-brand-white/20 font-black uppercase tracking-widest text-[10px]">Informasi paket belum tersedia untuk kategori ini.</p>
                     </div>
                 )}
             </section>
 
             {/* Bottom CTA */}
-            <section className="pb-32 px-6">
-                <div className="max-w-4xl mx-auto rounded-[40px] overflow-hidden relative group">
+            <section className="pb-20 md:pb-28 px-4 md:px-6">
+                <div className="max-w-3xl mx-auto rounded-[2rem] md:rounded-[32px] overflow-hidden relative group">
                     <div className="absolute inset-0 bg-brand-gold transform group-hover:scale-105 transition-transform duration-700"></div>
-                    <div className="relative p-12 md:p-16 text-center text-brand-black flex flex-col items-center">
-                        <FireIcon className="w-12 h-12 mb-6 opacity-20" />
-                        <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter italic mb-4 leading-none">
-                            TIDAK MENEMUKAN <br />YANG COCOK?
+                    <div className="relative p-8 md:p-12 text-center text-brand-black flex flex-col items-center">
+                        <FireIcon className="w-8 h-8 md:w-10 md:h-10 mb-3 md:mb-4 opacity-20" />
+                        <h2 className="text-xl md:text-3xl font-black uppercase tracking-tighter italic mb-3 leading-none">
+                            TIDAK MENEMUKAN <br className="hidden md:block" />YANG COCOK?
                         </h2>
-                        <p className="max-w-md mx-auto text-sm md:text-base font-bold mb-8 opacity-70">
+                        <p className="max-w-xs mx-auto text-[10px] md:text-xs font-bold mb-6 opacity-70 uppercase tracking-tight">
                             Kami menyediakan solusi custom untuk setiap kebutuhan unik Anda. Konsultasikan konsep foto impian Anda bersama kami secara gratis.
                         </p>
                         <a
                             href="https://wa.me/+6281234567890"
-                            className="inline-flex items-center gap-3 px-10 py-5 bg-black text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-2xl"
+                            className="inline-flex items-center gap-2 px-6 py-3.5 md:px-8 md:py-4 bg-black text-white rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-2xl"
                         >
                             Hubungi via WhatsApp
-                            <ChevronRightIcon className="w-4 h-4" />
+                            <ChevronRightIcon className="w-3 h-3 md:w-3.5 md:h-3.5" />
                         </a>
                     </div>
                 </div>
