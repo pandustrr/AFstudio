@@ -43,6 +43,7 @@ class ReviewController extends Controller
                 'rating' => $review->rating,
                 'photo_url' => $review->photo_path ? asset('storage/' . $review->photo_path) : null,
                 'created_at' => $review->created_at->format('d M Y, H:i'),
+                'is_visible' => (bool) $review->is_visible,
                 'session' => [
                     'uid' => $review->photoEditing->uid,
                     'customer_name' => $review->photoEditing->customer_name,
@@ -76,6 +77,7 @@ class ReviewController extends Controller
                 'rating' => $review->rating,
                 'photo_url' => $review->photo_path ? asset('storage/' . $review->photo_path) : null,
                 'created_at' => $review->created_at->format('d M Y, H:i'),
+                'is_visible' => (bool) $review->is_visible,
                 'session' => [
                     'id' => $review->photoEditing->id,
                     'uid' => $review->photoEditing->uid,
@@ -84,6 +86,18 @@ class ReviewController extends Controller
                 ],
             ]
         ]);
+    }
+
+    /**
+     * Toggle review visibility
+     */
+    public function toggleVisibility(Review $review)
+    {
+        $review->update([
+            'is_visible' => !$review->is_visible
+        ]);
+
+        return back()->with('success', 'Status visibilitas review berhasil diperbarui.');
     }
 
     /**

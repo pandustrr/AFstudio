@@ -11,6 +11,7 @@ class Review extends Model
         'review_text',
         'rating',
         'photo_path',
+        'is_visible',
     ];
 
     public function photoEditing()

@@ -14,6 +14,7 @@ class PublicReviewController extends Controller
     public function index()
     {
         $reviews = Review::with('photoEditing')
+            ->where('is_visible', true)
             ->latest()
             ->paginate(12) // Pagination for public view
             ->through(function ($review) {
