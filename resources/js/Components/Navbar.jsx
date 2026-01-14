@@ -28,12 +28,12 @@ export default function Navbar() {
     return (
         <nav
             className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled
-                ? 'bg-white/80 dark:bg-brand-black/80 backdrop-blur-xl py-2 md:py-3 border-b border-black/5 dark:border-white/5 shadow-sm'
-                : 'bg-transparent py-4 md:py-5'
+                ? 'bg-white/80 dark:bg-brand-black/80 backdrop-blur-xl py-1.5 md:py-2 border-b border-black/5 dark:border-white/5 shadow-sm'
+                : 'bg-transparent py-3 md:py-4'
                 }`}
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-12 md:h-16">
+                <div className="flex items-center justify-between h-10 md:h-14">
                     {/* Logo */}
                     <Link href="/" className="group flex items-center space-x-2">
                         <div className="w-6 h-6 md:w-7 md:h-7 bg-brand-red rounded-full flex items-center justify-center group-hover:bg-brand-gold transition-colors duration-500">
