@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
-import { Head, Link, useForm, router } from '@inertiajs/react'; // Added router import
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { StarIcon as StarOutlineIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import { StarIcon as StarOutlineIcon, CalendarIcon, ChevronDownIcon } from '@heroicons/react/24/outline'; // Added ChevronDownIcon
 import { StarIcon } from '@heroicons/react/24/solid';
 import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
 
-export default function Index({ reviews, averageRating, totalReviews, currentFilter }) { // Added currentFilter prop
+export default function Index({ reviews, averageRating, totalReviews, filters, options }) { // Updated props
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [selectedReviewId, setSelectedReviewId] = useState(null);
     const { delete: destroy, processing } = useForm();
+
+    const monthNames = [
+        "", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
 
     const openDeleteModal = (id) => {
         setSelectedReviewId(id);
@@ -38,13 +43,25 @@ export default function Index({ reviews, averageRating, totalReviews, currentFil
         router.patch(`/admin/reviews/${reviewId}/toggle`, {}, {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => { }, // State will naturally sync via props/useEffect
-            onError: () => setLocalReviews(reviews) // Revert on error
+            onSuccess: () => { },
+            onError: () => setLocalReviews(reviews)
         });
     };
 
-    const handleFilterChange = (filter) => {
-        router.get('/admin/reviews', { filter }, { preserveState: true, preserveScroll: true });
+    const handleFilterChange = (type, value) => {
+        const newFilters = { ...filters, [type]: value };
+
+        if (type === 'year') {
+            newFilters.month = '';
+            newFilters.day = '';
+        } else if (type === 'month') {
+            newFilters.day = '';
+        }
+
+        router.get('/admin/reviews', newFilters, {
+            preserveState: true,
+            preserveScroll: true
+        });
     };
 
     return (
@@ -90,26 +107,57 @@ export default function Index({ reviews, averageRating, totalReviews, currentFil
                     </div>
                 </div>
 
-                {/* Filter Controls */}
+                {/* Filter Controls - Cascading Date Dropdowns */}
                 <div className="flex flex-wrap gap-2 mb-8">
-                    {[
-                        { id: 'all', label: 'Semua' },
-                        { id: 'daily', label: 'Hari Ini' },
-                        { id: 'weekly', label: 'Minggu Ini' },
-                        { id: 'monthly', label: 'Bulan Ini' },
-                        { id: 'yearly', label: 'Tahun Ini' },
-                    ].map((filter) => (
-                        <button
-                            key={filter.id}
-                            onClick={() => handleFilterChange(filter.id)}
-                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${currentFilter === filter.id
-                                ? 'bg-brand-black text-white dark:bg-brand-gold dark:text-brand-black shadow-lg scale-105'
-                                : 'bg-black/5 dark:bg-white/5 text-brand-black/40 dark:text-brand-white/40 hover:bg-black/10 dark:hover:bg-white/10'
-                                }`}
-                        >
-                            {filter.label}
-                        </button>
-                    ))}
+                    <div className="flex items-center gap-1 p-1.5 bg-white dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 w-fit shadow-sm">
+                        <div className="relative group">
+                            <select
+                                value={filters.year || ''}
+                                onChange={(e) => handleFilterChange('year', e.target.value)}
+                                className="appearance-none bg-transparent border-0 rounded-lg pl-3 pr-8 py-2 text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                            >
+                                <option value="" className="bg-white dark:bg-brand-black">Tahun</option>
+                                {options.years.map((year) => (
+                                    <option key={year} value={year} className="bg-white dark:bg-brand-black">{year}</option>
+                                ))}
+                            </select>
+                            <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
+                        </div>
+
+                        <div className="w-px h-4 bg-black/10 dark:bg-white/10"></div>
+
+                        <div className="relative group">
+                            <select
+                                value={filters.month || ''}
+                                onChange={(e) => handleFilterChange('month', e.target.value)}
+                                disabled={!filters.year}
+                                className="appearance-none bg-transparent border-0 rounded-lg pl-3 pr-8 py-2 text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors disabled:opacity-30"
+                            >
+                                <option value="" className="bg-white dark:bg-brand-black">Bulan</option>
+                                {options.months.map((month) => (
+                                    <option key={month} value={month} className="bg-white dark:bg-brand-black">{monthNames[month]}</option>
+                                ))}
+                            </select>
+                            <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
+                        </div>
+
+                        <div className="w-px h-4 bg-black/10 dark:bg-white/10"></div>
+
+                        <div className="relative group">
+                            <select
+                                value={filters.day || ''}
+                                onChange={(e) => handleFilterChange('day', e.target.value)}
+                                disabled={!filters.month}
+                                className="appearance-none bg-transparent border-0 rounded-lg pl-3 pr-8 py-2 text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors disabled:opacity-30"
+                            >
+                                <option value="" className="bg-white dark:bg-brand-black">Tgl</option>
+                                {options.days.map((day) => (
+                                    <option key={day} value={day} className="bg-white dark:bg-brand-black">{day}</option>
+                                ))}
+                            </select>
+                            <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
+                        </div>
+                    </div>
                 </div>
 
                 {/* Reviews List */}

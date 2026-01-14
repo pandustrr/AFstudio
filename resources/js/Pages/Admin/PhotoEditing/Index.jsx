@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
-import { EyeIcon, PencilSquareIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, PencilSquareIcon, TrashIcon, XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import EditModal from './EditModal';
 import ViewModal from './ViewModal';
 import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
 
 
-export default function Index({ sessions, filters }) {
+export default function Index({ sessions, filters, options }) {
     const [viewSession, setViewSession] = useState(null);
     const [editSession, setEditSession] = useState(null);
     const [deleteSession, setDeleteSession] = useState(null);
@@ -17,15 +17,33 @@ export default function Index({ sessions, filters }) {
         { id: 'all', label: 'Semua', color: 'bg-black/5' },
         { id: 'pending', label: 'Pending', color: 'bg-yellow-500/10 text-yellow-600' },
         { id: 'processing', label: 'Processing', color: 'bg-blue-500/10 text-blue-600' },
-        { id: 'done', label: 'Selesai', color: 'bg-green-500/10 text-green-600' },
-        { id: 'cancelled', label: 'Dibatalkan', color: 'bg-red-500/10 text-red-600' },
+        { id: 'done', label: 'Done', color: 'bg-green-500/10 text-green-600' },
+        { id: 'cancelled', label: 'Cancelled', color: 'bg-red-500/10 text-red-600' },
     ];
 
-    const handleFilter = (status) => {
-        router.get('/admin/photo-editing',
-            status === 'all' ? {} : { status },
-            { preserveState: true, preserveScroll: true }
-        );
+    const monthNames = [
+        "", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+
+    const handleFilter = (type, value) => {
+        const newFilters = { ...filters, [type]: value };
+
+        if (type === 'year') {
+            newFilters.month = '';
+            newFilters.day = '';
+            newFilters.status = 'all';
+        } else if (type === 'month') {
+            newFilters.day = '';
+            newFilters.status = 'all';
+        } else if (type === 'day') {
+            newFilters.status = 'all';
+        }
+
+        router.get('/admin/photo-editing', newFilters, {
+            preserveState: true,
+            preserveScroll: true
+        });
     };
 
     const handleDelete = () => {
@@ -46,25 +64,79 @@ export default function Index({ sessions, filters }) {
             <Head title="Manage Requests" />
 
             <div className="pt-12 lg:pt-20 pb-20 px-6 max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
+                <div className="flex flex-col gap-8 mb-12">
                     <div>
                         <h1 className="text-4xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-2">Daftar Request</h1>
                         <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest">Kelola akses gallery dan request user.</p>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
-                        {statuses.map((status) => (
-                            <button
-                                key={status.id}
-                                onClick={() => handleFilter(status.id)}
-                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${filters.status === status.id
-                                    ? 'bg-brand-black text-white dark:bg-brand-gold dark:text-brand-black shadow-lg scale-105'
-                                    : 'bg-black/5 dark:bg-white/5 text-brand-black/40 dark:text-brand-white/40 hover:bg-black/10 dark:hover:bg-white/10'
-                                    }`}
-                            >
-                                {status.label}
-                            </button>
-                        ))}
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                        {/* Compact Date Filters */}
+                        <div className="flex items-center gap-1 p-1.5 bg-white dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 w-fit shadow-sm">
+                            <div className="relative group">
+                                <select
+                                    value={filters.year || ''}
+                                    onChange={(e) => handleFilter('year', e.target.value)}
+                                    className="appearance-none bg-transparent border-0 rounded-lg pl-3 pr-8 py-2 text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                                >
+                                    <option value="" className="bg-white dark:bg-brand-black">Tahun</option>
+                                    {options.years.map((year) => (
+                                        <option key={year} value={year} className="bg-white dark:bg-brand-black">{year}</option>
+                                    ))}
+                                </select>
+                                <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
+                            </div>
+
+                            <div className="w-px h-4 bg-black/10 dark:bg-white/10"></div>
+
+                            <div className="relative group">
+                                <select
+                                    value={filters.month || ''}
+                                    onChange={(e) => handleFilter('month', e.target.value)}
+                                    disabled={!filters.year}
+                                    className="appearance-none bg-transparent border-0 rounded-lg pl-3 pr-8 py-2 text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors disabled:opacity-30"
+                                >
+                                    <option value="" className="bg-white dark:bg-brand-black">Bulan</option>
+                                    {options.months.map((month) => (
+                                        <option key={month} value={month} className="bg-white dark:bg-brand-black">{monthNames[month]}</option>
+                                    ))}
+                                </select>
+                                <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
+                            </div>
+
+                            <div className="w-px h-4 bg-black/10 dark:bg-white/10"></div>
+
+                            <div className="relative group">
+                                <select
+                                    value={filters.day || ''}
+                                    onChange={(e) => handleFilter('day', e.target.value)}
+                                    disabled={!filters.month}
+                                    className="appearance-none bg-transparent border-0 rounded-lg pl-3 pr-8 py-2 text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors disabled:opacity-30"
+                                >
+                                    <option value="" className="bg-white dark:bg-brand-black">Tgl</option>
+                                    {options.days.map((day) => (
+                                        <option key={day} value={day} className="bg-white dark:bg-brand-black">{day}</option>
+                                    ))}
+                                </select>
+                                <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
+                            </div>
+                        </div>
+
+                        {/* Status Filters */}
+                        <div className="flex flex-wrap gap-2">
+                            {statuses.map((status) => (
+                                <button
+                                    key={status.id}
+                                    onClick={() => handleFilter('status', status.id)}
+                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${filters.status === status.id
+                                        ? 'bg-brand-black text-white dark:bg-brand-gold dark:text-brand-black shadow-lg scale-105'
+                                        : 'bg-black/5 dark:bg-white/5 text-brand-black/40 dark:text-brand-white/40 hover:bg-black/10 dark:hover:bg-white/10'
+                                        }`}
+                                >
+                                    {status.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
@@ -73,6 +145,7 @@ export default function Index({ sessions, filters }) {
                         <thead>
                             <tr className="border-b border-black/5 dark:border-white/5 bg-black/2 dark:bg-white/2">
                                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">UID / Customer</th>
+                                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Tanggal</th>
                                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Drive Status</th>
                                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Progress</th>
                                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 text-right">Aksi</th>
@@ -84,6 +157,21 @@ export default function Index({ sessions, filters }) {
                                     <td className="px-8 py-6">
                                         <div className="text-sm font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-1">{session.customer_name}</div>
                                         <div className="text-[10px] font-mono text-brand-red font-black tracking-widest opacity-80">{session.uid}</div>
+                                    </td>
+                                    <td className="px-8 py-6">
+                                        <div className="text-xs font-bold text-brand-black dark:text-brand-white">
+                                            {new Date(session.created_at).toLocaleDateString('id-ID', {
+                                                day: 'numeric',
+                                                month: 'long',
+                                                year: 'numeric'
+                                            })}
+                                        </div>
+                                        <div className="text-[10px] font-mono text-brand-black/40 dark:text-brand-white/40 font-bold tracking-widest mt-1">
+                                            {new Date(session.created_at).toLocaleTimeString('id-ID', {
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            }).replace('.', ':')} WIB
+                                        </div>
                                     </td>
                                     <td className="px-8 py-6">
                                         <div className="flex flex-col space-y-3">

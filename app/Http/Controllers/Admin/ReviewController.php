@@ -15,26 +15,45 @@ class ReviewController extends Controller
      */
     public function index()
     {
-        $query = Review::with('photoEditing')->latest();
+        $year = request('year');
+        $month = request('month');
+        $day = request('day');
         $filter = request('filter', 'all');
 
-        if ($filter === 'daily') {
-            $query->whereDate('created_at', today());
-        } elseif ($filter === 'weekly') {
-            $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
-        } elseif ($filter === 'monthly') {
-            $query->whereMonth('created_at', now()->month)
-                ->whereYear('created_at', now()->year);
-        } elseif ($filter === 'yearly') {
-            $query->whereYear('created_at', now()->year);
+        $query = Review::with('photoEditing');
+
+        // Apply Date Filters
+        if ($year) {
+            $query->whereYear('created_at', $year);
+        }
+        if ($month) {
+            $query->whereMonth('created_at', $month);
+        }
+        if ($day) {
+            $query->whereDay('created_at', $day);
         }
 
-        // Clone query for stats to avoid modifying the main query if we needed to do pagination later, 
-        // though currently we are doing get(). But calculating avg on the filtered set is correct.
-        // We can just use the collection methods if the dataset is small, or clone query for efficiency on large datasets.
-        // For now, let's execute the query to get reviews first.
+        // Retain existing filter logic for time ranges if no specific date is selected or as an alternative
+        // However, user requested LIKE photo editing, which uses specific date dropdowns. 
+        // We will prioritize the specific date filters if present.
+        // If the 'filter' param is passed (legacy/buttons), we can still use it if needed, 
+        // but typically the dropdowns replace the 'daily/weekly/monthly' buttons. 
+        // Let's support both but specific dates take precedence or work alongside.
 
-        $reviewsData = $query->get();
+        if (!$year && !$month && !$day) {
+            if ($filter === 'daily') {
+                $query->whereDate('created_at', today());
+            } elseif ($filter === 'weekly') {
+                $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
+            } elseif ($filter === 'monthly') {
+                $query->whereMonth('created_at', now()->month)
+                    ->whereYear('created_at', now()->year);
+            } elseif ($filter === 'yearly') {
+                $query->whereYear('created_at', now()->year);
+            }
+        }
+
+        $reviewsData = $query->latest()->get();
 
         $reviews = $reviewsData->map(function ($review) {
             return [
@@ -55,11 +74,46 @@ class ReviewController extends Controller
         $averageRating = $reviewsData->avg('rating') ?: 0;
         $totalReviews = $reviewsData->count();
 
+        // Get Available Options for Dropdowns
+        $availableYears = Review::selectRaw('YEAR(created_at) as year')
+            ->distinct()
+            ->orderBy('year', 'desc')
+            ->pluck('year');
+
+        $availableMonths = [];
+        if ($year) {
+            $availableMonths = Review::whereYear('created_at', $year)
+                ->selectRaw('MONTH(created_at) as month')
+                ->distinct()
+                ->orderBy('month', 'desc')
+                ->pluck('month');
+        }
+
+        $availableDays = [];
+        if ($year && $month) {
+            $availableDays = Review::whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->selectRaw('DAY(created_at) as day')
+                ->distinct()
+                ->orderBy('day', 'desc')
+                ->pluck('day');
+        }
+
         return Inertia::render('Admin/Reviews/Index', [
             'reviews' => $reviews,
             'averageRating' => round($averageRating, 1),
             'totalReviews' => $totalReviews,
             'currentFilter' => $filter,
+            'filters' => [
+                'year' => $year,
+                'month' => $month,
+                'day' => $day,
+            ],
+            'options' => [
+                'years' => $availableYears,
+                'months' => $availableMonths,
+                'days' => $availableDays
+            ]
         ]);
     }
 
