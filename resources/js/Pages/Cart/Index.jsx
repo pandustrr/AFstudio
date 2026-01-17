@@ -26,12 +26,21 @@ export default function CartIndex({ carts }) {
 
     const updateQuantity = (id, quantity) => {
         if (quantity < 1) return;
-        router.put(`/cart/${id}`, { quantity }, { preserveScroll: true });
+        const uid = localStorage.getItem('afstudio_cart_uid');
+        router.put(`/cart/${id}`, { quantity, cart_uid: uid }, {
+            headers: { 'X-Cart-UID': uid },
+            preserveScroll: true
+        });
     };
 
     const removeItem = (id) => {
         if (confirm('Are you sure you want to remove this item?')) {
-            router.delete(`/cart/${id}`, { preserveScroll: true });
+            const uid = localStorage.getItem('afstudio_cart_uid');
+            router.delete(`/cart/${id}`, {
+                headers: { 'X-Cart-UID': uid },
+                data: { cart_uid: uid }, // Some servers need matching body
+                preserveScroll: true
+            });
         }
     };
 
@@ -196,7 +205,10 @@ export default function CartIndex({ carts }) {
                                     <button
                                         disabled={selectedItems.length === 0}
                                         className="px-8 py-3 bg-brand-red text-white text-xs md:text-sm font-black uppercase tracking-widest rounded-xl hover:bg-brand-gold hover:text-brand-black transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                                        onClick={() => router.visit('/checkout')}
+                                        onClick={() => {
+                                            const uid = localStorage.getItem('afstudio_cart_uid');
+                                            router.visit(uid ? `/checkout?uid=${uid}` : '/checkout');
+                                        }}
                                     >
                                         Checkout
                                     </button>

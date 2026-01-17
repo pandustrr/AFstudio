@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
+import { Dialog, Transition } from '@headlessui/react';
+import { Fragment } from 'react';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../Contexts/ThemeContext';
-import { ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { ShoppingCartIcon, XMarkIcon, MagnifyingGlassIcon, ClipboardDocumentIcon, CheckIcon } from '@heroicons/react/24/outline';
 
 export default function Navbar() {
     const { theme, toggleTheme } = useTheme();
@@ -18,13 +20,48 @@ export default function Navbar() {
         { name: 'Review', href: '/review' },
     ];
 
+    const [cartUid, setCartUid] = useState(null);
+    const [isCartModalOpen, setIsCartModalOpen] = useState(false);
+    const [inputUid, setInputUid] = useState('');
+    const [isCopied, setIsCopied] = useState(false);
+    const { props } = usePage();
+
     useEffect(() => {
         const handleScroll = () => {
             setScrolled(window.scrollY > 20);
         };
         window.addEventListener('scroll', handleScroll);
+
+        // Get UID for cart link
+        const uid = localStorage.getItem('afstudio_cart_uid');
+        if (uid) {
+            setCartUid(uid);
+            setInputUid(uid);
+        }
+
         return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+    }, [props.flash, isCartModalOpen]); // Re-check on flash changes (adding to cart)
+
+    const handleUidSubmit = (e) => {
+        e.preventDefault();
+        if (inputUid.trim()) {
+            const formattedUid = inputUid.trim().toUpperCase();
+            localStorage.setItem('afstudio_cart_uid', formattedUid);
+            setCartUid(formattedUid);
+            setIsCartModalOpen(false);
+            router.visit(`/cart?uid=${formattedUid}`);
+        }
+    };
+
+    const copyToClipboard = async (text) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy: ', err);
+        }
+    };
 
     return (
         <nav
@@ -65,12 +102,12 @@ export default function Navbar() {
                         })}
 
                         {/* Cart Icon */}
-                        <Link
-                            href="/cart"
+                        <button
+                            onClick={() => setIsCartModalOpen(true)}
                             className="relative text-brand-black/70 dark:text-brand-white/70 hover:text-brand-gold transition-colors duration-300 ml-4 scale-90"
                         >
                             <ShoppingCartIcon className="w-6 h-6" />
-                        </Link>
+                        </button>
 
                         {/* Theme Toggle Button */}
                         <ThemeToggle theme={theme} toggleTheme={toggleTheme} className="ml-2 scale-90" />
@@ -108,16 +145,118 @@ export default function Navbar() {
                     ))}
                     {/* Removed redundant text that might cause overlap issues on scroll */}
                     {/* Mobile Cart Link */}
-                    <Link
-                        href="/cart"
-                        onClick={() => setIsOpen(false)}
+                    <button
+                        onClick={() => {
+                            setIsOpen(false);
+                            setIsCartModalOpen(true);
+                        }}
                         className="text-2xl font-black uppercase tracking-widest text-brand-black dark:text-brand-white hover:text-brand-gold transition-colors flex items-center gap-2"
                     >
                         <ShoppingCartIcon className="w-6 h-6" />
                         CART
-                    </Link>
+                    </button>
                 </div>
             </div>
+            {/* UID Input Modal */}
+            <Transition appear show={isCartModalOpen} as={Fragment}>
+                <Dialog as="div" className="relative z-60" onClose={() => setIsCartModalOpen(false)}>
+                    <Transition.Child
+                        as={Fragment}
+                        enter="ease-out duration-300"
+                        enterFrom="opacity-0"
+                        enterTo="opacity-100"
+                        leave="ease-in duration-200"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
+                    >
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-md" />
+                    </Transition.Child>
+
+                    <div className="fixed inset-0 overflow-y-auto">
+                        <div className="flex min-h-full items-center justify-center p-4 text-center">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-95"
+                            >
+                                <Dialog.Panel className="w-full max-w-sm transform overflow-hidden rounded-[2.5rem] bg-white dark:bg-brand-black border border-white/10 p-8 text-left shadow-2xl transition-all">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <Dialog.Title as="h3" className="text-xl font-black uppercase tracking-tighter italic text-brand-black dark:text-brand-white">
+                                            Buka Keranjang
+                                        </Dialog.Title>
+                                        <button onClick={() => setIsCartModalOpen(false)} className="rounded-full p-1 hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+                                            <XMarkIcon className="w-5 h-5 text-brand-black dark:text-brand-white" />
+                                        </button>
+                                    </div>
+
+                                    <form onSubmit={handleUidSubmit} className="space-y-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
+                                                Masukkan UID Sesi Anda
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    value={inputUid}
+                                                    onChange={(e) => setInputUid(e.target.value)}
+                                                    placeholder="Contoh: PANDU-123456"
+                                                    className="w-full bg-black/5 dark:bg-white/5 border-2 border-transparent focus:border-brand-gold focus:ring-0 rounded-2xl px-5 py-4 pr-12 text-brand-black dark:text-brand-white font-black tracking-widest uppercase placeholder:text-black/20 dark:placeholder:text-white/20 transition-all font-mono"
+                                                    autoFocus
+                                                />
+                                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                                    {inputUid && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => copyToClipboard(inputUid)}
+                                                            className="p-2 rounded-lg text-brand-gold hover:bg-brand-gold/10 transition-all active:scale-90"
+                                                            title="Copy UID"
+                                                        >
+                                                            {isCopied ? <CheckIcon className="w-4 h-4" /> : <ClipboardDocumentIcon className="w-4 h-4" />}
+                                                        </button>
+                                                    )}
+                                                    <MagnifyingGlassIcon className="w-5 h-5 text-brand-black/20 dark:text-brand-white/20 mr-2" />
+                                                </div>
+                                            </div>
+                                            <p className="text-[9px] font-bold text-brand-gold uppercase tracking-tighter">
+                                                *UID dapat ditemukan pada notifikasi setelah tambah ke keranjang
+                                            </p>
+                                        </div>
+
+                                        <div className="flex items-center justify-between gap-4">
+                                            <button
+                                                type="submit"
+                                                className="flex-1 py-4 bg-brand-red text-white font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-all shadow-lg shadow-brand-red/20 flex items-center justify-center gap-2"
+                                            >
+                                                <ShoppingCartIcon className="w-5 h-5" />
+                                                Buka
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (confirm("Hapus sesi keranjang saat ini?")) {
+                                                        localStorage.removeItem('afstudio_cart_uid');
+                                                        setCartUid(null);
+                                                        setInputUid('');
+                                                        setIsCartModalOpen(false);
+                                                        router.visit('/price-list');
+                                                    }
+                                                }}
+                                                className="py-4 px-6 bg-black/5 dark:bg-white/5 text-brand-black/40 dark:text-brand-white/40 font-black uppercase tracking-tighter rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-all text-[10px]"
+                                            >
+                                                Reset
+                                            </button>
+                                        </div>
+                                    </form>
+                                </Dialog.Panel>
+                            </Transition.Child>
+                        </div>
+                    </div>
+                </Dialog>
+            </Transition>
         </nav>
     );
 }

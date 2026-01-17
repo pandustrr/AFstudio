@@ -13,14 +13,21 @@ use Inertia\Inertia;
 
 class BookingController extends Controller
 {
-    public function create()
+    public function create(Request $request)
     {
-        // Get cart items for the user
-        // Ideally we should pass selected IDs from the cart page, but for now let's assume all items in cart?
-        // Or better yet, receive selected items from the request if possible, or just fetch all cart items.
-        // The requirement implies clicking checkout from cart.
-        
-        $carts = Auth::user()->carts()->with(['package.subCategory.category'])->get();
+        $uid = $request->header('X-Cart-UID') ?? $request->query('uid');
+
+        $query = Cart::with(['package.subCategory.category']);
+
+        if (Auth::check()) {
+            $query->where('user_id', Auth::id());
+        } elseif ($uid) {
+            $query->where('cart_uid', $uid);
+        } else {
+            return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
+        }
+
+        $carts = $query->get();
 
         // Filter out items where package might be missing (e.g. deleted)
         $carts = $carts->filter(function ($cart) {
@@ -48,8 +55,18 @@ class BookingController extends Controller
         try {
             DB::beginTransaction();
 
-            $user = Auth::user();
-            $carts = $user->carts()->with('package')->get();
+            $uid = $request->header('X-Cart-UID') ?? $request->input('cart_uid');
+
+            $query = Cart::with('package');
+            if (Auth::check()) {
+                $query->where('user_id', Auth::id());
+            } elseif ($uid) {
+                $query->where('cart_uid', $uid);
+            } else {
+                throw new \Exception('Identity not found (UID or Login required).');
+            }
+
+            $carts = $query->get();
 
             // Filter out invalid items (orphan carts)
             $validCarts = $carts->filter(fn($c) => $c->package !== null);
@@ -72,15 +89,16 @@ class BookingController extends Controller
                 // Logic: Min(100k, Total) if 25% < 100k? 
                 // Requirement: Min 100k. But if Total < 100k?
                 // Let's assume Total matches. If Total < 100k, DP = Total.
-                 $calculatedDP = 100000;
+                $calculatedDP = 100000;
             }
-            
+
             if ($calculatedDP > $totalPrice) {
                 $calculatedDP = $totalPrice;
             }
 
             $booking = Booking::create([
-                'user_id' => $user->id,
+                'user_id' => Auth::id(),
+                'guest_uid' => $uid,
                 'name' => $request->name,
                 'phone' => $request->phone,
                 'booking_date' => now(), // Use current timestamp for the transaction date
@@ -107,12 +125,16 @@ class BookingController extends Controller
             }
 
             // Clear Cart (All, including orphans to clean up)
-            $user->carts()->delete();
+            $query->delete();
 
             DB::commit();
 
-            return redirect()->route('booking.show', $booking->booking_code)->with('success', 'Booking created successfully!');
+            $redirectUrl = route('booking.show', $booking->booking_code);
+            if ($uid && !Auth::check()) {
+                $redirectUrl .= '?uid=' . $uid;
+            }
 
+            return redirect($redirectUrl)->with('success', 'Booking created successfully!');
         } catch (\Exception $e) {
             DB::rollback();
             // Log the error for debugging
@@ -125,9 +147,20 @@ class BookingController extends Controller
     {
         $booking = Booking::with(['items.package.subCategory'])->where('booking_code', $code)->firstOrFail();
 
+        $uid = request()->header('X-Cart-UID') ?? request()->query('uid');
+
         // Ensure user owns this booking
-        if ($booking->user_id !== Auth::id()) {
-            abort(403);
+        if ($booking->user_id) {
+            if ($booking->user_id !== Auth::id()) {
+                abort(403);
+            }
+        } elseif ($booking->guest_uid) {
+            if ($booking->guest_uid !== $uid) {
+                // Allow if code is shareable? Requirement says UID is used to see it.
+                // But usually booking_code is enough if it's unique and secret.
+                // Let's stick to UID if guest.
+                abort(403);
+            }
         }
 
         return Inertia::render('Checkout/Show', [
