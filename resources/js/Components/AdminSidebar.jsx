@@ -10,11 +10,11 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
 
     const menuItems = [
         { label: 'Dashboard', href: '/admin/dashboard', icon: ChartBarIcon },
-        { label: 'Reservations', href: '/admin/bookings', icon: CalendarDaysIcon },
         { label: 'About Page', href: '/admin/about', icon: BuildingOfficeIcon },
+        { label: 'Pricelist', href: '/admin/pricelist', icon: BanknotesIcon },
+        { label: 'Reservations', href: '/admin/bookings', icon: CalendarDaysIcon },
         { label: 'Request Edit', href: '/admin/photo-editing', icon: CameraIcon },
         { label: 'Reviews', href: '/admin/reviews', icon: StarIcon },
-        { label: 'Pricelist', href: '/admin/pricelist', icon: BanknotesIcon },
     ];
 
     return (

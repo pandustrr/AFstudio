@@ -13,12 +13,22 @@ class CartController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $carts = Auth::user()->carts()->with(['package.subCategory.category'])->latest()->get();
+        $uid = $request->header('X-Cart-UID') ?? $request->input('uid') ?? $request->query('uid') ?? $request->input('cart_uid') ?? $request->query('cart_uid');
+
+        $query = Cart::with(['package.subCategory.category'])->latest();
+
+        if (Auth::check()) {
+            $query->where('user_id', Auth::id());
+        } elseif ($uid) {
+            $query->where('cart_uid', $uid);
+        } else {
+            return Inertia::render('Cart/Index', ['carts' => []]);
+        }
 
         return Inertia::render('Cart/Index', [
-            'carts' => $carts,
+            'carts' => $query->get(),
         ]);
     }
 
@@ -37,22 +47,22 @@ class CartController extends Controller
 
         $package = \App\Models\PricelistPackage::findOrFail($request->pricelist_package_id);
         $duration = $package->duration ?? 60;
-        
+
         $startTime = \Carbon\Carbon::parse($request->scheduled_date . ' ' . $request->start_time);
         $endTime = $startTime->copy()->addMinutes($duration);
-        
+
         $assignedRoom = $request->room_id;
-        
+
         // If room_id provided, validate only that room
         if ($assignedRoom) {
             $isRoomTaken = \App\Models\BookingItem::whereHas('booking', function ($q) {
-                    $q->whereIn('status', ['pending', 'confirmed', 'completed']);
-                })
+                $q->whereIn('status', ['pending', 'confirmed', 'completed']);
+            })
                 ->where('scheduled_date', $request->scheduled_date)
                 ->where('room_id', $assignedRoom)
                 ->where(function ($query) use ($request, $endTime) {
-                     $query->where('start_time', '<', $endTime->format('H:i:s'))
-                           ->where('end_time', '>', $request->start_time);
+                    $query->where('start_time', '<', $endTime->format('H:i:s'))
+                        ->where('end_time', '>', $request->start_time);
                 })
                 ->exists();
 
@@ -63,13 +73,13 @@ class CartController extends Controller
             // Smart Slotting Fallback
             for ($roomId = 1; $roomId <= 3; $roomId++) {
                 $isRoomTaken = \App\Models\BookingItem::whereHas('booking', function ($q) {
-                        $q->whereIn('status', ['pending', 'confirmed', 'completed']);
-                    })
+                    $q->whereIn('status', ['pending', 'confirmed', 'completed']);
+                })
                     ->where('scheduled_date', $request->scheduled_date)
                     ->where('room_id', $roomId)
                     ->where(function ($query) use ($request, $endTime) {
-                         $query->where('start_time', '<', $endTime->format('H:i:s'))
-                               ->where('end_time', '>', $request->start_time);
+                        $query->where('start_time', '<', $endTime->format('H:i:s'))
+                            ->where('end_time', '>', $request->start_time);
                     })
                     ->exists();
 
@@ -79,13 +89,16 @@ class CartController extends Controller
                 }
             }
         }
-        
+
         if (!$assignedRoom) {
-             return redirect()->back()->with('error', 'Sorry, no rooms are available at this time. Please select another slot.');
+            return redirect()->back()->with('error', 'Sorry, no rooms are available at this time. Please select another slot.');
         }
+
+        $uid = $request->header('X-Cart-UID') ?? $request->input('cart_uid') ?? $request->input('uid');
 
         Cart::create([
             'user_id' => Auth::id(),
+            'cart_uid' => $uid,
             'pricelist_package_id' => $request->pricelist_package_id,
             'quantity' => 1,
             'scheduled_date' => $request->scheduled_date,
@@ -106,8 +119,17 @@ class CartController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $cart = Cart::where('user_id', Auth::id())->where('id', $id)->firstOrFail();
-        
+        $uid = $request->header('X-Cart-UID') ?? $request->input('cart_uid') ?? $request->input('uid');
+
+        $query = Cart::query();
+        if (Auth::check()) {
+            $query->where('user_id', Auth::id());
+        } else {
+            $query->where('cart_uid', $uid);
+        }
+
+        $cart = $query->where('id', $id)->firstOrFail();
+
         $cart->update([
             'quantity' => $request->quantity
         ]);
@@ -118,9 +140,18 @@ class CartController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
-        $cart = Cart::where('user_id', Auth::id())->where('id', $id)->firstOrFail();
+        $uid = $request->header('X-Cart-UID') ?? $request->input('cart_uid') ?? $request->query('cart_uid') ?? $request->input('uid') ?? $request->query('uid');
+
+        $query = Cart::query();
+        if (Auth::check()) {
+            $query->where('user_id', Auth::id());
+        } else {
+            $query->where('cart_uid', $uid);
+        }
+
+        $cart = $query->where('id', $id)->firstOrFail();
         $cart->delete();
 
         return redirect()->back()->with('success', 'Item removed from cart.');
