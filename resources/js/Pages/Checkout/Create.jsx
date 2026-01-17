@@ -12,6 +12,7 @@ export default function CheckoutCreate({ carts = [] }) {
         phone: '',
         location: '',
         notes: '',
+        cart_uid: localStorage.getItem('afstudio_cart_uid') || '',
     });
 
     const total = Array.isArray(carts)
@@ -30,6 +31,9 @@ export default function CheckoutCreate({ carts = [] }) {
         e.preventDefault();
         console.log("Submitting booking form...", data);
         post('/checkout', {
+            headers: {
+                'X-Cart-UID': data.cart_uid
+            },
             onError: (errors) => {
                 console.error("Form submission errors:", errors);
                 alert("Submission failed. Check console or fields.");

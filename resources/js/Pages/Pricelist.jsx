@@ -160,24 +160,13 @@ export default function Pricelist({ categories }) {
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={() => openScheduleModal(pkg)}
-                                                className={`p-3.5 md:p-4 rounded-2xl md:rounded-xl flex items-center justify-center transition-all ${pkg.is_popular
-                                                    ? 'bg-brand-red text-white hover:bg-brand-gold hover:text-brand-black shadow-lg shadow-brand-red/20'
-                                                    : 'bg-black/5 dark:bg-white/10 text-brand-black dark:text-brand-white hover:bg-brand-black hover:text-white dark:hover:bg-brand-gold dark:hover:text-brand-black shadow-sm'
-                                                    }`}
-                                                title="Add to Cart"
-                                            >
-                                                <ShoppingCartIcon className="w-5 h-5" />
-                                            </button>
-                                            <a
-                                                href={`https://wa.me/6281230487469?text=Halo AF Studio! Saya tertarik dengan paket ${pkg.name} (${sub.name} - ${activeCategory.name}).`}
-                                                target="_blank"
                                                 className={`block w-full py-3.5 md:py-4 rounded-2xl md:rounded-xl text-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all ${pkg.is_popular
                                                     ? 'bg-brand-red text-white hover:bg-brand-gold hover:text-brand-black shadow-lg shadow-brand-red/20'
                                                     : 'bg-black/5 dark:bg-white/10 text-brand-black dark:text-brand-white hover:bg-brand-black hover:text-white dark:hover:bg-brand-gold dark:hover:text-brand-black shadow-sm'
                                                     }`}
                                             >
-                                                Pilih Paket
-                                            </a>
+                                                Lihat Detail
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
