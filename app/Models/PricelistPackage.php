@@ -8,6 +8,16 @@ class PricelistPackage extends Model
 {
     protected $guarded = ['id'];
 
+    protected $fillable = [
+        'sub_category_id',
+        'name',
+        'price_display',
+        'price_numeric',
+        'is_popular',
+        'features',
+        'duration',
+    ];
+
     protected $casts = [
         'features' => 'array',
         'is_popular' => 'boolean',

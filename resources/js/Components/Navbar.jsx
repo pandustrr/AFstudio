@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../Contexts/ThemeContext';
+import { ShoppingCartIcon } from '@heroicons/react/24/outline';
 
 export default function Navbar() {
     const { theme, toggleTheme } = useTheme();
@@ -63,6 +64,14 @@ export default function Navbar() {
                             );
                         })}
 
+                        {/* Cart Icon */}
+                        <Link
+                            href="/cart"
+                            className="relative text-brand-black/70 dark:text-brand-white/70 hover:text-brand-gold transition-colors duration-300 ml-4 scale-90"
+                        >
+                            <ShoppingCartIcon className="w-6 h-6" />
+                        </Link>
+
                         {/* Theme Toggle Button */}
                         <ThemeToggle theme={theme} toggleTheme={toggleTheme} className="ml-2 scale-90" />
                     </div>
@@ -98,6 +107,15 @@ export default function Navbar() {
                         </Link>
                     ))}
                     {/* Removed redundant text that might cause overlap issues on scroll */}
+                    {/* Mobile Cart Link */}
+                    <Link
+                        href="/cart"
+                        onClick={() => setIsOpen(false)}
+                        className="text-2xl font-black uppercase tracking-widest text-brand-black dark:text-brand-white hover:text-brand-gold transition-colors flex items-center gap-2"
+                    >
+                        <ShoppingCartIcon className="w-6 h-6" />
+                        CART
+                    </Link>
                 </div>
             </div>
         </nav>
