@@ -1,0 +1,289 @@
+import React, { useState } from 'react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
+import AdminLayout from '@/Layouts/AdminLayout';
+import { StarIcon as StarOutlineIcon, CalendarIcon, ChevronDownIcon } from '@heroicons/react/24/outline'; // Added ChevronDownIcon
+import { StarIcon } from '@heroicons/react/24/solid';
+import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
+
+export default function Index({ reviews, averageRating, totalReviews, filters, options }) { // Updated props
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [selectedReviewId, setSelectedReviewId] = useState(null);
+    const { delete: destroy, processing } = useForm();
+
+    const monthNames = [
+        "", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+
+    const openDeleteModal = (id) => {
+        setSelectedReviewId(id);
+        setDeleteModalOpen(true);
+    };
+
+    const handleDelete = () => {
+        destroy(`/admin/reviews/${selectedReviewId}`, {
+            onSuccess: () => setDeleteModalOpen(false),
+            preserveScroll: true,
+        });
+    };
+
+    const [localReviews, setLocalReviews] = useState(reviews);
+
+    React.useEffect(() => {
+        setLocalReviews(reviews);
+    }, [reviews]);
+
+    const handleToggle = (reviewId) => {
+        // Optimistic update
+        const updatedReviews = localReviews.map(r =>
+            r.id === reviewId ? { ...r, is_visible: !r.is_visible } : r
+        );
+        setLocalReviews(updatedReviews);
+
+        router.patch(`/admin/reviews/${reviewId}/toggle`, {}, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => { },
+            onError: () => setLocalReviews(reviews)
+        });
+    };
+
+    const handleFilterChange = (type, value) => {
+        const newFilters = { ...filters, [type]: value };
+
+        if (type === 'year') {
+            newFilters.month = '';
+            newFilters.day = '';
+        } else if (type === 'month') {
+            newFilters.day = '';
+        }
+
+        router.get('/admin/reviews', newFilters, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
+    return (
+        <AdminLayout>
+            <Head title="Reviews" />
+
+            <div className="p-6 lg:p-8">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+                    <div>
+                        <div className="flex items-center space-x-3 mb-2">
+                            <StarOutlineIcon className="w-8 h-8 text-brand-black dark:text-brand-white" />
+                            <h1 className="text-3xl font-black uppercase tracking-tighter text-brand-black dark:text-brand-white">
+                                Reviews
+                            </h1>
+                        </div>
+                        <p className="text-sm text-brand-black/60 dark:text-brand-white/60">
+                            Ulasan dari customer untuk kualitas layanan Anda.
+                        </p>
+                    </div>
+
+                    {/* Stats Card */}
+                    <div className="flex bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 shadow-sm items-center gap-6">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Rata-rata Rating</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-2xl font-black text-brand-black dark:text-brand-white">{averageRating}</span>
+                                <div className="flex">
+                                    {[1, 2, 3, 4, 5].map((i) => (
+                                        <StarIcon
+                                            key={i}
+                                            className={`w-4 h-4 ${i <= Math.round(averageRating) ? 'text-yellow-400 fill-yellow-400' : 'text-black/10 dark:text-white/10'}`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="w-px h-10 bg-black/5 dark:bg-white/5" />
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Total Reviews</span>
+                            <span className="text-2xl font-black text-brand-black dark:text-brand-white">{totalReviews}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Filter Controls - Cascading Date Dropdowns */}
+                <div className="flex flex-wrap gap-2 mb-8">
+                    <div className="flex items-center gap-1 p-1.5 bg-white dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 w-fit shadow-sm">
+                        <div className="relative group">
+                            <select
+                                value={filters.year || ''}
+                                onChange={(e) => handleFilterChange('year', e.target.value)}
+                                className="appearance-none bg-transparent border-0 rounded-lg pl-3 pr-8 py-2 text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                            >
+                                <option value="" className="bg-white dark:bg-brand-black">Tahun</option>
+                                {options.years.map((year) => (
+                                    <option key={year} value={year} className="bg-white dark:bg-brand-black">{year}</option>
+                                ))}
+                            </select>
+                            <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
+                        </div>
+
+                        <div className="w-px h-4 bg-black/10 dark:bg-white/10"></div>
+
+                        <div className="relative group">
+                            <select
+                                value={filters.month || ''}
+                                onChange={(e) => handleFilterChange('month', e.target.value)}
+                                disabled={!filters.year}
+                                className="appearance-none bg-transparent border-0 rounded-lg pl-3 pr-8 py-2 text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors disabled:opacity-30"
+                            >
+                                <option value="" className="bg-white dark:bg-brand-black">Bulan</option>
+                                {options.months.map((month) => (
+                                    <option key={month} value={month} className="bg-white dark:bg-brand-black">{monthNames[month]}</option>
+                                ))}
+                            </select>
+                            <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
+                        </div>
+
+                        <div className="w-px h-4 bg-black/10 dark:bg-white/10"></div>
+
+                        <div className="relative group">
+                            <select
+                                value={filters.day || ''}
+                                onChange={(e) => handleFilterChange('day', e.target.value)}
+                                disabled={!filters.month}
+                                className="appearance-none bg-transparent border-0 rounded-lg pl-3 pr-8 py-2 text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors disabled:opacity-30"
+                            >
+                                <option value="" className="bg-white dark:bg-brand-black">Tgl</option>
+                                {options.days.map((day) => (
+                                    <option key={day} value={day} className="bg-white dark:bg-brand-black">{day}</option>
+                                ))}
+                            </select>
+                            <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Reviews List */}
+                {localReviews.length === 0 ? (
+                    <div className="bg-white dark:bg-brand-black/50 rounded-2xl border border-black/5 dark:border-white/5 p-12 text-center">
+                        <div className="flex justify-center mb-4">
+                            <StarIcon className="w-16 h-16 text-brand-black/20 dark:text-brand-white/20" />
+                        </div>
+                        <p className="text-brand-black/40 dark:text-brand-white/40 font-bold">
+                            Belum ada review
+                        </p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {localReviews.map((review) => (
+                            <div
+                                key={review.id}
+                                className="bg-white dark:bg-brand-black/50 rounded-xl border border-black/5 dark:border-white/5 p-4 hover:shadow-md transition-all"
+                            >
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                        {/* Customer Info */}
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-8 h-8 bg-brand-red/10 rounded-full flex items-center justify-center shrink-0">
+                                                <span className="text-brand-red font-black text-xs">
+                                                    {review.session.customer_name.charAt(0).toUpperCase()}
+                                                </span>
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h3 className="font-black text-sm text-brand-black dark:text-brand-white truncate">
+                                                    {review.session.customer_name}
+                                                </h3>
+                                                <p className="text-[10px] text-brand-black/40 dark:text-brand-white/40 truncate">
+                                                    UID: {review.session.uid}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Rating */}
+                                        {review.rating && (
+                                            <div className="flex items-center gap-1 mb-2">
+                                                {[...Array(5)].map((_, i) => (
+                                                    <StarIcon
+                                                        key={i}
+                                                        className={`w-4 h-4 ${i < review.rating
+                                                            ? 'text-yellow-400 fill-yellow-400'
+                                                            : 'text-brand-black/10 dark:text-brand-white/10'
+                                                            }`}
+                                                    />
+                                                ))}
+                                                <span className="ml-1 text-xs font-bold text-brand-black/60 dark:text-brand-white/60">
+                                                    {review.rating}/5
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* Review Text */}
+                                        <p className="text-sm text-brand-black/80 dark:text-brand-white/80 leading-relaxed mb-2 line-clamp-2">
+                                            {review.review_text}
+                                        </p>
+
+                                        {/* Review Photo Preview */}
+                                        {review.photo_url && (
+                                            <div className="mb-2">
+                                                <img
+                                                    src={review.photo_url}
+                                                    alt="Foto Customer"
+                                                    className="w-16 h-16 object-cover rounded-lg border border-black/5 dark:border-white/5"
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Tampilkan Toggle */}
+                                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-black/5 dark:border-white/5">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
+                                                Tampilkan
+                                            </span>
+                                            <button
+                                                onClick={() => handleToggle(review.id)}
+                                                className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors focus:outline-none ${review.is_visible ? 'bg-green-500' : 'bg-gray-200 dark:bg-white/10'
+                                                    }`}
+                                            >
+                                                <span
+                                                    className={`${review.is_visible ? 'translate-x-4' : 'translate-x-1'
+                                                        } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
+                                                />
+                                            </button>
+                                        </div>
+
+                                        {/* Date */}
+                                        <p className="text-xs text-brand-black/40 dark:text-brand-white/40 flex items-center gap-1 mt-2">
+                                            <CalendarIcon className="w-3 h-3" />
+                                            <span>{review.created_at}</span>
+                                        </p>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="flex flex-col gap-2">
+                                        <Link
+                                            href={`/admin/reviews/${review.id}`}
+                                            className="px-3 py-1.5 bg-black/5 dark:bg-white/5 text-brand-black/60 dark:text-brand-white/60 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-black hover:text-white dark:hover:bg-brand-gold transition-all text-center"
+                                        >
+                                            Detail
+                                        </Link>
+                                        <button
+                                            onClick={() => openDeleteModal(review.id)}
+                                            className="px-3 py-1.5 bg-red-500/10 text-red-500 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all text-center"
+                                        >
+                                            Hapus
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                <DeleteConfirmModal
+                    isOpen={deleteModalOpen}
+                    onClose={() => setDeleteModalOpen(false)}
+                    onConfirm={handleDelete}
+                    title="Hapus Review"
+                    message="Review ini akan dihapus permanen. Lanjutkan?"
+                    processing={processing}
+                />
+            </div>
+        </AdminLayout>
+    );
+}

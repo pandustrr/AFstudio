@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-red: #7C9A8E;
+  --color-brand-white: #FFFFFF;
+  --color-brand-black: #2F2F2F;
+  --color-brand-gold: #C9A27E;
+}
+
+/* Enable class-based dark mode */
+@variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --bg-primary: #FAFAFA;
+    --text-primary: #2F2F2F;
+    --text-secondary: rgba(47, 47, 47, 0.4);
+    --border-color: rgba(47, 47, 47, 0.05);
+  }
+
+  .dark {
+    --bg-primary: #2F2F2F;
+    --text-primary: #F3EFEA;
+    --text-secondary: rgba(243, 239, 234, 0.4);
+    --border-color: rgba(243, 239, 234, 0.05);
+  }
+
+  body {
+    @apply transition-colors duration-300;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+    20%, 40%, 60%, 80% { transform: translateX(4px); }
+  }
+
+  .animate-shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+  }
+}
