@@ -33,6 +33,20 @@ class PhotoSelectorController extends Controller
             return count($request->selected_photos ?? []);
         });
 
+        // Fetch associated booking info (if any)
+        $booking = \App\Models\Booking::where('guest_uid', $uid)->with('items.package')->first();
+        $bookingDetail = null;
+        if ($booking && $booking->items->isNotEmpty()) {
+            $item = $booking->items->first();
+            $bookingDetail = [
+                'package_name' => $item->package->name,
+                'scheduled_date' => $item->scheduled_date, // Raw string YYYY-MM-DD
+                'start_time' => $item->start_time,
+                'end_time' => $item->end_time,
+                'room_id' => $item->room_id,
+            ];
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -42,6 +56,7 @@ class PhotoSelectorController extends Controller
                 'has_edited' => !empty($session->edited_folder_id),
                 'status' => $session->status,
                 'requested_count' => $requestedCount,
+                'booking' => $bookingDetail,
             ]
         ]);
     }

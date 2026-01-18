@@ -64,6 +64,23 @@ export default function Index({ reviews, averageRating, totalReviews, filters, o
         });
     };
 
+    const setToday = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1;
+        const day = today.getDate();
+
+        router.get('/admin/reviews', {
+            ...filters,
+            year: year.toString(),
+            month: month.toString(),
+            day: day.toString(),
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
     return (
         <AdminLayout>
             <Head title="Reviews" />
@@ -158,6 +175,13 @@ export default function Index({ reviews, averageRating, totalReviews, filters, o
                             <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
                         </div>
                     </div>
+
+                    <button
+                        onClick={setToday}
+                        className="px-4 py-2 bg-brand-gold text-brand-black rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-brand-gold/90 transition-all shrink-0"
+                    >
+                        Hari Ini
+                    </button>
                 </div>
 
                 {/* Reviews List */}

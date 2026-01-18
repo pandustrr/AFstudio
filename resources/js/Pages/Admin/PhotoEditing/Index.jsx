@@ -46,6 +46,23 @@ export default function Index({ sessions, filters, options }) {
         });
     };
 
+    const setToday = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1;
+        const day = today.getDate();
+
+        router.get('/admin/photo-editing', {
+            ...filters,
+            year: year.toString(),
+            month: month.toString(),
+            day: day.toString(),
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
     const handleDelete = () => {
         if (!deleteSession) return;
 
@@ -64,7 +81,7 @@ export default function Index({ sessions, filters, options }) {
             <Head title="Manage Requests" />
 
             <div className="pt-12 lg:pt-20 pb-20 px-6 max-w-7xl mx-auto">
-                <div className="flex flex-col gap-8 mb-12">
+                <div className="flex flex-col gap-5 mb-6">
                     <div>
                         <h1 className="text-4xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-2">Daftar Request</h1>
                         <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest">Kelola akses gallery dan request user.</p>
@@ -122,21 +139,28 @@ export default function Index({ sessions, filters, options }) {
                             </div>
                         </div>
 
-                        {/* Status Filters */}
-                        <div className="flex flex-wrap gap-2">
-                            {statuses.map((status) => (
-                                <button
-                                    key={status.id}
-                                    onClick={() => handleFilter('status', status.id)}
-                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${filters.status === status.id
-                                        ? 'bg-brand-black text-white dark:bg-brand-gold dark:text-brand-black shadow-lg scale-105'
-                                        : 'bg-black/5 dark:bg-white/5 text-brand-black/40 dark:text-brand-white/40 hover:bg-black/10 dark:hover:bg-white/10'
-                                        }`}
-                                >
-                                    {status.label}
-                                </button>
-                            ))}
-                        </div>
+                        <button
+                            onClick={setToday}
+                            className="px-4 py-2 bg-brand-gold text-brand-black rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-brand-gold/90 transition-all shrink-0"
+                        >
+                            Hari Ini
+                        </button>
+                    </div>
+
+                    {/* Status Filters */}
+                    <div className="flex flex-wrap gap-2">
+                        {statuses.map((status) => (
+                            <button
+                                key={status.id}
+                                onClick={() => handleFilter('status', status.id)}
+                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${filters.status === status.id
+                                    ? 'bg-brand-black text-white dark:bg-brand-gold dark:text-brand-black shadow-lg scale-105'
+                                    : 'bg-black/5 dark:bg-white/5 text-brand-black/40 dark:text-brand-white/40 hover:bg-black/10 dark:hover:bg-white/10'
+                                    }`}
+                            >
+                                {status.label}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
@@ -160,11 +184,14 @@ export default function Index({ sessions, filters, options }) {
                                     </td>
                                     <td className="px-8 py-6">
                                         <div className="text-xs font-bold text-brand-black dark:text-brand-white">
-                                            {new Date(session.created_at).toLocaleDateString('id-ID', {
-                                                day: 'numeric',
-                                                month: 'long',
-                                                year: 'numeric'
-                                            })}
+                                            {(() => {
+                                                const dObj = new Date(session.created_at);
+                                                return dObj.toLocaleDateString('id-ID', {
+                                                    day: 'numeric',
+                                                    month: 'long',
+                                                    year: 'numeric'
+                                                });
+                                            })()}
                                         </div>
                                         <div className="text-[10px] font-mono text-brand-black/40 dark:text-brand-white/40 font-bold tracking-widest mt-1">
                                             {new Date(session.created_at).toLocaleTimeString('id-ID', {
@@ -248,31 +275,33 @@ export default function Index({ sessions, filters, options }) {
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* View Modal */}
-            <ViewModal
-                session={viewSession}
-                onClose={() => setViewSession(null)}
-            />
-
-            {/* Modal Edit Section */}
-            {editSession && (
-                <EditModal
-                    session={editSession}
-                    onClose={() => setEditSession(null)}
+                {/* View Modal */}
+                <ViewModal
+                    session={viewSession}
+                    onClose={() => setViewSession(null)}
                 />
-            )}
 
-            {/* Delete Confirmation Modal */}
-            <DeleteConfirmModal
-                isOpen={!!deleteSession}
-                onClose={() => setDeleteSession(null)}
-                onConfirm={handleDelete}
-                processing={isDeleting}
-                title="Hapus Request"
-                message={`Apakah Anda yakin ingin menghapus request dari ${deleteSession?.customer_name}? Data foto dan seleksi akan ikut terhapus.`}
-            />
+                {/* Modal Edit Section */}
+                {
+                    editSession && (
+                        <EditModal
+                            session={editSession}
+                            onClose={() => setEditSession(null)}
+                        />
+                    )
+                }
+
+                {/* Delete Confirmation Modal */}
+                <DeleteConfirmModal
+                    isOpen={!!deleteSession}
+                    onClose={() => setDeleteSession(null)}
+                    onConfirm={handleDelete}
+                    processing={isDeleting}
+                    title="Hapus Request"
+                    message={`Apakah Anda yakin ingin menghapus request dari ${deleteSession?.customer_name}? Data foto dan seleksi akan ikut terhapus.`}
+                />
+            </div>
         </AdminLayout>
     );
 }
