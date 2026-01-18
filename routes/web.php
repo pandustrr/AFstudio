@@ -40,9 +40,11 @@ Route::prefix('api/photo-selector')->group(function () {
     Route::post('/sessions/{uid}/review', [PhotoSelectorController::class, 'storeReview']);
 });
 
-Route::get('/editor/login', function () {
-    return Inertia::render('Editor/Login');
-})->name('editor.login');
+Route::prefix('editor')->group(function () {
+    Route::get('/login', [\App\Http\Controllers\AuthController::class, 'showLogin'])->name('editor.login');
+    Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login']);
+    Route::post('/logout', [\App\Http\Controllers\AuthController::class, 'logout'])->name('editor.logout');
+});
 
 // Admin Routes
 Route::prefix('admin')->group(function () {
@@ -50,7 +52,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login']);
     Route::post('/logout', [\App\Http\Controllers\AuthController::class, 'logout'])->name('logout');
 
-    Route::middleware(['auth'])->group(function () {
+    Route::middleware(['auth:web,editor'])->group(function () {
         // Shared Routes (Admin & Editor)
         Route::middleware(['role:editor'])->group(function () {
             Route::get('/dashboard', function () {

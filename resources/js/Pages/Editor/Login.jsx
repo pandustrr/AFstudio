@@ -9,11 +9,12 @@ export default function EditorLogin() {
         username: '',
         password: '',
         remember: false,
+        type: 'editor',
     });
 
     const submit = (e) => {
         e.preventDefault();
-        post('/admin/login', {
+        post('/editor/login', {
             onFinish: () => reset('password'),
         });
     };

@@ -6,8 +6,11 @@ export default function Dashboard() {
     const { auth } = usePage().props;
 
     const handleLogout = () => {
-        router.post('/admin/logout', {}, {
-            onSuccess: () => window.location.href = '/admin/login',
+        const logoutUrl = auth.user.role === 'editor' ? '/editor/logout' : '/admin/logout';
+        const loginUrl = auth.user.role === 'editor' ? '/editor/login' : '/admin/login';
+
+        router.post(logoutUrl, {}, {
+            onSuccess: () => window.location.href = loginUrl,
             onError: () => window.location.reload()
         });
     };

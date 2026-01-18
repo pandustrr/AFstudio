@@ -71,10 +71,10 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                         <ThemeToggle theme={theme} toggleTheme={toggleTheme} className="scale-75 origin-right" />
                     </div>
                     <Link
-                        href="/admin/logout"
+                        href={user.role === 'editor' ? "/editor/logout" : "/admin/logout"}
                         method="post"
                         as="button"
-                        onSuccess={() => window.location.href = '/admin/login'}
+                        onSuccess={() => window.location.href = user.role === 'editor' ? '/editor/login' : '/admin/login'}
                         onError={() => window.location.reload()}
                         className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-black uppercase text-[9px] tracking-widest text-brand-red hover:bg-brand-red/5 transition-all text-left"
                     >
