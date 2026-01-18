@@ -1,3 +1,4 @@
+
 <?php
 
 use Illuminate\Database\Migrations\Migration;
@@ -11,8 +12,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('pricelist_packages', function (Blueprint $table) {
-            $table->integer('duration')->after('price_numeric')->default(60)->comment('Duration in minutes');
+        Schema::table('users', function (Blueprint $table) {
+            $table->enum('role', ['admin', 'editor'])->default('admin')->after('password');
         });
     }
 
@@ -21,8 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('pricelist_packages', function (Blueprint $table) {
-            //
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('role');
         });
     }
 };

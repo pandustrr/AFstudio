@@ -9,45 +9,71 @@ import {
     ClockIcon,
     HomeIcon,
     CalendarDaysIcon,
-    XMarkIcon
+    XMarkIcon,
+    ChevronDownIcon
 } from '@heroicons/react/24/outline';
 
-export default function BookingIndex({ bookingItems, filters }) {
+export default function BookingIndex({ bookingItems, filters, options, rooms: initialRooms }) {
     const [search, setSearch] = useState(filters?.search || '');
-    const [status, setStatus] = useState(filters?.status || '');
-    const [roomId, setRoomId] = useState(filters?.room_id || '');
-    const [date, setDate] = useState(filters?.date || '');
+
+    const rooms = useMemo(() => [
+        { id: '', label: 'All Rooms' },
+        ...(initialRooms || [])
+    ], [initialRooms]);
+
+    const monthNames = [
+        "", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
 
     const handleSearch = (e) => {
         e.preventDefault();
-        router.get('/admin/bookings', { search, status, room_id: roomId, date }, { preserveState: true });
+        router.get('/admin/bookings', { ...filters, search }, { preserveState: true });
     };
 
-    const handleFilterChange = (newStatus) => {
-        setStatus(newStatus);
-        router.get('/admin/bookings', { search, status: newStatus, room_id: roomId, date }, { preserveState: true });
+    const handleFilter = (type, value) => {
+        const newFilters = { ...filters, [type]: value };
+
+        if (type === 'year') {
+            newFilters.month = '';
+            newFilters.day = '';
+            newFilters.status = 'all';
+        } else if (type === 'month') {
+            newFilters.day = '';
+            newFilters.status = 'all';
+        } else if (type === 'day') {
+            newFilters.status = 'all';
+        }
+
+        router.get('/admin/bookings', newFilters, {
+            preserveState: true,
+            preserveScroll: true
+        });
     };
 
     const handleRoomChange = (newRoomId) => {
-        setRoomId(newRoomId);
-        router.get('/admin/bookings', { search, status, room_id: newRoomId, date }, { preserveState: true });
-    };
-
-    const handleDateChange = (newDate) => {
-        setDate(newDate);
-        router.get('/admin/bookings', { search, status, room_id: roomId, date: newDate }, { preserveState: true });
+        router.get('/admin/bookings', { ...filters, room_id: newRoomId }, { preserveState: true });
     };
 
     const setToday = () => {
-        const today = new Date().toISOString().split('T')[0];
-        handleDateChange(today);
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1;
+        const day = today.getDate();
+
+        router.get('/admin/bookings', {
+            ...filters,
+            year: year.toString(),
+            month: month.toString(),
+            day: day.toString(),
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
     };
 
     const resetFilters = () => {
         setSearch('');
-        setStatus('');
-        setRoomId('');
-        setDate('');
         router.get('/admin/bookings', {}, { preserveState: false });
     };
 
@@ -72,51 +98,61 @@ export default function BookingIndex({ bookingItems, filters }) {
         }, {});
     }, [bookingItems?.data]);
 
-    const rooms = [
-        { id: '', label: 'All Rooms' },
-        { id: '1', label: 'Room 1' },
-        { id: '2', label: 'Room 2' },
-        { id: '3', label: 'Room 3' },
-    ];
-
     const sortedDates = Object.keys(groupedItems).sort((a, b) => new Date(a) - new Date(b));
+
+    const statusOptions = [
+        { id: 'all', label: 'Semua' },
+        { id: 'pending', label: 'Pending' },
+        { id: 'confirmed', label: 'Confirmed' },
+        { id: 'completed', label: 'Done' },
+        { id: 'cancelled', label: 'Cancelled' },
+    ];
 
     return (
         <AdminLayout>
             <Head title="Daily Schedule Overview" />
 
-            <div className="pt-24 pb-12 px-6">
+            <div className="pt-16 pb-12 px-6">
                 <div className="max-w-7xl mx-auto">
 
                     {/* Header */}
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-6">
                         <div>
-                            <h1 className="text-3xl font-black text-brand-black dark:text-brand-white uppercase italic tracking-tighter">Reservations Dashboard</h1>
-                            <p className="text-sm text-brand-black/50 dark:text-brand-white/50 font-bold uppercase tracking-widest mt-1">
-                                Daily schedule & room monitoring system.
+                            <h1 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase italic tracking-tighter">Reservations Dashboard</h1>
+                            <p className="text-[9px] text-brand-black/50 dark:text-brand-white/50 font-bold uppercase tracking-widest mt-0.5">
+                                Daily schedule & room monitoring.
                             </p>
                         </div>
-                        <button
-                            onClick={resetFilters}
-                            className="px-6 py-3 bg-red-50 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition-all flex items-center gap-2"
-                        >
-                            <XMarkIcon className="w-4 h-4" /> Reset Filters
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <Link
+                                href="/admin/rooms"
+                                className="px-4 py-2 bg-brand-black dark:bg-white/10 text-brand-white dark:text-brand-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-brand-black/90 transition-all flex items-center gap-2 border border-transparent dark:border-white/5"
+                            >
+                                <HomeIcon className="w-3.5 h-3.5" /> Manage Rooms
+                            </Link>
+
+                            <button
+                                onClick={resetFilters}
+                                className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-red-100 transition-all flex items-center gap-2"
+                            >
+                                <XMarkIcon className="w-3.5 h-3.5" /> Reset
+                            </button>
+                        </div>
                     </div>
 
                     {/* Room & Quick Date Tabs */}
-                    <div className="flex flex-col gap-6 mb-8">
-                        <div className="flex gap-2 overflow-x-auto pb-2">
+                    <div className="flex flex-col gap-4 mb-6">
+                        <div className="flex gap-1.5 overflow-x-auto pb-2">
                             {rooms.map((room) => (
                                 <button
                                     key={room.id}
                                     onClick={() => handleRoomChange(room.id)}
-                                    className={`px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 border shadow-sm shrink-0 ${String(roomId) === String(room.id)
-                                            ? 'bg-brand-black dark:bg-brand-white text-brand-white dark:text-brand-black border-transparent scale-105 shadow-xl'
-                                            : 'bg-white dark:bg-white/5 text-brand-black/40 dark:text-brand-white/40 border-black/5 dark:border-white/5 hover:bg-gray-50'
+                                    className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-2 border shrink-0 ${String(filters.room_id || '') === String(room.id)
+                                        ? 'bg-brand-black dark:bg-brand-white text-brand-white dark:text-brand-black border-transparent shadow-md'
+                                        : 'bg-white dark:bg-white/5 text-brand-black/40 dark:text-brand-white/40 border-black/5 dark:border-white/5 hover:bg-gray-50'
                                         }`}
                                 >
-                                    <HomeIcon className="w-4 h-4" />
+                                    <HomeIcon className="w-3.5 h-3.5" />
                                     {room.label}
                                 </button>
                             ))}
@@ -124,118 +160,151 @@ export default function BookingIndex({ bookingItems, filters }) {
                     </div>
 
                     {/* Advanced Filters */}
-                    <div className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-3xl p-6 mb-12 flex flex-col lg:flex-row gap-6 items-center justify-between shadow-lg">
-                        <div className="flex flex-col md:flex-row gap-4 w-full lg:w-auto grow">
+                    <div className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 mb-8 flex flex-col lg:flex-row gap-4 items-center justify-between shadow-sm">
+                        <div className="flex flex-col md:flex-row gap-3 w-full lg:w-auto grow">
                             {/* Search */}
                             <form onSubmit={handleSearch} className="relative grow md:max-w-xs">
-                                <MagnifyingGlassIcon className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-brand-black/20" />
+                                <MagnifyingGlassIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-brand-black/20" />
                                 <input
                                     type="text"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     placeholder="Search Customer/Code..."
-                                    className="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-black/20 border-0 rounded-2xl focus:ring-2 focus:ring-brand-gold text-xs font-bold transition-all shadow-inner"
+                                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-black/20 border-0 rounded-xl focus:ring-1 focus:ring-brand-gold text-[10px] font-bold transition-all shadow-inner"
                                 />
                             </form>
 
-                            {/* Date Picker */}
-                            <div className="flex items-center gap-2 grow md:max-w-xs">
-                                <div className="relative grow">
-                                    <CalendarDaysIcon className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-brand-black/20 font-black" />
-                                    <input
-                                        type="date"
-                                        value={date}
-                                        onChange={(e) => handleDateChange(e.target.value)}
-                                        className="w-full pl-12 pr-4 py-3.5 bg-gray-50 dark:bg-black/20 border-0 rounded-2xl focus:ring-2 focus:ring-brand-red text-xs font-black transition-all shadow-inner cursor-pointer"
-                                    />
+                            {/* Compact Date Filters */}
+                            <div className="flex items-center gap-0.5 p-1 bg-gray-50 dark:bg-black/20 rounded-xl border border-black/5 dark:border-white/5 w-fit shadow-inner">
+                                <div className="relative group">
+                                    <select
+                                        value={filters.year || ''}
+                                        onChange={(e) => handleFilter('year', e.target.value)}
+                                        className="appearance-none bg-transparent border-0 rounded-lg pl-2 pr-7 py-1.5 text-[9px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                                    >
+                                        <option value="" className="bg-white dark:bg-brand-black">Tahun</option>
+                                        {options.years.map((year) => (
+                                            <option key={year} value={year} className="bg-white dark:bg-brand-black">{year}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDownIcon className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none" />
                                 </div>
-                                <button
-                                    onClick={setToday}
-                                    className="px-4 py-3.5 bg-brand-gold text-brand-black rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all shrink-0"
-                                >
-                                    Today
-                                </button>
+                                <div className="w-px h-3 bg-black/10 dark:bg-white/10 mx-1"></div>
+                                <div className="relative group">
+                                    <select
+                                        value={filters.month || ''}
+                                        onChange={(e) => handleFilter('month', e.target.value)}
+                                        disabled={!filters.year}
+                                        className="appearance-none bg-transparent border-0 rounded-lg pl-2 pr-7 py-1.5 text-[9px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors disabled:opacity-30"
+                                    >
+                                        <option value="" className="bg-white dark:bg-brand-black">Bulan</option>
+                                        {options.months.map((month) => (
+                                            <option key={month} value={month} className="bg-white dark:bg-brand-black">{monthNames[month]}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDownIcon className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none" />
+                                </div>
+                                <div className="w-px h-3 bg-black/10 dark:bg-white/10 mx-1"></div>
+                                <div className="relative group">
+                                    <select
+                                        value={filters.day || ''}
+                                        onChange={(e) => handleFilter('day', e.target.value)}
+                                        disabled={!filters.month}
+                                        className="appearance-none bg-transparent border-0 rounded-lg pl-2 pr-7 py-1.5 text-[9px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors disabled:opacity-30"
+                                    >
+                                        <option value="" className="bg-white dark:bg-brand-black">Tgl</option>
+                                        {options.days.map((day) => (
+                                            <option key={day} value={day} className="bg-white dark:bg-brand-black">{day}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDownIcon className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none" />
+                                </div>
                             </div>
+
+                            <button
+                                onClick={setToday}
+                                className="px-4 py-2 bg-brand-gold text-brand-black rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md hover:bg-brand-gold/90 transition-all shrink-0"
+                            >
+                                Hari Ini
+                            </button>
                         </div>
 
                         {/* Status Filter */}
-                        <div className="flex gap-2 overflow-x-auto pb-2 lg:pb-0 w-full lg:w-auto shrink-0">
-                            {['', 'pending', 'confirmed', 'completed', 'cancelled'].map((s) => (
+                        <div className="flex gap-1 overflow-x-auto pb-1.5 lg:pb-0 w-full lg:w-auto shrink-0">
+                            {statusOptions.map((s) => (
                                 <button
-                                    key={s}
-                                    onClick={() => handleFilterChange(s)}
-                                    className={`px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${status === s
-                                        ? 'bg-brand-red text-white shadow-lg'
+                                    key={s.id}
+                                    onClick={() => handleFilter('status', s.id)}
+                                    className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider whitespace-nowrap transition-all ${filters.status === s.id
+                                        ? 'bg-brand-red text-white shadow-md'
                                         : 'bg-gray-100 text-brand-black/40 dark:bg-white/5 dark:text-brand-white/40 hover:bg-gray-200'
                                         }`}
                                 >
-                                    {s === '' ? 'All Status' : s}
+                                    {s.label}
                                 </button>
                             ))}
                         </div>
                     </div>
 
                     {/* Grouped Timeline View */}
-                    <div className="space-y-16">
+                    <div className="space-y-8">
                         {sortedDates.length > 0 ? (
                             sortedDates.map((dateKey) => (
                                 <section key={dateKey}>
                                     {/* Date Partition */}
-                                    <div className="flex items-center gap-6 mb-8">
-                                        <div className="h-[2px] grow bg-black/5 dark:bg-white/5"></div>
-                                        <div className="flex items-center gap-3 bg-brand-black dark:bg-brand-white px-6 py-2 rounded-full shadow-2xl">
-                                            <CalendarIcon className="w-4 h-4 text-brand-gold" />
-                                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white dark:text-brand-black">
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <div className="h-px grow bg-black/5 dark:bg-white/5"></div>
+                                        <div className="flex items-center gap-2 bg-brand-black dark:bg-brand-white px-4 py-1.5 rounded-full shadow-md">
+                                            <CalendarIcon className="w-3.5 h-3.5 text-brand-gold" />
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-white dark:text-brand-black">
                                                 {new Date(dateKey).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                                             </span>
                                         </div>
-                                        <div className="h-[2px] grow bg-black/5 dark:bg-white/5"></div>
+                                        <div className="h-px grow bg-black/5 dark:bg-white/5"></div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                         {groupedItems[dateKey].map((item) => (
-                                            <div key={item.id} className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all group overflow-hidden relative">
+                                            <div key={item.id} className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
                                                 {/* Room Badge */}
-                                                <div className="absolute top-0 right-0 p-4">
-                                                    <span className={`px-3 py-1 bg-brand-gold text-brand-black rounded-full font-black text-[9px] uppercase tracking-tighter ${item.room_id == 1 ? 'opacity-100' : item.room_id == 2 ? 'opacity-80' : 'opacity-60'}`}>
-                                                        Room {item.room_id}
+                                                <div className="absolute top-0 right-0 p-3">
+                                                    <span className={`px-2 py-0.5 bg-brand-gold/20 text-brand-black dark:text-brand-gold rounded-full font-black text-[8px] uppercase tracking-tighter`}>
+                                                        R{item.room_id}
                                                     </span>
                                                 </div>
 
-                                                <div className="mb-6">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-brand-red">
-                                                            {item.package?.sub_category?.name || item.package?.name || 'Package'}
+                                                <div className="mb-4">
+                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                        <span className="text-[8px] font-black uppercase tracking-widest text-brand-red truncate max-w-[120px]">
+                                                            {item.package?.sub_category?.name || 'Package'}
                                                         </span>
-                                                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${getStatusColor(item.booking?.status)}`}>
-                                                            {item.booking?.status || 'unknown'}
+                                                        <span className={`px-1.5 py-0.5 rounded text-[7px] font-black uppercase ${getStatusColor(item.booking?.status)}`}>
+                                                            {item.booking?.status || '??'}
                                                         </span>
                                                     </div>
-                                                    <h3 className="text-xl font-black text-brand-black dark:text-brand-white uppercase italic tracking-tighter leading-none mb-4 group-hover:text-brand-red transition-all">
-                                                        {item.package?.name || 'Untitled Package'}
+                                                    <h3 className="text-sm font-black text-brand-black dark:text-brand-white uppercase italic tracking-tighter leading-tight mb-2 group-hover:text-brand-red transition-all truncate">
+                                                        {item.package?.name || 'Untitled'}
                                                     </h3>
 
-                                                    <div className="flex flex-col gap-2">
-                                                        <div className="flex items-center gap-3 text-xs font-black text-brand-gold italic uppercase tracking-tighter bg-brand-black rounded-lg px-4 py-2 w-fit">
-                                                            <ClockIcon className="w-4 h-4" />
-                                                            {item.start_time?.substring(0, 5) || '--:--'} - {item.end_time?.substring(0, 5) || '--:--'}
-                                                        </div>
+                                                    <div className="flex items-center gap-2 text-[10px] font-black text-brand-gold italic uppercase tracking-tighter bg-brand-black rounded-lg px-3 py-1.5 w-fit">
+                                                        <ClockIcon className="w-3.5 h-3.5" />
+                                                        {item.start_time?.substring(0, 5) || '--:--'} - {item.end_time?.substring(0, 5) || '--:--'}
                                                     </div>
                                                 </div>
 
-                                                <div className="pt-6 border-t border-black/5 dark:border-white/5 flex items-center justify-between">
-                                                    <div className="grow overflow-hidden pr-4">
-                                                        <p className="text-[10px] font-black uppercase text-brand-black/30 dark:text-brand-white/30 truncate mb-0.5">Booking Code / Name</p>
-                                                        <p className="font-bold text-sm text-brand-black dark:text-brand-white truncate uppercase tracking-tighter">
+                                                <div className="pt-4 border-t border-black/5 dark:border-white/5 flex items-center justify-between">
+                                                    <div className="grow overflow-hidden pr-2">
+                                                        <p className="text-[8px] font-black uppercase text-brand-black/30 dark:text-brand-white/30 truncate mb-0.5">Customer / Code</p>
+                                                        <p className="font-bold text-[11px] text-brand-black dark:text-brand-white truncate uppercase tracking-tighter">
                                                             <span className="font-mono text-brand-red">{item.booking?.booking_code || '---'}</span> • {item.booking?.name || 'Unknown'}
                                                         </p>
                                                     </div>
                                                     {item.booking?.id && (
                                                         <Link
                                                             href={`/admin/bookings/${item.booking.id}`}
-                                                            className="shrink-0 bg-brand-black dark:bg-brand-white text-white dark:text-brand-black p-3 rounded-2xl hover:scale-110 active:scale-95 transition-all shadow-lg"
+                                                            className="shrink-0 bg-brand-black dark:bg-brand-white text-white dark:text-brand-black p-2 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-md"
                                                         >
-                                                            <EyeIcon className="w-5 h-5" />
+                                                            <EyeIcon className="w-4 h-4" />
                                                         </Link>
                                                     )}
                                                 </div>
@@ -245,10 +314,10 @@ export default function BookingIndex({ bookingItems, filters }) {
                                 </section>
                             ))
                         ) : (
-                            <div className="py-20 text-center bg-gray-50 dark:bg-white/2 rounded-3xl border border-dashed border-black/10 dark:border-white/10">
-                                <p className="text-brand-black/40 dark:text-brand-white/40 font-black uppercase tracking-widest italic flex flex-col items-center gap-4">
-                                    <CalendarDaysIcon className="w-12 h-12 opacity-10" />
-                                    No reservations found for current filters.
+                            <div className="py-12 text-center bg-gray-50 dark:bg-white/2 rounded-2xl border border-dashed border-black/10 dark:border-white/10">
+                                <p className="text-brand-black/40 dark:text-brand-white/40 font-black uppercase tracking-widest italic text-[10px] flex flex-col items-center gap-3">
+                                    <CalendarDaysIcon className="w-10 h-10 opacity-10" />
+                                    No records.
                                 </p>
                             </div>
                         )}

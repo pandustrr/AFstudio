@@ -78,7 +78,14 @@ class ReviewController extends Controller
         $availableYears = Review::selectRaw('YEAR(created_at) as year')
             ->distinct()
             ->orderBy('year', 'desc')
-            ->pluck('year');
+            ->pluck('year')
+            ->toArray();
+
+        // Ensure current filtered year is in options
+        if ($year && !in_array((int)$year, $availableYears)) {
+            $availableYears[] = (int)$year;
+            rsort($availableYears);
+        }
 
         $availableMonths = [];
         if ($year) {
@@ -86,7 +93,14 @@ class ReviewController extends Controller
                 ->selectRaw('MONTH(created_at) as month')
                 ->distinct()
                 ->orderBy('month', 'desc')
-                ->pluck('month');
+                ->pluck('month')
+                ->toArray();
+
+            // Ensure current filtered month is in options
+            if ($month && !in_array((int)$month, $availableMonths)) {
+                $availableMonths[] = (int)$month;
+                rsort($availableMonths);
+            }
         }
 
         $availableDays = [];
@@ -96,7 +110,14 @@ class ReviewController extends Controller
                 ->selectRaw('DAY(created_at) as day')
                 ->distinct()
                 ->orderBy('day', 'desc')
-                ->pluck('day');
+                ->pluck('day')
+                ->toArray();
+
+            // Ensure current filtered day is in options
+            if ($day && !in_array((int)$day, $availableDays)) {
+                $availableDays[] = (int)$day;
+                rsort($availableDays);
+            }
         }
 
         return Inertia::render('Admin/Reviews/Index', [

@@ -13,14 +13,18 @@ return new class extends Migration
     {
         Schema::create('bookings', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
+            $table->string('guest_uid')->nullable()->index();
             $table->string('booking_code')->unique();
             $table->string('name');
+            $table->string('university')->nullable();
+            $table->string('domicile')->nullable();
             $table->string('phone');
             $table->date('booking_date');
             $table->string('location');
             $table->text('notes')->nullable();
             $table->decimal('total_price', 15, 2);
+            $table->decimal('down_payment', 15, 2)->default(0);
             $table->enum('status', ['pending', 'confirmed', 'completed', 'cancelled'])->default('pending');
             $table->timestamps();
         });

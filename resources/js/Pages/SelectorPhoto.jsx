@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import GuestLayout from '../Layouts/GuestLayout';
 import { Head, router } from '@inertiajs/react';
 import { StarIcon, XMarkIcon, CameraIcon } from '@heroicons/react/24/solid';
@@ -7,6 +7,13 @@ import { StarIcon as StarOutlineIcon } from '@heroicons/react/24/outline';
 export default function SelectorPhoto() {
     const [step, setStep] = useState(1);
     const [uid, setUid] = useState('');
+
+    useEffect(() => {
+        const savedUid = localStorage.getItem('afstudio_cart_uid');
+        if (savedUid) {
+            setUid(savedUid);
+        }
+    }, []);
     const [driveType, setDriveType] = useState(''); // 'Mentahan', 'Result', or 'RequestEdit'
     const [selectedPhotos, setSelectedPhotos] = useState([]); // Array of objects {id, name}
     const [review, setReview] = useState('');
@@ -366,6 +373,48 @@ export default function SelectorPhoto() {
                                     <h2 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase mb-2">Pilih Aksi</h2>
                                     <div className="flex flex-col items-center gap-1 mb-4">
                                         <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest leading-none">Silakan pilih folder atau layanan yang ingin Anda akses.</p>
+
+                                        {/* Booking Detail Section */}
+                                        {sessionData?.booking && (
+                                            <div className="w-full mt-6 mb-2 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-5 text-left animate-in fade-in slide-in-from-top-2 duration-500">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div>
+                                                        <h4 className="text-[10px] font-black text-brand-red uppercase tracking-widest mb-1">Detail Jadwal</h4>
+                                                        <p className="text-xs font-black text-brand-black dark:text-brand-white uppercase truncate">{sessionData.booking.package_name}</p>
+                                                    </div>
+                                                    <div className="bg-brand-gold/10 px-2 py-1 rounded-md">
+                                                        <p className="text-[9px] font-black text-brand-gold uppercase tracking-tighter">Room {sessionData.booking.room_id}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="p-1.5 bg-black/5 dark:bg-white/10 rounded-lg text-brand-black dark:text-brand-white">
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                                        </div>
+                                                        <p className="text-[10px] font-bold text-brand-black/60 dark:text-brand-white/60">
+                                                            {(() => {
+                                                                const [y, m, d] = sessionData.booking.scheduled_date.split('-').map(Number);
+                                                                return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('id-ID', {
+                                                                    day: 'numeric',
+                                                                    month: 'short',
+                                                                    year: 'numeric',
+                                                                    timeZone: 'UTC'
+                                                                });
+                                                            })()}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="p-1.5 bg-black/5 dark:bg-white/10 rounded-lg text-brand-black dark:text-brand-white">
+                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                        </div>
+                                                        <p className="text-[10px] font-bold text-brand-black/60 dark:text-brand-white/60">
+                                                            {sessionData.booking.start_time.substring(0, 5)} - {sessionData.booking.end_time.substring(0, 5)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         <div className="bg-brand-gold/10 border-2 border-brand-gold/40 rounded-full px-6 py-1.5 mt-2 animate-pulse-subtle">
                                             <p className="text-brand-gold text-[10px] font-black uppercase tracking-widest">
                                                 Kuota Editing: {sessionData?.requested_count || 0} / 20 Foto
@@ -376,18 +425,21 @@ export default function SelectorPhoto() {
                                 <div className="grid grid-cols-1 gap-4">
                                     <button
                                         onClick={() => handleDriveSelection('Mentahan')}
-                                        className="group relative h-28 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl p-6 overflow-hidden transition-all hover:border-brand-gold hover:scale-[1.02]"
+                                        disabled={!sessionData?.has_raw}
+                                        className={`group relative h-28 border rounded-2xl p-6 overflow-hidden transition-all ${sessionData?.has_raw
+                                            ? 'bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10 hover:border-brand-gold hover:scale-[1.02]'
+                                            : 'bg-black/5 dark:bg-white/2 opacity-30 cursor-not-allowed border-transparent'}`}
                                     >
                                         <div className="relative z-10 h-full flex items-center space-x-6 text-left">
-                                            <span className="text-3xl group-hover:scale-110 transition-transform">📂</span>
+                                            <span className="text-3xl group-hover:scale-110 transition-transform">{sessionData?.has_raw ? '📂' : '🔒'}</span>
                                             <div>
                                                 <h3 className="text-brand-black dark:text-brand-white font-black uppercase text-xs tracking-widest">Foto Mentahan</h3>
-                                                <p className="text-brand-black/40 dark:text-brand-white/40 text-[9px] font-bold">Lihat & Download foto original.</p>
+                                                <p className="text-brand-black/40 dark:text-brand-white/40 text-[9px] font-bold">
+                                                    {sessionData?.has_raw ? 'Lihat & Download foto original.' : 'Foto belum di-upload admin.'}
+                                                </p>
                                             </div>
                                         </div>
                                     </button>
-
-
 
                                     <button
                                         onClick={() => handleDriveSelection('Result')}
@@ -670,7 +722,7 @@ export default function SelectorPhoto() {
             {/* Preview Modal */}
             {previewIndex !== null && (
                 <div
-                    className="fixed inset-0 z-100 flex items-center justify-center bg-black/95 backdrop-blur-sm"
+                    className="fixed inset-0 z-100 flex items-center justify-center bg-black/95"
                     onClick={closePreview}
                     onTouchStart={onTouchStart}
                     onTouchMove={onTouchMove}
@@ -698,7 +750,7 @@ export default function SelectorPhoto() {
             )}
             {/* Success Modal */}
             {showSuccessModal && (
-                <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
+                <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 animate-fade-in">
                     <div className="bg-white dark:bg-brand-black border border-black/10 dark:border-white/10 rounded-3xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl space-y-6">
                         <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
                             <span className="text-3xl">✅</span>
