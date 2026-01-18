@@ -35,8 +35,15 @@ export default function Navbar() {
         // Get UID for cart link
         const uid = localStorage.getItem('afstudio_cart_uid');
         if (uid) {
-            setCartUid(uid);
-            setInputUid(uid);
+            // Force reset if UID is in old format (no dash)
+            if (!uid.includes('-')) {
+                localStorage.removeItem('afstudio_cart_uid');
+                setCartUid(null);
+                setInputUid('');
+            } else {
+                setCartUid(uid);
+                setInputUid(uid);
+            }
         }
 
         return () => window.removeEventListener('scroll', handleScroll);
@@ -169,7 +176,7 @@ export default function Navbar() {
                         leaveFrom="opacity-100"
                         leaveTo="opacity-0"
                     >
-                        <div className="fixed inset-0 bg-black/80 backdrop-blur-md" />
+                        <div className="fixed inset-0 bg-black/60" />
                     </Transition.Child>
 
                     <div className="fixed inset-0 overflow-y-auto">
@@ -183,7 +190,7 @@ export default function Navbar() {
                                 leaveFrom="opacity-100 scale-100"
                                 leaveTo="opacity-0 scale-95"
                             >
-                                <Dialog.Panel className="w-full max-w-sm transform overflow-hidden rounded-[2.5rem] bg-white dark:bg-brand-black border border-white/10 p-8 text-left shadow-2xl transition-all">
+                                <Dialog.Panel className="w-full max-w-sm transform overflow-hidden rounded-[2.5rem] bg-white dark:bg-brand-black border border-white/10 p-8 text-left shadow-[0_0_50px_0_rgba(0,0,0,0.3)] transition-all">
                                     <div className="flex justify-between items-center mb-6">
                                         <Dialog.Title as="h3" className="text-xl font-black uppercase tracking-tighter italic text-brand-black dark:text-brand-white">
                                             Buka Keranjang

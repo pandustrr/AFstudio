@@ -8,21 +8,28 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
     const { url } = usePage();
     const { theme, toggleTheme } = useTheme();
 
-    const menuItems = [
+    const user = usePage().props.auth.user;
+
+    const allMenuItems = [
         { label: 'Dashboard', href: '/admin/dashboard', icon: ChartBarIcon },
         { label: 'About Page', href: '/admin/about', icon: BuildingOfficeIcon },
         { label: 'Pricelist', href: '/admin/pricelist', icon: BanknotesIcon },
         { label: 'Reservations', href: '/admin/bookings', icon: CalendarDaysIcon },
+        { label: 'Manage Rooms', href: '/admin/rooms', icon: BuildingOfficeIcon },
         { label: 'Request Edit', href: '/admin/photo-editing', icon: CameraIcon },
         { label: 'Reviews', href: '/admin/reviews', icon: StarIcon },
     ];
+
+    const menuItems = user.role === 'editor'
+        ? allMenuItems.filter(item => item.label === 'Request Edit')
+        : allMenuItems;
 
     return (
         <>
             {/* Backdrop Mobile */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
                     onClick={toggleSidebar}
                 />
             )}
@@ -64,10 +71,10 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                         <ThemeToggle theme={theme} toggleTheme={toggleTheme} className="scale-75 origin-right" />
                     </div>
                     <Link
-                        href="/admin/logout"
+                        href={user.role === 'editor' ? "/editor/logout" : "/admin/logout"}
                         method="post"
                         as="button"
-                        onSuccess={() => window.location.href = '/admin/login'}
+                        onSuccess={() => window.location.href = user.role === 'editor' ? '/editor/login' : '/admin/login'}
                         onError={() => window.location.reload()}
                         className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-black uppercase text-[9px] tracking-widest text-brand-red hover:bg-brand-red/5 transition-all text-left"
                     >

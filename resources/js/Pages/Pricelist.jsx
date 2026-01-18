@@ -5,7 +5,7 @@ import { CheckBadgeIcon, SparklesIcon, FireIcon, ChevronRightIcon, ShoppingCartI
 
 import ScheduleModal from '@/Components/Pricelist/ScheduleModal'; // Import Modal
 
-export default function Pricelist({ categories }) {
+export default function Pricelist({ categories, rooms }) {
     const [activeCategoryId, setActiveCategoryId] = useState(categories[0]?.id || null);
     const activeCategory = categories.find(c => c.id === activeCategoryId);
 
@@ -41,6 +41,7 @@ export default function Pricelist({ categories }) {
                 isOpen={isScheduleModalOpen}
                 onClose={() => setIsScheduleModalOpen(false)}
                 packageData={selectedPackageForCart}
+                rooms={rooms}
             />
 
             {/* Header Section */}
@@ -58,7 +59,7 @@ export default function Pricelist({ categories }) {
             </section>
 
             {/* Category Tabs */}
-            <section className="px-6 mb-6 sticky top-[4.5rem] md:top-20 z-10">
+            <section className="px-6 mb-6 top">
                 <div className="max-w-4xl mx-auto overflow-x-auto no-scrollbar scroll-smooth">
                     <div className="inline-flex min-w-full md:flex md:flex-wrap md:justify-center gap-1.5 p-1.5 bg-white/50 dark:bg-black/50 backdrop-blur-md rounded-2xl border border-black/5 dark:border-white/5">
                         {categories.map((category) => (
@@ -79,7 +80,7 @@ export default function Pricelist({ categories }) {
 
             {/* Sub-Category Tabs (New) */}
             {activeCategory?.sub_categories.length > 0 && (
-                <section className="px-6 mb-10 sticky top-[8.5rem] md:top-32 z-10 animate-in fade-in slide-in-from-top-2">
+                <section className="px-6 mb-10 top-sub animate-in fade-in slide-in-from-top-2">
                     <div className="max-w-3xl mx-auto overflow-x-auto no-scrollbar scroll-smooth pb-2">
                         <div className="inline-flex min-w-full md:flex md:flex-wrap md:justify-center gap-2 p-1">
                             {/* ALL button */}
@@ -128,7 +129,7 @@ export default function Pricelist({ categories }) {
                                 {sub.packages.map((pkg) => (
                                     <div
                                         key={pkg.id}
-                                        className={`relative group p-5 md:p-7 rounded-[2.5rem] md:rounded-3xl border transition-all duration-500 flex flex-col w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.5rem)] xl:w-[calc(25%-1.5rem)] max-w-sm ${pkg.is_popular
+                                        className={`relative group p-5 md:p-7 rounded-[40px] border transition-all duration-500 flex flex-col w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.5rem)] xl:w-[calc(25%-1.5rem)] max-w-sm ${pkg.is_popular
                                             ? 'bg-brand-black text-white border-brand-black shadow-2xl shadow-brand-red/10 ring-4 ring-brand-red/5'
                                             : 'bg-white dark:bg-white/5 border-black/5 dark:border-white/5 text-brand-black dark:text-brand-white'
                                             } hover:-translate-y-2`}
@@ -141,7 +142,7 @@ export default function Pricelist({ categories }) {
                                             </div>
                                         )}
 
-                                        <div className="mb-6 md:mb-8">
+                                        <div className="mb-6 md:mb-8 text-center">
                                             <h3 className="text-lg md:text-xl font-black uppercase tracking-tighter mb-0.5 md:mb-1">{pkg.name}</h3>
                                             <div className="text-2xl md:text-3xl font-black text-brand-gold tracking-tight italic">
                                                 {pkg.price_display}
@@ -183,7 +184,7 @@ export default function Pricelist({ categories }) {
 
             {/* Bottom CTA */}
             <section className="pb-20 md:pb-28 px-4 md:px-6">
-                <div className="max-w-3xl mx-auto rounded-[2rem] md:rounded-[32px] overflow-hidden relative group">
+                <div className="max-w-3xl mx-auto rounded-[32px] overflow-hidden relative group">
                     <div className="absolute inset-0 bg-brand-gold transform group-hover:scale-105 transition-transform duration-700"></div>
                     <div className="relative p-8 md:p-12 text-center text-brand-black flex flex-col items-center">
                         <FireIcon className="w-8 h-8 md:w-10 md:h-10 mb-3 md:mb-4 opacity-20" />

@@ -1,11 +1,16 @@
 import React from 'react';
 import AdminLayout from '../../Layouts/AdminLayout';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 
 export default function Dashboard() {
+    const { auth } = usePage().props;
+
     const handleLogout = () => {
-        router.post('/admin/logout', {}, {
-            onSuccess: () => window.location.href = '/admin/login',
+        const logoutUrl = auth.user.role === 'editor' ? '/editor/logout' : '/admin/logout';
+        const loginUrl = auth.user.role === 'editor' ? '/editor/login' : '/admin/login';
+
+        router.post(logoutUrl, {}, {
+            onSuccess: () => window.location.href = loginUrl,
             onError: () => window.location.reload()
         });
     };
@@ -19,7 +24,7 @@ export default function Dashboard() {
                     <div className="flex flex-col sm:flex-row justify-between items-center mb-12 gap-6">
                         <div>
                             <h1 className="text-4xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-2 italic">Dashboard</h1>
-                            <p className="text-brand-black/40 dark:text-brand-white/40 text-xs font-bold uppercase tracking-widest">Selamat datang kembali, Admin.</p>
+                            <p className="text-brand-black/40 dark:text-brand-white/40 text-xs font-bold uppercase tracking-widest capitalize">Selamat datang kembali, {auth.user.role}.</p>
                         </div>
                         <button
                             onClick={handleLogout}

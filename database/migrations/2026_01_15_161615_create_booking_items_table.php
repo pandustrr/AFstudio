@@ -18,6 +18,10 @@ return new class extends Migration
             $table->integer('quantity');
             $table->decimal('price', 15, 2); // Snapshot price
             $table->decimal('subtotal', 15, 2);
+            $table->date('scheduled_date')->nullable();
+            $table->time('start_time')->nullable();
+            $table->time('end_time')->nullable();
+            $table->foreignId('room_id')->nullable()->constrained('rooms')->onDelete('set null');
             $table->timestamps();
         });
     }

@@ -1,6 +1,6 @@
 import React from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import {
     ChevronLeftIcon,
     CalendarIcon,
@@ -11,23 +11,32 @@ import {
     ChatBubbleLeftEllipsisIcon,
     CheckCircleIcon,
     XCircleIcon,
-    ArrowPathIcon
+    ArrowPathIcon,
+    KeyIcon
 } from '@heroicons/react/24/outline';
 
-export default function BookingShow({ booking }) {
-    const { data, setData, patch, processing } = useForm({
-        status: booking.status
-    });
+export default function BookingShow({ booking, rooms = [] }) {
+    const { processing } = useForm();
 
     const updateStatus = (newStatus) => {
         if (confirm(`Are you sure you want to change status to ${newStatus}?`)) {
-            // Using direct path to avoid route helper issues
-            patch(`/admin/bookings/${booking.id}`, {
+            router.patch(`/admin/bookings/${booking.id}`, {
                 status: newStatus
             }, {
                 preserveScroll: true
             });
         }
+    };
+
+    const updateItem = (item, data) => {
+        router.patch(`/admin/booking-items/${item.id}`, data, {
+            preserveScroll: true
+        });
+    };
+
+    const getRoomLabel = (id) => {
+        const room = rooms.find(r => r.id === parseInt(id));
+        return room ? room.label : `Room ${id}`;
     };
 
     const formatPrice = (num) => {
@@ -62,7 +71,6 @@ export default function BookingShow({ booking }) {
                     >
                         <ChevronLeftIcon className="w-4 h-4" /> Back to List
                     </Link>
-
                     {/* Header */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
                         <div>
@@ -134,6 +142,13 @@ export default function BookingShow({ booking }) {
                                     <UserIcon className="w-4 h-4" /> Customer Information
                                 </h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="md:col-span-2 bg-brand-red/5 p-4 rounded-2xl border border-brand-red/10">
+                                        <p className="text-[10px] font-black uppercase text-brand-red mb-1 flex items-center gap-2">
+                                            <KeyIcon className="w-3 h-3" /> Session ID / Guest UID
+                                        </p>
+                                        <p className="font-mono font-black text-brand-black dark:text-brand-white text-lg tracking-widest">{booking.guest_uid || booking.booking_code}</p>
+                                        <p className="text-[9px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase mt-1">Gunakan kode ini untuk login di Selector Photo</p>
+                                    </div>
                                     <div>
                                         <p className="text-[10px] font-black uppercase text-brand-black/30 dark:text-brand-white/30 mb-1">Full Name</p>
                                         <p className="font-bold text-brand-black dark:text-brand-white">{booking.name}</p>
@@ -187,9 +202,25 @@ export default function BookingShow({ booking }) {
                                                             <ClockIcon className="w-4 h-4" />
                                                             {item.start_time.substring(0, 5)} - {item.end_time.substring(0, 5)}
                                                         </div>
-                                                        <div className="flex items-center gap-2 text-xs font-bold text-brand-black/60 dark:text-brand-white/60">
-                                                            <MapPinIcon className="w-4 h-4" />
-                                                            Room {item.room_id}
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex items-center gap-2 text-xs font-bold text-brand-black/60 dark:text-brand-white/60">
+                                                                <MapPinIcon className="w-4 h-4" />
+                                                                <select
+                                                                    value={item.room_id || ''}
+                                                                    onChange={(e) => updateItem(item, {
+                                                                        room_id: e.target.value,
+                                                                        scheduled_date: item.scheduled_date,
+                                                                        start_time: item.start_time,
+                                                                        end_time: item.end_time
+                                                                    })}
+                                                                    className="bg-transparent border-0 p-0 text-xs font-bold focus:ring-0 text-brand-black/60 dark:text-brand-white/60 cursor-pointer hover:text-brand-red transition-colors"
+                                                                >
+                                                                    <option value="" disabled>Select Room</option>
+                                                                    {rooms.map(room => (
+                                                                        <option key={room.id} value={room.id} className="text-black">{room.label}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>

@@ -21,6 +21,17 @@ class AdminSeeder extends Seeder
                 'name' => 'Admin AFstudio',
                 'email' => 'admin@afstudio.com',
                 'password' => Hash::make('admin123'),
+                'role' => 'admin',
+            ]
+        );
+
+        User::updateOrCreate(
+            ['username' => 'editor'],
+            [
+                'name' => 'Editor AFstudio',
+                'email' => 'editor@afstudio.com',
+                'password' => Hash::make('editor123'),
+                'role' => 'editor',
             ]
         );
     }

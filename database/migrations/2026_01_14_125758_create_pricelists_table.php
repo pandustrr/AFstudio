@@ -32,6 +32,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('price_display');
             $table->decimal('price_numeric', 12, 2)->nullable();
+            $table->integer('duration')->default(60)->comment('Duration in minutes');
             $table->json('features')->nullable();
             $table->boolean('is_popular')->default(false);
             $table->timestamps();

@@ -4,7 +4,12 @@ import Navbar from '@/Components/Navbar';
 import { CheckCircleIcon, QrCodeIcon } from '@heroicons/react/24/outline';
 import { PhoneIcon } from '@heroicons/react/24/solid';
 
-export default function CheckoutShow({ booking }) {
+export default function CheckoutShow({ booking, rooms = [] }) {
+
+    const getRoomLabel = (id) => {
+        const room = rooms.find(r => r.id === parseInt(id));
+        return room ? room.label : `Room ${id}`;
+    };
 
     const formatPrice = (num) => {
         return new Intl.NumberFormat('id-ID', {
@@ -19,7 +24,7 @@ export default function CheckoutShow({ booking }) {
 
     let itemsMessage = "";
     booking.items.forEach((item, index) => {
-        itemsMessage += `${index + 1}. ${item.package.name} - ${item.scheduled_date} (${item.start_time.substring(0, 5)}-${item.end_time.substring(0, 5)})\n`;
+        itemsMessage += `${index + 1}. ${item.package.name} - ${item.scheduled_date} (${item.start_time.substring(0, 5)}-${item.end_time.substring(0, 5)}) [${getRoomLabel(item.room_id)}]\n`;
     });
 
     const message = `Halo Admin AF Studio, saya sudah melakukan booking dan pembayaran DP.
@@ -81,7 +86,7 @@ Mohon konfirmasinya. Terima kasih!`;
                                     <p className="text-[10px] text-brand-black/60 dark:text-brand-white/60">
                                         Date: {item.scheduled_date} | Time: {item.start_time.substring(0, 5)} - {item.end_time.substring(0, 5)}
                                     </p>
-                                    <p className="text-[10px] text-brand-black/60 dark:text-brand-white/60">Room: {item.room_id}</p>
+                                    <p className="text-[10px] text-brand-black/60 dark:text-brand-white/60">Room: {getRoomLabel(item.room_id)}</p>
                                 </div>
                             ))}
                         </div>

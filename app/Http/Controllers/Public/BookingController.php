@@ -40,6 +40,7 @@ class BookingController extends Controller
 
         return Inertia::render('Checkout/Create', [
             'carts' => $carts,
+            'rooms' => \App\Models\Room::all(),
         ]);
     }
 
@@ -48,6 +49,8 @@ class BookingController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
+            'university' => 'nullable|string|max:255',
+            'domicile' => 'nullable|string|max:255',
             'location' => 'required|string|max:255',
             'notes' => 'nullable|string',
         ]);
@@ -101,6 +104,8 @@ class BookingController extends Controller
                 'guest_uid' => $uid,
                 'name' => $request->name,
                 'phone' => $request->phone,
+                'university' => $request->university,
+                'domicile' => $request->domicile,
                 'booking_date' => now(), // Use current timestamp for the transaction date
                 'location' => $request->location,
                 'notes' => $request->notes,
@@ -152,19 +157,22 @@ class BookingController extends Controller
         // Ensure user owns this booking
         if ($booking->user_id) {
             if ($booking->user_id !== Auth::id()) {
-                abort(403);
-            }
-        } elseif ($booking->guest_uid) {
-            if ($booking->guest_uid !== $uid) {
-                // Allow if code is shareable? Requirement says UID is used to see it.
-                // But usually booking_code is enough if it's unique and secret.
-                // Let's stick to UID if guest.
+                // If it's a registered user's booking, protect it.
+                // Ideally if Auth::check() is false, we might want to redirect to login.
+                if (!Auth::check()) {
+                    // For now abort 403, or maybe allow viewing if they have the exact code?
+                    // Let's keep it strict for registered users.
+                    abort(403);
+                }
                 abort(403);
             }
         }
+        // For guests (no user_id), we trust the unique booking_code as the 'key'.
+        // STRICT UID check removed to allow cross-device access via link.
 
         return Inertia::render('Checkout/Show', [
             'booking' => $booking,
+            'rooms' => \App\Models\Room::all(),
         ]);
     }
 }

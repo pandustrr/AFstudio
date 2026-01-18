@@ -92,7 +92,7 @@ export default function Review({ reviews }) {
                                         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                             <button
                                                 onClick={() => setSelectedPhoto(review.photo_url)}
-                                                className="px-4 py-2 bg-white/20 backdrop-blur-md rounded-lg text-white text-[10px] font-black uppercase tracking-widest border border-white/30 hover:bg-white hover:text-black transition-all"
+                                                className="px-4 py-2 bg-white/20 rounded-lg text-white text-[10px] font-black uppercase tracking-widest border border-white/30 hover:bg-white hover:text-black transition-all"
                                             >
                                                 Lihat Foto
                                             </button>
@@ -125,7 +125,7 @@ export default function Review({ reviews }) {
             {/* Photo Modal */}
             {selectedPhoto && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-fade-in"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 animate-fade-in"
                     onClick={() => setSelectedPhoto(null)}
                 >
                     <button

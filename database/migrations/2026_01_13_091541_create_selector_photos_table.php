@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('uid')->unique();
             $table->string('customer_name');
-            $table->string('raw_folder_id');
+            $table->string('raw_folder_id')->nullable();
             $table->string('edited_folder_id')->nullable();
             $table->enum('status', ['pending', 'processing', 'done', 'cancelled'])->default('pending');
             $table->timestamps();

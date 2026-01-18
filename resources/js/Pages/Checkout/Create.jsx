@@ -1,14 +1,21 @@
 import React, { useState } from 'react';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
-import { ShieldCheckIcon, CalendarIcon, MapPinIcon, PhoneIcon, UserIcon, ChatBubbleBottomCenterTextIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { ShieldCheckIcon, CalendarIcon, MapPinIcon, PhoneIcon, UserIcon, ChatBubbleBottomCenterTextIcon, ClockIcon, HomeIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
 
-export default function CheckoutCreate({ carts = [] }) {
+export default function CheckoutCreate({ carts = [], rooms = [] }) {
     const { auth } = usePage().props;
+
+    const getRoomLabel = (id) => {
+        const room = rooms.find(r => r.id === parseInt(id));
+        return room ? room.label : `Room ${id}`;
+    };
     const user = auth?.user || {};
 
     const { data, setData, post, processing, errors } = useForm({
         name: user.name || '',
+        university: '',
+        domicile: '',
         phone: '',
         location: '',
         notes: '',
@@ -29,20 +36,9 @@ export default function CheckoutCreate({ carts = [] }) {
 
     const submit = (e) => {
         e.preventDefault();
-        console.log("Submitting booking form...", data);
         post('/checkout', {
             headers: {
                 'X-Cart-UID': data.cart_uid
-            },
-            onError: (errors) => {
-                console.error("Form submission errors:", errors);
-                alert("Submission failed. Check console or fields.");
-            },
-            onSuccess: () => {
-                console.log("Form submission successful!");
-            },
-            onFinish: () => {
-                console.log("Form submission finished.");
             }
         });
     };
@@ -55,73 +51,129 @@ export default function CheckoutCreate({ carts = [] }) {
             <Navbar />
 
             <div className="pt-24 md:pt-32 px-4 md:px-6 max-w-6xl mx-auto">
-                {/* Flash Messages */}
-                {flash?.error && (
-                    <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                        <strong className="font-bold">Error: </strong>
-                        <span className="block sm:inline">{flash.error}</span>
-                    </div>
-                )}
-                {flash?.success && (
-                    <div className="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-                        <strong className="font-bold">Success: </strong>
-                        <span className="block sm:inline">{flash.success}</span>
-                    </div>
-                )}
-
                 <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
 
                     {/* Left: Booking Form */}
                     <div className="flex-1 order-2 lg:order-1">
-                        <div className="mb-8">
+                        <div className="mb-8 p-6 bg-brand-gold/10 border-l-4 border-brand-gold rounded-r-xl">
                             <h1 className="text-2xl md:text-3xl font-black uppercase italic tracking-tighter text-brand-black dark:text-brand-white flex items-center gap-3">
                                 <ShieldCheckIcon className="w-8 h-8 md:w-10 md:h-10 text-brand-red" />
-                                Booking Details
+                                Form Booking
                             </h1>
-                            <p className="mt-2 text-brand-black/60 dark:text-brand-white/60 text-sm md:text-base">
-                                Please fill in your details to secure your slot.
+                            <p className="mt-2 text-brand-black/60 dark:text-brand-white/60 text-sm font-bold uppercase tracking-widest">
+                                Mohon untuk diisi kak ya! 🙏🏻😇
                             </p>
                         </div>
 
                         <form onSubmit={submit} className="space-y-6">
-                            {/* Name */}
+                            {/* Session UID (Read-only) */}
                             <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/70 dark:text-brand-white/70">
-                                    <UserIcon className="w-4 h-4" /> Full Name <span className="text-red-500">*</span>
+                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/40 dark:text-brand-white/40">
+                                    <ShieldCheckIcon className="w-4 h-4" /> Session ID
                                 </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={data.name}
-                                    onChange={e => setData('name', e.target.value)}
-                                    className="w-full bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white"
-                                    placeholder="Enter your full name"
-                                />
-                                {errors.name && <p className="text-red-500 text-xs font-bold">{errors.name}</p>}
+                                <div className="w-full bg-black/5 dark:bg-white/5 border border-dashed border-black/10 dark:border-white/10 rounded-xl px-4 py-3 text-brand-black/50 dark:text-brand-white/50 font-mono text-xs tracking-widest">
+                                    {data.cart_uid || 'NO-SESSION'}
+                                </div>
                             </div>
 
-                            {/* Phone */}
-                            <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/70 dark:text-brand-white/70">
-                                    <PhoneIcon className="w-4 h-4" /> WhatsApp Number <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="tel"
-                                    required
-                                    value={data.phone}
-                                    onChange={e => setData('phone', e.target.value)}
-                                    className="w-full bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white"
-                                    placeholder="e.g. 081234567890"
-                                />
-                                {errors.phone && <p className="text-red-500 text-xs font-bold">{errors.phone}</p>}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Name */}
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/70 dark:text-brand-white/70">
+                                        <UserIcon className="w-4 h-4" /> Nama ; <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={data.name}
+                                        onChange={e => setData('name', e.target.value)}
+                                        className="w-full bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white"
+                                        placeholder="Masukkan nama lengkap"
+                                    />
+                                    {errors.name && <p className="text-red-500 text-xs font-bold">{errors.name}</p>}
+                                </div>
+
+                                {/* Phone */}
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/70 dark:text-brand-white/70">
+                                        <PhoneIcon className="w-4 h-4" /> WhatsApp <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        required
+                                        value={data.phone}
+                                        onChange={e => setData('phone', e.target.value)}
+                                        className="w-full bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white"
+                                        placeholder="e.g. 081234567890"
+                                    />
+                                    {errors.phone && <p className="text-red-500 text-xs font-bold">{errors.phone}</p>}
+                                </div>
+
+                                {/* University */}
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/70 dark:text-brand-white/70">
+                                        <HomeIcon className="w-4 h-4" /> Nama univ:
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={data.university}
+                                        onChange={e => setData('university', e.target.value)}
+                                        className="w-full bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white"
+                                        placeholder="Contoh: UNEJ / POLIJE"
+                                    />
+                                    {errors.university && <p className="text-red-500 text-xs font-bold">{errors.university}</p>}
+                                </div>
+
+                                {/* Domicile */}
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/70 dark:text-brand-white/70">
+                                        <MapPinIcon className="w-4 h-4" /> Domisili:
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={data.domicile}
+                                        onChange={e => setData('domicile', e.target.value)}
+                                        className="w-full bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white"
+                                        placeholder="Contoh: Kaliwates, Jember"
+                                    />
+                                    {errors.domicile && <p className="text-red-500 text-xs font-bold">{errors.domicile}</p>}
+                                </div>
+
+                                {/* Tanggal Acara (Read-only from first item for display) */}
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
+                                        <CalendarIcon className="w-4 h-4" /> Tanggal acara ;
+                                    </label>
+                                    <div className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 text-brand-black/60 dark:text-brand-white/60 font-bold">
+                                        {carts[0]?.scheduled_date || '-'}
+                                    </div>
+                                </div>
+
+                                {/* Jam yg Disepakati (Read-only from first item for display) */}
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
+                                        <ClockIcon className="w-4 h-4" /> Jam yg disepakati
+                                    </label>
+                                    <div className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 text-brand-black/60 dark:text-brand-white/60 font-bold">
+                                        {carts[0]?.start_time?.substring(0, 5) || '-'} WIB
+                                    </div>
+                                </div>
                             </div>
 
+                            {/* Paket yang diambil (Read-only summary) */}
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
+                                    <ShoppingCartIcon className="w-4 h-4" /> Paket yang di ambil (total harga):
+                                </label>
+                                <div className="w-full bg-brand-gold/5 border border-brand-gold/20 rounded-xl px-4 py-3 text-brand-gold font-black italic">
+                                    {carts.map(c => c.package?.name).join(', ')} ({formatPrice(total)})
+                                </div>
+                            </div>
 
-
-                            {/* Location */}
+                            {/* Location (Alamat Acara) */}
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/70 dark:text-brand-white/70">
-                                    <MapPinIcon className="w-4 h-4" /> Location / Venue <span className="text-red-500">*</span>
+                                    <MapPinIcon className="w-4 h-4" /> Alamat acara ; <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -129,7 +181,7 @@ export default function CheckoutCreate({ carts = [] }) {
                                     value={data.location}
                                     onChange={e => setData('location', e.target.value)}
                                     className="w-full bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white"
-                                    placeholder="e.g. Hotel Aston, Jember or 'Studio'"
+                                    placeholder="Alamat lengkap lokasi pemotretan"
                                 />
                                 {errors.location && <p className="text-red-500 text-xs font-bold">{errors.location}</p>}
                             </div>
@@ -137,13 +189,13 @@ export default function CheckoutCreate({ carts = [] }) {
                             {/* Notes */}
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/70 dark:text-brand-white/70">
-                                    <ChatBubbleBottomCenterTextIcon className="w-4 h-4" /> Additional Notes
+                                    <ChatBubbleBottomCenterTextIcon className="w-4 h-4" /> Catatan Tambahan
                                 </label>
                                 <textarea
                                     value={data.notes}
                                     onChange={e => setData('notes', e.target.value)}
-                                    className="w-full bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white h-32"
-                                    placeholder="Any specific requests or questions..."
+                                    className="w-full bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white h-24"
+                                    placeholder="Kebutuhan khusus atau permintaan lainnya..."
                                 />
                                 {errors.notes && <p className="text-red-500 text-xs font-bold">{errors.notes}</p>}
                             </div>
@@ -197,7 +249,7 @@ export default function CheckoutCreate({ carts = [] }) {
                                             </div>
                                             <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white">
                                                 <MapPinIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
-                                                <span>Studio Room {cart.room_id}</span>
+                                                <span>Studio {getRoomLabel(cart.room_id)}</span>
                                             </div>
                                         </div>
                                     </div>
