@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, usePage } from '@inertiajs/react';
-import { ChartBarIcon, CameraIcon, StarIcon, ArrowRightOnRectangleIcon, BuildingOfficeIcon, BanknotesIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { ChartBarIcon, CameraIcon, StarIcon, ArrowRightOnRectangleIcon, BuildingOfficeIcon, BanknotesIcon, CalendarDaysIcon, ChartPieIcon } from '@heroicons/react/24/outline';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../Contexts/ThemeContext';
 
@@ -10,6 +10,7 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
 
     const menuItems = [
         { label: 'Dashboard', href: '/admin/dashboard', icon: ChartBarIcon },
+        { label: 'Insights', href: '/admin/insights', icon: ChartPieIcon },
         { label: 'About Page', href: '/admin/about', icon: BuildingOfficeIcon },
         { label: 'Pricelist', href: '/admin/pricelist', icon: BanknotesIcon },
         { label: 'Reservations', href: '/admin/bookings', icon: CalendarDaysIcon },

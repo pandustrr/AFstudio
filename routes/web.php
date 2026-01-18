@@ -5,6 +5,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\Api\PhotoSelectorController;
 use App\Http\Controllers\Admin\PhotoEditingController;
 use App\Http\Controllers\Admin\ReviewController;
+use App\Http\Controllers\Admin\InsightController;
 use App\Http\Controllers\Public\CartController;
 use App\Http\Controllers\Public\BookingController;
 use App\Http\Controllers\Public\ScheduleController;
@@ -55,6 +56,13 @@ Route::prefix('admin')->group(function () {
         Route::resource('photo-editing', PhotoEditingController::class)->names('admin.photo-editing');
         Route::patch('/reviews/{review}/toggle', [\App\Http\Controllers\Admin\ReviewController::class, 'toggleVisibility'])->name('admin.reviews.toggle');
         Route::resource('reviews', ReviewController::class)->only(['index', 'show', 'destroy'])->names('admin.reviews');
+
+        // Insights
+        Route::get('/insights/test', function () {
+            return \Inertia\Inertia::render('Admin/Insights/Test');
+        });
+        Route::get('/insights', [InsightController::class, 'index'])->name('admin.insights.index');
+        Route::get('/insights/page/{pageName}', [InsightController::class, 'pageDetails'])->name('admin.insights.page');
 
         // About & Pricelist
         Route::get('/about', [\App\Http\Controllers\Admin\AboutController::class, 'index'])->name('admin.about.index');
