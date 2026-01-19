@@ -13,15 +13,20 @@ class AuthController extends Controller
      */
     public function showLogin(Request $request)
     {
-        $guard = $request->is('editor*') ? 'editor' : 'web';
+        $segment = $request->segment(1);
+        $guard = 'web';
+
+        if ($segment === 'editor') $guard = 'editor';
+        elseif ($segment === 'photographer') $guard = 'photographer';
 
         if (Auth::guard($guard)->check()) {
-            return redirect()->route($guard === 'editor' ? 'editor.dashboard' : 'admin.dashboard');
+            if ($guard === 'editor') return redirect()->route('editor.dashboard');
+            if ($guard === 'photographer') return redirect()->route('photographer.dashboard');
+            return redirect()->route('admin.dashboard');
         }
 
-        return $guard === 'editor'
-            ? Inertia::render('Editor/Login')
-            : Inertia::render('Admin/Login');
+        if ($segment === 'photographer') return Inertia::render('Photographer/Login');
+        return Inertia::render('Admin/Login');
     }
 
     /**
@@ -29,20 +34,34 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        $guard = $request->is('editor*') || $request->input('type') === 'editor' ? 'editor' : 'web';
-
         $credentials = $request->validate([
             'username' => ['required'],
             'password' => ['required'],
         ]);
 
+        // Detect guard based on type input or user's role in database
+        $user = \App\Models\User::where('username', $request->username)->first();
+
+        $type = $request->input('type');
+        $guard = 'web';
+
+        if ($type === 'photographer' || ($user && $user->role === 'photographer')) {
+            $guard = 'photographer';
+        } elseif ($type === 'editor' || ($user && $user->role === 'editor')) {
+            $guard = 'editor';
+        }
+
         if (Auth::guard($guard)->attempt($credentials, $request->boolean('remember'))) {
-            // Check role after successful credentials check
             $user = Auth::guard($guard)->user();
 
             if ($guard === 'editor' && $user->role !== 'editor' && $user->role !== 'admin') {
                 Auth::guard($guard)->logout();
                 return back()->withErrors(['username' => 'Akses khusus Editor.']);
+            }
+
+            if ($guard === 'photographer' && $user->role !== 'photographer' && $user->role !== 'admin') {
+                Auth::guard($guard)->logout();
+                return back()->withErrors(['username' => 'Akses khusus Photographer.']);
             }
 
             if ($guard === 'web' && $user->role !== 'admin') {
@@ -52,7 +71,9 @@ class AuthController extends Controller
 
             $request->session()->regenerate();
 
-            return redirect()->intended(route($guard === 'editor' ? 'editor.dashboard' : 'admin.dashboard'));
+            if ($guard === 'editor') return redirect()->intended(route('editor.dashboard'));
+            if ($guard === 'photographer') return redirect()->intended(route('photographer.dashboard'));
+            return redirect()->intended(route('admin.dashboard'));
         }
 
         return back()->withErrors([
@@ -65,20 +86,16 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        $guard = $request->is('admin*') ? 'web' : 'editor';
-        $otherGuard = $guard === 'web' ? 'editor' : 'web';
+        $guard = 'web';
+        if ($request->is('admin*')) $guard = 'web';
+        elseif ($request->is('editor*')) $guard = 'editor';
+        elseif ($request->is('photographer*')) $guard = 'photographer';
 
         Auth::guard($guard)->logout();
 
-        // Only invalidate if the other guard is NOT logged in
-        if (!Auth::guard($otherGuard)->check()) {
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-        } else {
-            // Just regenerate to be safe but keep the session
-            $request->session()->regenerate();
-        }
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
-        return redirect($guard === 'web' ? '/admin/login' : '/editor/login');
+        return redirect('/admin/login');
     }
 }

@@ -34,5 +34,15 @@ class AdminSeeder extends Seeder
                 'role' => 'editor',
             ]
         );
+
+        User::updateOrCreate(
+            ['username' => 'photographer'],
+            [
+                'name' => 'Photographer AFstudio',
+                'email' => 'photographer@afstudio.com',
+                'password' => Hash::make('photo123'),
+                'role' => 'photographer',
+            ]
+        );
     }
 }

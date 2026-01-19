@@ -43,6 +43,9 @@ class HandleInertiaRequests extends Middleware
                     if ($request->is('editor*')) {
                         return Auth::guard('editor')->user();
                     }
+                    if ($request->is('photographer*')) {
+                        return Auth::guard('photographer')->user();
+                    }
                     if ($request->is('admin*')) {
                         return Auth::guard('web')->user();
                     }

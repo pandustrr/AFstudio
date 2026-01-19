@@ -9,7 +9,9 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
     const { theme, toggleTheme } = useTheme();
 
     const user = usePage().props.auth.user;
-    const prefix = url.startsWith('/editor') ? '/editor' : '/admin';
+    let prefix = '/admin';
+    if (url.startsWith('/editor')) prefix = '/editor';
+    else if (url.startsWith('/photographer')) prefix = '/photographer';
 
     const allMenuItems = [
         { label: 'Dashboard', href: `${prefix}/dashboard`, icon: ChartBarIcon },
@@ -22,9 +24,14 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
     ];
 
     const isEditorRoute = url.startsWith('/editor');
-    const menuItems = (user.role === 'editor' || isEditorRoute)
-        ? allMenuItems.filter(item => item.label === 'Request Edit' || item.label === 'Dashboard')
-        : allMenuItems;
+    const isPhotographerRoute = url.startsWith('/photographer');
+
+    let menuItems = allMenuItems;
+    if (user.role === 'photographer' || isPhotographerRoute) {
+        menuItems = allMenuItems.filter(item => item.label === 'Dashboard');
+    } else if (user.role === 'editor' || isEditorRoute) {
+        menuItems = allMenuItems.filter(item => item.label === 'Request Edit' || item.label === 'Dashboard');
+    }
 
     return (
         <>
@@ -73,10 +80,10 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                         <ThemeToggle theme={theme} toggleTheme={toggleTheme} className="scale-75 origin-right" />
                     </div>
                     <Link
-                        href={url.startsWith('/editor') ? "/editor/logout" : "/admin/logout"}
+                        href={url.startsWith('/photographer') ? "/photographer/logout" : (url.startsWith('/editor') ? "/editor/logout" : "/admin/logout")}
                         method="post"
                         as="button"
-                        onSuccess={() => window.location.href = url.startsWith('/editor') ? '/editor/login' : '/admin/login'}
+                        onSuccess={() => window.location.href = url.startsWith('/photographer') ? '/photographer/login' : (url.startsWith('/editor') ? '/editor/login' : '/admin/login')}
                         onError={() => window.location.reload()}
                         className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-black uppercase text-[9px] tracking-widest text-brand-red hover:bg-brand-red/5 transition-all text-left"
                     >

@@ -41,6 +41,7 @@ Route::prefix('api/photo-selector')->group(function () {
 });
 
 use App\Http\Controllers\Admin\EditorDashboardController;
+use App\Http\Controllers\Admin\PhotographerDashboardController;
 
 // Editor Routes
 Route::prefix('editor')->group(function () {
@@ -52,6 +53,17 @@ Route::prefix('editor')->group(function () {
         Route::get('/dashboard', [EditorDashboardController::class, 'index'])->name('editor.dashboard');
 
         Route::resource('photo-editing', PhotoEditingController::class)->names('editor.photo-editing');
+    });
+});
+
+// Photographer Routes
+Route::prefix('photographer')->group(function () {
+    Route::get('/login', [\App\Http\Controllers\AuthController::class, 'showLogin'])->name('photographer.login');
+    Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login']);
+    Route::post('/logout', [\App\Http\Controllers\AuthController::class, 'logout'])->name('photographer.logout');
+
+    Route::middleware(['auth:photographer', 'role:photographer'])->group(function () {
+        Route::get('/dashboard', [PhotographerDashboardController::class, 'index'])->name('photographer.dashboard');
     });
 });
 
