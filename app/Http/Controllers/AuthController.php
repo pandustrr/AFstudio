@@ -16,7 +16,7 @@ class AuthController extends Controller
         $guard = $request->is('editor*') ? 'editor' : 'web';
 
         if (Auth::guard($guard)->check()) {
-            return redirect()->route('admin.dashboard');
+            return redirect()->route($guard === 'editor' ? 'editor.dashboard' : 'admin.dashboard');
         }
 
         return $guard === 'editor'
@@ -52,7 +52,7 @@ class AuthController extends Controller
 
             $request->session()->regenerate();
 
-            return redirect()->intended(route('admin.dashboard'));
+            return redirect()->intended(route($guard === 'editor' ? 'editor.dashboard' : 'admin.dashboard'));
         }
 
         return back()->withErrors([

@@ -9,19 +9,21 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
     const { theme, toggleTheme } = useTheme();
 
     const user = usePage().props.auth.user;
+    const prefix = url.startsWith('/editor') ? '/editor' : '/admin';
 
     const allMenuItems = [
-        { label: 'Dashboard', href: '/admin/dashboard', icon: ChartBarIcon },
-        { label: 'About Page', href: '/admin/about', icon: BuildingOfficeIcon },
-        { label: 'Pricelist', href: '/admin/pricelist', icon: BanknotesIcon },
-        { label: 'Reservations', href: '/admin/bookings', icon: CalendarDaysIcon },
-        { label: 'Manage Rooms', href: '/admin/rooms', icon: BuildingOfficeIcon },
-        { label: 'Request Edit', href: '/admin/photo-editing', icon: CameraIcon },
-        { label: 'Reviews', href: '/admin/reviews', icon: StarIcon },
+        { label: 'Dashboard', href: `${prefix}/dashboard`, icon: ChartBarIcon },
+        { label: 'About Page', href: `${prefix}/about`, icon: BuildingOfficeIcon },
+        { label: 'Pricelist', href: `${prefix}/pricelist`, icon: BanknotesIcon },
+        { label: 'Reservations', href: `${prefix}/bookings`, icon: CalendarDaysIcon },
+        { label: 'Manage Rooms', href: `${prefix}/rooms`, icon: BuildingOfficeIcon },
+        { label: 'Request Edit', href: `${prefix}/photo-editing`, icon: CameraIcon },
+        { label: 'Reviews', href: `${prefix}/reviews`, icon: StarIcon },
     ];
 
-    const menuItems = user.role === 'editor'
-        ? allMenuItems.filter(item => item.label === 'Request Edit')
+    const isEditorRoute = url.startsWith('/editor');
+    const menuItems = (user.role === 'editor' || isEditorRoute)
+        ? allMenuItems.filter(item => item.label === 'Request Edit' || item.label === 'Dashboard')
         : allMenuItems;
 
     return (
@@ -71,10 +73,10 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                         <ThemeToggle theme={theme} toggleTheme={toggleTheme} className="scale-75 origin-right" />
                     </div>
                     <Link
-                        href={user.role === 'editor' ? "/editor/logout" : "/admin/logout"}
+                        href={url.startsWith('/editor') ? "/editor/logout" : "/admin/logout"}
                         method="post"
                         as="button"
-                        onSuccess={() => window.location.href = user.role === 'editor' ? '/editor/login' : '/admin/login'}
+                        onSuccess={() => window.location.href = url.startsWith('/editor') ? '/editor/login' : '/admin/login'}
                         onError={() => window.location.reload()}
                         className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-black uppercase text-[9px] tracking-widest text-brand-red hover:bg-brand-red/5 transition-all text-left"
                     >
