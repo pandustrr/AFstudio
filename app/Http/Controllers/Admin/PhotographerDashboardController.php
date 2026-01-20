@@ -12,16 +12,26 @@ class PhotographerDashboardController extends Controller
 {
     public function index()
     {
-        // Simple stats for photographer
+        $photographerId = \Illuminate\Support\Facades\Auth::id();
+
+        // Stats for this photographer
         $stats = [
-            'total_bookings' => Booking::count(),
-            'pending_bookings' => Booking::where('status', 'pending')->count(),
-            'confirmed_bookings' => Booking::where('status', 'confirmed')->count(),
-            'completed_bookings' => Booking::where('status', 'completed')->count(),
+            'total_sessions' => \App\Models\PhotographerSession::where('photographer_id', $photographerId)->count(),
+            'booked_sessions' => \App\Models\PhotographerSession::where('photographer_id', $photographerId)->where('status', 'booked')->count(),
+            'open_sessions' => \App\Models\PhotographerSession::where('photographer_id', $photographerId)->where('status', 'open')->count(),
+            'upcoming_sessions' => \App\Models\PhotographerSession::where('photographer_id', $photographerId)
+                ->where('status', 'booked')
+                ->where('date', '>=', now()->toDateString())
+                ->count(),
         ];
 
-        // Recent bookings for the photographer
-        $recent_bookings = Booking::with(['items.package', 'items.room'])
+        // Recent bookings involving this photographer
+        $recent_bookings = \App\Models\Booking::whereHas('items', function ($q) use ($photographerId) {
+            $q->where('photographer_id', $photographerId);
+        })
+            ->with(['items' => function ($q) use ($photographerId) {
+                $q->where('photographer_id', $photographerId)->with('package');
+            }])
             ->latest()
             ->take(5)
             ->get();

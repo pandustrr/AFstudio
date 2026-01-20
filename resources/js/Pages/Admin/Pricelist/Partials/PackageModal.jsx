@@ -9,6 +9,7 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId }) {
         features: [],
         sub_category_id: '',
         is_popular: false,
+        max_sessions: 1,
     });
 
     const [newFeature, setNewFeature] = useState('');
@@ -21,6 +22,7 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId }) {
                 features: pkg.features || [],
                 sub_category_id: pkg.sub_category_id || '',
                 is_popular: pkg.is_popular || false,
+                max_sessions: pkg.max_sessions || 1,
             });
         } else {
             reset();
@@ -96,15 +98,28 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId }) {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 p-4 bg-black/5 dark:bg-white/5 rounded-2xl">
-                        <input
-                            type="checkbox"
-                            id="is_popular"
-                            checked={data.is_popular}
-                            onChange={(e) => setData('is_popular', e.target.checked)}
-                            className="w-5 h-5 rounded border-0 bg-black/10 dark:bg-white/10 text-brand-gold focus:ring-brand-gold"
-                        />
-                        <label htmlFor="is_popular" className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white cursor-pointer select-none">Tandai Sebagai Paket Populer (Highlight)</label>
+                    <div className="flex items-center gap-6">
+                        <div className="flex-1 flex items-center gap-3 p-4 bg-black/5 dark:bg-white/5 rounded-2xl">
+                            <input
+                                type="checkbox"
+                                id="is_popular"
+                                checked={data.is_popular}
+                                onChange={(e) => setData('is_popular', e.target.checked)}
+                                className="w-5 h-5 rounded border-0 bg-black/10 dark:bg-white/10 text-brand-gold focus:ring-brand-gold"
+                            />
+                            <label htmlFor="is_popular" className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white cursor-pointer select-none">Tandai Populer</label>
+                        </div>
+                        <div className="w-32">
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-2">Maks Sesi</label>
+                            <input
+                                type="number"
+                                min="1"
+                                value={data.max_sessions}
+                                onChange={(e) => setData('max_sessions', e.target.value)}
+                                className="w-full bg-black/5 dark:bg-white/5 border-0 rounded-xl px-4 py-3 text-sm font-bold text-brand-black dark:text-brand-white focus:ring-2 focus:ring-brand-gold transition-all"
+                                required
+                            />
+                        </div>
                     </div>
 
                     <div>

@@ -16,6 +16,7 @@ class PricelistPackage extends Model
         'is_popular',
         'features',
         'duration',
+        'max_sessions',
     ];
 
     protected $casts = [

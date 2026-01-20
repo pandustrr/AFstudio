@@ -25,6 +25,7 @@ Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
 Route::patch('/cart/{cart}', [CartController::class, 'update'])->name('cart.update');
 Route::delete('/cart/{cart}', [CartController::class, 'destroy'])->name('cart.destroy');
 Route::get('/schedule/check', [ScheduleController::class, 'checkAvailability'])->name('schedule.check');
+Route::get('/schedule/photographer', [ScheduleController::class, 'checkPhotographerAvailability'])->name('schedule.photographer');
 
 // Booking Routes (Guest & Auth)
 Route::get('/checkout', [BookingController::class, 'create'])->name('booking.create');
@@ -64,6 +65,9 @@ Route::prefix('photographer')->group(function () {
 
     Route::middleware(['auth:photographer', 'role:photographer'])->group(function () {
         Route::get('/dashboard', [PhotographerDashboardController::class, 'index'])->name('photographer.dashboard');
+
+        Route::get('/sessions', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'index'])->name('photographer.sessions.index');
+        Route::post('/sessions/toggle', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'toggle'])->name('photographer.sessions.toggle');
     });
 });
 
@@ -97,6 +101,10 @@ Route::prefix('admin')->group(function () {
             ->only(['index', 'store', 'update', 'destroy'])
             ->names('admin.rooms');
 
+        Route::resource('photographers', \App\Http\Controllers\Admin\PhotographerController::class)
+            ->only(['index', 'store', 'update', 'destroy'])
+            ->names('admin.photographers');
+
         // Room Schedule
         Route::get('/rooms/{room}/schedule', [\App\Http\Controllers\Admin\RoomScheduleController::class, 'show'])->name('admin.rooms.schedule.show');
         Route::post('/rooms/{room}/schedule', [\App\Http\Controllers\Admin\RoomScheduleController::class, 'store'])->name('admin.rooms.schedule.store');
@@ -119,6 +127,13 @@ Route::prefix('admin')->group(function () {
             Route::post('/package', [\App\Http\Controllers\Admin\PricelistController::class, 'storePackage'])->name('admin.pricelist.package.store');
             Route::put('/package/{package}', [\App\Http\Controllers\Admin\PricelistController::class, 'updatePackage'])->name('admin.pricelist.package.update');
             Route::delete('/package/{package}', [\App\Http\Controllers\Admin\PricelistController::class, 'destroyPackage'])->name('admin.pricelist.package.destroy');
+        });
+
+        // Photographer Sessions Admin Management
+        Route::prefix('photographer-sessions')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'adminIndex'])->name('admin.photographer-sessions.index');
+            Route::post('/offset', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'updateOffset'])->name('admin.photographer-sessions.offset');
+            Route::post('/reschedule', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'reschedule'])->name('admin.photographer-sessions.reschedule');
         });
     });
 });

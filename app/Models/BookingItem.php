@@ -20,11 +20,22 @@ class BookingItem extends Model
         'start_time',
         'end_time',
         'room_id',
+        'photographer_id',
     ];
 
     public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class);
+    }
+
+    public function photographer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'photographer_id');
+    }
+
+    public function sessions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PhotographerSession::class, 'booking_item_id');
     }
 
     public function package(): BelongsTo

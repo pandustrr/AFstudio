@@ -8,6 +8,7 @@ export default function ManageCategoriesModal({ isOpen, onClose, categories }) {
 
     const { data, setData, post, processing, reset, errors } = useForm({
         name: '',
+        type: 'room',
     });
 
     const handleAdd = (e) => {
@@ -17,9 +18,8 @@ export default function ManageCategoriesModal({ isOpen, onClose, categories }) {
         });
     };
 
-    const handleUpdate = (id) => {
-        if (!editName.trim()) return;
-        router.put(`/admin/pricelist/category/${id}`, { name: editName }, {
+    const handleUpdate = (id, fields) => {
+        router.put(`/admin/pricelist/category/${id}`, fields, {
             onSuccess: () => setEditingId(null),
         });
     };
@@ -34,7 +34,7 @@ export default function ManageCategoriesModal({ isOpen, onClose, categories }) {
 
     return (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-brand-black/60" onClick={onClose}></div>
+            <div className="absolute inset-0 bg-transparent" onClick={onClose}></div>
             <div className="relative bg-white dark:bg-brand-black w-full max-w-lg rounded-3xl overflow-hidden shadow-[0_32px_64px_-15px_rgba(0,0,0,0.5)] border border-black/5 dark:border-white/5">
                 <div className="px-8 py-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between">
                     <h3 className="text-xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter">
@@ -62,15 +62,28 @@ export default function ManageCategoriesModal({ isOpen, onClose, categories }) {
                                         onKeyPress={(e) => e.key === 'Enter' && handleUpdate(category.id)}
                                     />
                                 ) : (
-                                    <div
-                                        className="flex-1 text-sm font-bold text-brand-black dark:text-brand-white px-4 cursor-pointer"
-                                        onClick={() => {
-                                            setEditingId(category.id);
-                                            setEditName(category.name);
-                                        }}
-                                    >
-                                        {category.name}
+                                    <div className="flex-1 flex flex-col gap-1 px-4 cursor-pointer" onClick={() => {
+                                        setEditingId(category.id);
+                                        setEditName(category.name);
+                                    }}>
+                                        <div className="text-sm font-bold text-brand-black dark:text-brand-white">
+                                            {category.name}
+                                        </div>
+                                        <div className="text-[9px] font-black uppercase text-brand-black/30 dark:text-brand-white/30 tracking-widest">
+                                            Type: {category.type}
+                                        </div>
                                     </div>
+                                )}
+
+                                {editingId === category.id && (
+                                    <select
+                                        value={category.type}
+                                        onChange={(e) => handleUpdate(category.id, { name: editName, type: e.target.value })}
+                                        className="bg-white dark:bg-white/10 border-0 rounded-lg px-2 py-1 text-[9px] font-black uppercase"
+                                    >
+                                        <option value="room">ROOM</option>
+                                        <option value="photographer">PHOTOGRAPHER</option>
+                                    </select>
                                 )}
 
                                 <div className="flex items-center gap-1">
@@ -97,22 +110,34 @@ export default function ManageCategoriesModal({ isOpen, onClose, categories }) {
                     {/* Add New Category */}
                     <div className="pt-6 border-t border-black/5 dark:border-white/5">
                         <label className="block text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-3">Tambah Kategori Baru</label>
-                        <form onSubmit={handleAdd} className="flex gap-2">
-                            <input
-                                type="text"
-                                value={data.name}
-                                onChange={(e) => setData('name', e.target.value)}
-                                className="flex-1 bg-black/5 dark:bg-white/5 border-0 rounded-xl px-4 py-3 text-sm font-bold text-brand-black dark:text-brand-white focus:ring-2 focus:ring-brand-gold transition-all"
-                                placeholder="Nama kategori..."
-                                required
-                            />
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                className="p-3 bg-brand-gold text-brand-black rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand-gold/20 disabled:opacity-50"
-                            >
-                                <PlusIcon className="w-5 h-5" />
-                            </button>
+                        <form onSubmit={handleAdd} className="space-y-4">
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={data.name}
+                                    onChange={(e) => setData('name', e.target.value)}
+                                    className="flex-1 bg-black/5 dark:bg-white/5 border-0 rounded-xl px-4 py-3 text-sm font-bold text-brand-black dark:text-brand-white focus:ring-2 focus:ring-brand-gold transition-all"
+                                    placeholder="Nama kategori..."
+                                    required
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={processing}
+                                    className="p-3 bg-brand-gold text-brand-black rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand-gold/20 disabled:opacity-50"
+                                >
+                                    <PlusIcon className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <div className="flex gap-4">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" checked={data.type === 'room'} onChange={() => setData('type', 'room')} />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest">Room</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" checked={data.type === 'photographer'} onChange={() => setData('type', 'photographer')} />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest">Photographer</span>
+                                </label>
+                            </div>
                         </form>
                         {errors.name && <p className="mt-1 text-[10px] text-brand-red font-bold uppercase tracking-widest">{errors.name}</p>}
                     </div>

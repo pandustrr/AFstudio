@@ -41,6 +41,7 @@ class BookingController extends Controller
         return Inertia::render('Checkout/Create', [
             'carts' => $carts,
             'rooms' => \App\Models\Room::all(),
+            'photographers' => \App\Models\User::where('role', 'photographer')->get(['id', 'name']),
         ]);
     }
 
@@ -115,18 +116,27 @@ class BookingController extends Controller
             ]);
 
             foreach ($validCarts as $cart) {
-                BookingItem::create([
+                $item = BookingItem::create([
                     'booking_id' => $booking->id,
                     'pricelist_package_id' => $cart->pricelist_package_id,
                     'quantity' => $cart->quantity,
                     'price' => $cart->package->price_numeric ?? 0,
                     'subtotal' => $cart->quantity * ($cart->package->price_numeric ?? 0),
-                    // Transfer schedule info from Cart to BookingItem
                     'scheduled_date' => $cart->scheduled_date,
                     'start_time' => $cart->start_time,
                     'end_time' => $cart->end_time,
                     'room_id' => $cart->room_id,
+                    'photographer_id' => $cart->photographer_id,
                 ]);
+
+                // If this is a photographer flow, update sessions
+                if ($cart->photographer_id && $cart->session_ids) {
+                    \App\Models\PhotographerSession::whereIn('id', $cart->session_ids)
+                        ->update([
+                            'status' => 'booked',
+                            'booking_item_id' => $item->id,
+                        ]);
+                }
             }
 
             // Clear Cart (All, including orphans to clean up)

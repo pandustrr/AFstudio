@@ -1,6 +1,15 @@
 import React from 'react';
 import { Link, usePage } from '@inertiajs/react';
-import { ChartBarIcon, CameraIcon, StarIcon, ArrowRightOnRectangleIcon, BuildingOfficeIcon, BanknotesIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import {
+    ChartBarIcon,
+    CameraIcon,
+    StarIcon,
+    ArrowRightOnRectangleIcon,
+    BuildingOfficeIcon,
+    BanknotesIcon,
+    CalendarDaysIcon,
+    UserIcon
+} from '@heroicons/react/24/outline';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../Contexts/ThemeContext';
 
@@ -18,7 +27,8 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
         { label: 'About Page', href: `${prefix}/about`, icon: BuildingOfficeIcon },
         { label: 'Pricelist', href: `${prefix}/pricelist`, icon: BanknotesIcon },
         { label: 'Reservations', href: `${prefix}/bookings`, icon: CalendarDaysIcon },
-        { label: 'Manage Rooms', href: `${prefix}/rooms`, icon: BuildingOfficeIcon },
+        { label: 'Manage Photographer', href: `${prefix}/photographers`, icon: UserIcon },
+        { label: 'Sesi Fotografer', href: `/admin/photographer-sessions`, icon: CalendarDaysIcon },
         { label: 'Request Edit', href: `${prefix}/photo-editing`, icon: CameraIcon },
         { label: 'Reviews', href: `${prefix}/reviews`, icon: StarIcon },
     ];
@@ -28,7 +38,10 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
 
     let menuItems = allMenuItems;
     if (user.role === 'photographer' || isPhotographerRoute) {
-        menuItems = allMenuItems.filter(item => item.label === 'Dashboard');
+        menuItems = [
+            { label: 'Dashboard', href: `${prefix}/dashboard`, icon: ChartBarIcon },
+            { label: 'Jadwal Sesi', href: `${prefix}/sessions`, icon: CalendarDaysIcon },
+        ];
     } else if (user.role === 'editor' || isEditorRoute) {
         menuItems = allMenuItems.filter(item => item.label === 'Request Edit' || item.label === 'Dashboard');
     }

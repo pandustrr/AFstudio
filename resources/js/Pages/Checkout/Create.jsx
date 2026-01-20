@@ -3,13 +3,19 @@ import { Head, useForm, usePage } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
 import { ShieldCheckIcon, CalendarIcon, MapPinIcon, PhoneIcon, UserIcon, ChatBubbleBottomCenterTextIcon, ClockIcon, HomeIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
 
-export default function CheckoutCreate({ carts = [], rooms = [] }) {
+export default function CheckoutCreate({ carts = [], rooms = [], photographers = [] }) {
     const { auth } = usePage().props;
 
     const getRoomLabel = (id) => {
         const room = rooms.find(r => r.id === parseInt(id));
         return room ? room.label : `Room ${id}`;
     };
+
+    const getPhotographerName = (id) => {
+        const fg = photographers.find(p => p.id === parseInt(id));
+        return fg ? fg.name : 'Unknown Photographer';
+    };
+
     const user = auth?.user || {};
 
     const { data, setData, post, processing, errors } = useForm({
@@ -248,8 +254,17 @@ export default function CheckoutCreate({ carts = [], rooms = [] }) {
                                                 <span>{cart.start_time?.substring(0, 5)} - {cart.end_time?.substring(0, 5)}</span>
                                             </div>
                                             <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white">
-                                                <MapPinIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
-                                                <span>Studio {getRoomLabel(cart.room_id)}</span>
+                                                {cart.photographer_id ? (
+                                                    <>
+                                                        <UserIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
+                                                        <span>FG: {getPhotographerName(cart.photographer_id)}</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <MapPinIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
+                                                        <span>Studio {getRoomLabel(cart.room_id)}</span>
+                                                    </>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

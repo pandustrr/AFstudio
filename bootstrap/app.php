@@ -24,6 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('photographer*')) {
                 return route('photographer.login');
             }
+            if ($request->is('editor*')) {
+                return route('editor.login');
+            }
             return route('login');
         });
     })

@@ -26,6 +26,7 @@ class AuthController extends Controller
         }
 
         if ($segment === 'photographer') return Inertia::render('Photographer/Login');
+        if ($segment === 'editor') return Inertia::render('Editor/Login');
         return Inertia::render('Admin/Login');
     }
 
@@ -39,16 +40,14 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        // Detect guard based on type input or user's role in database
-        $user = \App\Models\User::where('username', $request->username)->first();
-
-        $type = $request->input('type');
+        // Detect guard strictly based on URL segment
+        $segment = $request->segment(1);
         $guard = 'web';
 
-        if ($type === 'photographer' || ($user && $user->role === 'photographer')) {
-            $guard = 'photographer';
-        } elseif ($type === 'editor' || ($user && $user->role === 'editor')) {
+        if ($segment === 'editor') {
             $guard = 'editor';
+        } elseif ($segment === 'photographer') {
+            $guard = 'photographer';
         }
 
         if (Auth::guard($guard)->attempt($credentials, $request->boolean('remember'))) {
@@ -96,6 +95,8 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
+        if ($guard === 'editor') return redirect('/editor/login');
+        if ($guard === 'photographer') return redirect('/photographer/login');
         return redirect('/admin/login');
     }
 }

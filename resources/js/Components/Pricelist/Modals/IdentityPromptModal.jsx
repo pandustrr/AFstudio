@@ -22,7 +22,7 @@ export default function IdentityPromptModal({ isOpen, onClose, onConfirm }) {
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <div className="fixed inset-0 bg-black/60" />
+                    <div className="fixed inset-0 bg-transparent" />
                 </Transition.Child>
 
                 <div className="fixed inset-0 overflow-y-auto">
