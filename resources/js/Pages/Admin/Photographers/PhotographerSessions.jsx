@@ -9,7 +9,8 @@ import {
     ClockIcon,
     AdjustmentsHorizontalIcon,
     ArrowsRightLeftIcon,
-    InformationCircleIcon
+    InformationCircleIcon,
+    CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 import Modal from '@/Components/Modal';
 

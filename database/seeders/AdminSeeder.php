@@ -19,7 +19,6 @@ class AdminSeeder extends Seeder
             ['username' => 'admin'],
             [
                 'name' => 'Admin AFstudio',
-                'email' => 'admin@afstudio.com',
                 'password' => Hash::make('admin123'),
                 'role' => 'admin',
             ]
@@ -29,7 +28,6 @@ class AdminSeeder extends Seeder
             ['username' => 'editor'],
             [
                 'name' => 'Editor AFstudio',
-                'email' => 'editor@afstudio.com',
                 'password' => Hash::make('editor123'),
                 'role' => 'editor',
             ]
@@ -39,7 +37,6 @@ class AdminSeeder extends Seeder
             ['username' => 'photographer'],
             [
                 'name' => 'Photographer AFstudio',
-                'email' => 'photographer@afstudio.com',
                 'password' => Hash::make('photo123'),
                 'role' => 'photographer',
             ]
