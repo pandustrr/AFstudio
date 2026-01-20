@@ -13,202 +13,338 @@ class ScheduleController extends Controller
 {
     /**
      * Check availability for a specific date and package.
-     * Returns valid start times.
+     * For room packages: Returns available start times from room schedules
+     * For photographer packages: Returns photographer sessions with 'open' status
      */
     public function checkAvailability(Request $request)
     {
         $request->validate([
             'date' => 'required|date|after_or_equal:today',
             'package_id' => 'required|exists:pricelist_packages,id',
-            'room_id' => 'nullable|integer|in:1,2,3',
         ]);
 
         try {
-            \Illuminate\Support\Facades\Log::info('Schedule Check Request:', $request->all());
-
-            $date = Carbon::parse($request->date);
-            $package = PricelistPackage::findOrFail($request->package_id);
+            $date = Carbon::parse($request->date)->toDateString();
+            $package = PricelistPackage::with('subCategory.category')->findOrFail($request->package_id);
             $durationMinutes = $package->duration ?? 60;
-            $requestedRoomId = $request->room_id;
 
-            // 1. Fetch ALL rooms for metadata
-            $allRooms = \App\Models\Room::all();
+            // Check if this is a photographer package or room package
+            $isPhotographer = $package->subCategory?->category?->type === 'photographer';
 
-            // 2. Pre-fetch schedules for ALL rooms
-            $dayOfWeek = $date->dayOfWeek;
-            $schedules = \App\Models\RoomSchedule::whereIn('room_id', $allRooms->pluck('id'))
-                ->where(function ($q) use ($date, $dayOfWeek) {
-                    $q->where('date', $date->toDateString())
-                        ->orWhere(function ($q2) use ($dayOfWeek) {
-                            $q2->whereNull('date')->where('day_of_week', $dayOfWeek);
-                        });
-                })->get()->groupBy('room_id');
+            if ($isPhotographer) {
+                // Fetch photographer sessions with 'open' status
+                $sessionsNeeded = ceil($durationMinutes / 30);
+                
+                $sessions = \App\Models\PhotographerSession::where('date', $date)
+                    ->where('status', 'open')
+                    ->orderBy('photographer_id')
+                    ->orderBy('start_time')
+                    ->get(['id', 'photographer_id', 'start_time', 'status']);
 
-            $perRoomInfo = [];
-            $allRoomAvailability = [];
+                // Group by photographer and find who has consecutive available slots
+                $photographerSlots = $sessions->groupBy('photographer_id');
+                $availableSlots = [];
 
-            foreach ($allRooms as $room) {
-                $roomSchedules = isset($schedules[$room->id]) ? $schedules[$room->id] : collect();
+                foreach ($photographerSlots as $photographerId => $slots) {
+                    $slotTimes = $slots->pluck('start_time')->map(function($time) {
+                        return substr($time, 0, 5); // H:i format
+                    })->toArray();
 
-                // Check overrides then weekly
-                $activeSchedules = $roomSchedules->where('date', $date->toDateString());
-                if ($activeSchedules->isEmpty()) {
-                    $activeSchedules = $roomSchedules->whereNull('date')->where('day_of_week', $dayOfWeek);
-                }
+                    // Find consecutive slots that match duration needed
+                    foreach ($slotTimes as $index => $startTime) {
+                        $isConsecutive = true;
+                        $endIndex = $index + $sessionsNeeded;
+                        
+                        if ($endIndex <= count($slotTimes)) {
+                            for ($i = $index; $i < $endIndex; $i++) {
+                                $expectedTime = Carbon::createFromFormat('H:i', $slotTimes[$index])
+                                    ->addMinutes(($i - $index) * 30)
+                                    ->format('H:i');
+                                
+                                if ($slotTimes[$i] !== $expectedTime) {
+                                    $isConsecutive = false;
+                                    break;
+                                }
+                            }
 
-                $windows = [];
-                $minW = null;
-                $maxW = null;
-
-                if ($activeSchedules->isNotEmpty()) {
-                    foreach ($activeSchedules as $sched) {
-                        if ($sched->is_active) {
-                            $start = Carbon::parse($date->toDateString() . ' ' . $sched->start_time);
-                            $end = Carbon::parse($date->toDateString() . ' ' . $sched->end_time);
-                            $windows[] = ['start' => $start, 'end' => $end];
-
-                            if (!$minW || $start->lt($minW)) $minW = $start;
-                            if (!$maxW || $end->gt($maxW)) $maxW = $end;
-                        }
-                    }
-                }
-
-                $allRoomAvailability[$room->id] = $windows;
-
-                // Format for frontend
-                if (!empty($windows) && $minW && $maxW) {
-                    $perRoomInfo[] = [
-                        'id' => $room->id,
-                        'name' => $room->label ?? $room->name,
-                        'start' => $minW->format('H:i'),
-                        'end' => $maxW->format('H:i'),
-                        'is_open' => true // Simplified, if windows exist it's likely open unless explicitly closed (which results in empty windows if we handled is_active=false correctly above? actually we checked is_active)
-                        // Wait, in the loop above we only add if is_active. 
-                        // If activeSchedules exists but valid ones have is_active=false, windows might be empty.
-                        // So windows empty means closed.
-                    ];
-                    if (empty($windows)) {
-                        // Correct the entry to show closed
-                        array_pop($perRoomInfo);
-                        $perRoomInfo[] = [
-                            'id' => $room->id,
-                            'name' => $room->label ?? $room->name,
-                            'start' => '-',
-                            'end' => '-',
-                            'is_open' => false
-                        ];
-                    }
-                } else {
-                    $perRoomInfo[] = [
-                        'id' => $room->id,
-                        'name' => $room->label ?? $room->name,
-                        'start' => '-',
-                        'end' => '-',
-                        'is_open' => false
-                    ];
-                }
-            }
-
-            // 3. Generate slots for REQUESTED room(s)
-            $targetRooms = $requestedRoomId ? $allRooms->where('id', $requestedRoomId) : $allRooms;
-
-            // Get all booked slots
-            $query = BookingItem::whereHas('booking', function ($q) {
-                $q->whereIn('status', ['pending', 'confirmed', 'completed']);
-            })
-                ->whereDate('scheduled_date', $date->toDateString());
-            $bookedSlots = $query->get(['start_time', 'end_time', 'room_id']);
-
-            $availableStartTimes = [];
-
-            foreach ($targetRooms as $room) {
-                $windows = $allRoomAvailability[$room->id] ?? [];
-
-                foreach ($windows as $window) {
-                    $currentSlot = $window['start']->copy();
-
-                    // Iterate within this specific window
-                    // Step by duration to create clean slots aligned with window start
-                    while ($currentSlot->copy()->addMinutes($durationMinutes)->lte($window['end'])) {
-                        $slotEnd = $currentSlot->copy()->addMinutes($durationMinutes);
-
-                        // Check booking overlap
-                        $isTaken = $bookedSlots->filter(function ($booking) use ($room, $currentSlot, $slotEnd) {
-                            if ($booking->room_id != $room->id) return false;
-                            $bStart = Carbon::parse($booking->start_time);
-                            $bEnd = Carbon::parse($booking->end_time);
-                            return $bStart->lt($slotEnd) && $bEnd->gt($currentSlot);
-                        })->isNotEmpty();
-
-                        if (!$isTaken) {
-                            $timeStr = $currentSlot->format('H:i');
-                            if (!in_array($timeStr, $availableStartTimes)) {
-                                $availableStartTimes[] = $timeStr;
+                            if ($isConsecutive) {
+                                $availableSlots[] = [
+                                    'start_time' => $startTime,
+                                    'photographer_id' => $photographerId,
+                                    'sessions_needed' => $sessionsNeeded,
+                                ];
                             }
                         }
-
-                        $currentSlot->addMinutes($durationMinutes);
                     }
                 }
+
+                return response()->json([
+                    'date' => $date,
+                    'package_type' => 'photographer',
+                    'duration_minutes' => $durationMinutes,
+                    'sessions_needed' => $sessionsNeeded,
+                    'available_slots' => array_values(array_unique($availableSlots, SORT_REGULAR)),
+                ]);
+            } else {
+                // Room package: fetch from RoomSchedule
+                $allRooms = \App\Models\Room::all();
+                $dayOfWeek = Carbon::parse($date)->dayOfWeek;
+
+                $schedules = \App\Models\RoomSchedule::whereIn('room_id', $allRooms->pluck('id'))
+                    ->where(function ($q) use ($date, $dayOfWeek) {
+                        $q->where('date', $date)
+                            ->orWhere(function ($q2) use ($dayOfWeek) {
+                                $q2->whereNull('date')->where('day_of_week', $dayOfWeek);
+                            });
+                    })->get()->groupBy('room_id');
+
+                $allRoomAvailability = [];
+                foreach ($allRooms as $room) {
+                    $roomSchedules = isset($schedules[$room->id]) ? $schedules[$room->id] : collect();
+                    $activeSchedules = $roomSchedules->where('date', $date);
+                    
+                    if ($activeSchedules->isEmpty()) {
+                        $activeSchedules = $roomSchedules->whereNull('date')->where('day_of_week', $dayOfWeek);
+                    }
+
+                    $windows = [];
+                    if ($activeSchedules->isNotEmpty()) {
+                        foreach ($activeSchedules as $sched) {
+                            if ($sched->is_active) {
+                                $start = Carbon::parse($date . ' ' . $sched->start_time);
+                                $end = Carbon::parse($date . ' ' . $sched->end_time);
+                                $windows[] = ['start' => $start, 'end' => $end];
+                            }
+                        }
+                    }
+
+                    $allRoomAvailability[$room->id] = $windows;
+                }
+
+                // Get booked slots
+                $bookedSlots = BookingItem::whereHas('booking', function ($q) {
+                    $q->whereIn('status', ['pending', 'confirmed', 'completed']);
+                })
+                    ->whereDate('scheduled_date', $date)
+                    ->get(['start_time', 'end_time', 'room_id']);
+
+                $availableStartTimes = [];
+                foreach ($allRooms as $room) {
+                    $windows = $allRoomAvailability[$room->id] ?? [];
+
+                    foreach ($windows as $window) {
+                        $currentSlot = $window['start']->copy();
+
+                        while ($currentSlot->copy()->addMinutes($durationMinutes)->lte($window['end'])) {
+                            $slotEnd = $currentSlot->copy()->addMinutes($durationMinutes);
+
+                            $isTaken = $bookedSlots->filter(function ($booking) use ($room, $currentSlot, $slotEnd) {
+                                if ($booking->room_id != $room->id) return false;
+                                $bStart = Carbon::parse($booking->start_time);
+                                $bEnd = Carbon::parse($booking->end_time);
+                                return $bStart->lt($slotEnd) && $bEnd->gt($currentSlot);
+                            })->isNotEmpty();
+
+                            if (!$isTaken) {
+                                $timeStr = $currentSlot->format('H:i');
+                                if (!in_array($timeStr, $availableStartTimes)) {
+                                    $availableStartTimes[] = $timeStr;
+                                }
+                            }
+
+                            $currentSlot->addMinutes($durationMinutes);
+                        }
+                    }
+                }
+
+                sort($availableStartTimes);
+
+                return response()->json([
+                    'date' => $date,
+                    'package_type' => 'room',
+                    'duration' => $durationMinutes,
+                    'available_slots' => $availableStartTimes,
+                ]);
             }
-
-            sort($availableStartTimes);
-
-            return response()->json([
-                'date' => $date->toDateString(),
-                'duration' => $durationMinutes,
-                'room_id' => $requestedRoomId,
-                'available_slots' => $availableStartTimes,
-                'per_room_info' => $perRoomInfo
-            ]);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Schedule Check Error: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
-    public function checkPhotographerAvailability(Request $request)
+    /**
+     * Get available time slots for photographer booking (without selecting specific photographer)
+     * Returns all time slots in operational hours
+     */
+    public function getPhotographerTimeSlots(Request $request)
     {
         $request->validate([
             'date' => 'required|date|after_or_equal:today',
             'package_id' => 'required|exists:pricelist_packages,id',
-            'photographer_id' => 'nullable|exists:users,id',
         ]);
 
-        $date = $request->date;
-        $package = PricelistPackage::findOrFail($request->package_id);
-        $maxSessions = $package->max_sessions;
+        $date = Carbon::parse($request->date)->toDateString();
+        $package = PricelistPackage::with('subCategory.category')->findOrFail($request->package_id);
+        
+        if ($package->subCategory?->category?->type !== 'photographer') {
+            return response()->json(['error' => 'Package is not photographer type'], 400);
+        }
 
-        // Fetch photographers who have "open" sessions on this date
-        $photographers = \App\Models\User::where('role', 'photographer')
-            ->whereHas('photographerSessions', function ($q) use ($date) {
-                $q->where('date', $date)->where('status', 'open');
-            })
-            ->get(['id', 'name']);
+        $maxSessions = $package->max_sessions ?? 1;
 
-        $grid = [];
-        if ($request->photographer_id) {
-            $sessions = \App\Models\PhotographerSession::where('photographer_id', $request->photographer_id)
-                ->where('date', $date)
-                ->orderBy('start_time')
-                ->get();
-
-            // Format sessions for selection
-            foreach ($sessions as $session) {
-                $grid[] = [
-                    'id' => $session->id,
-                    'time' => Carbon::parse($session->start_time)->format('H:i'),
-                    'status' => $session->status,
-                    'block' => $session->block_identifier,
-                ];
-            }
+        // Generate all operational time slots (05:00 - 20:00, every 30 minutes)
+        $timeSlots = [];
+        $start = Carbon::createFromTimeString('05:00');
+        $end = Carbon::createFromTimeString('20:00');
+        
+        while ($start <= $end) {
+            $timeSlots[] = $start->format('H:i');
+            $start->addMinutes(30);
         }
 
         return response()->json([
-            'date' => $date,
+            'time_slots' => $timeSlots,
             'max_sessions' => $maxSessions,
-            'photographers' => $photographers,
-            'sessions' => $grid,
         ]);
+    }
+
+    /**
+     * Check if photographer is available for specific time slot
+     * Auto-find photographer with consecutive open sessions
+     */
+    public function checkPhotographerAvailability(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date|after_or_equal:today',
+            'start_time' => 'required',
+            'sessions_needed' => 'required|integer|min:1',
+            'package_id' => 'required|exists:pricelist_packages,id',
+        ]);
+
+        $date = Carbon::parse($request->date)->toDateString();
+        $startTime = $request->start_time; // Format: H:i
+        $sessionsNeeded = $request->sessions_needed;
+
+        // Generate consecutive time slots needed (convert H:i to H:i:s for database queries)
+        $slots = [];
+        $time = Carbon::createFromFormat('H:i', $startTime);
+        for ($i = 0; $i < $sessionsNeeded; $i++) {
+            $slots[] = $time->format('H:i:s');
+            $time->addMinutes(30);
+        }
+
+        // Find photographer who has ALL these slots available (open status)
+        // Using direct query on PhotographerSession table
+        $photographer = \App\Models\User::where('role', 'photographer')
+            ->whereHas('sessions', function($query) use ($date, $slots) {
+                $query->where('date', $date)
+                    ->whereIn('start_time', $slots)
+                    ->where('status', 'open');
+            }, '=', count($slots))
+            ->first();
+        $available = $photographer !== null;
+
+        return response()->json([
+            'available' => $available,
+            'photographer_id' => $available ? $photographer->id : null,
+            'slots_checked' => $slots,
+        ]);
+    }
+
+    /**
+     * Check if photographer/room is available for specific start time
+     */
+    public function checkTimeAvailability(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date|after_or_equal:today',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'nullable|date_format:H:i',
+            'package_id' => 'required|exists:pricelist_packages,id',
+        ]);
+
+        try {
+            $date = Carbon::parse($request->date)->toDateString();
+            $startTime = $request->start_time; // H:i format
+            $endTime = $request->end_time; // H:i format (from frontend for rooms)
+            $package = PricelistPackage::with('subCategory.category')->findOrFail($request->package_id);
+            $durationMinutes = $package->duration ?? 60;
+            $isPhotographer = $package->subCategory?->category?->type === 'photographer';
+
+            if ($isPhotographer) {
+                // Check if photographer has consecutive open sessions for this duration
+                $sessionsNeeded = ceil($durationMinutes / 30);
+                
+                // Generate required time slots (H:i:s format for DB query)
+                $slots = [];
+                $time = Carbon::createFromFormat('H:i', $startTime);
+                for ($i = 0; $i < $sessionsNeeded; $i++) {
+                    $slots[] = $time->format('H:i:s');
+                    $time->addMinutes(30);
+                }
+
+                // Find photographer with ALL slots available
+                $photographer = \App\Models\User::where('role', 'photographer')
+                    ->whereHas('sessions', function($query) use ($date, $slots) {
+                        $query->where('date', $date)
+                            ->whereIn('start_time', $slots)
+                            ->where('status', 'open');
+                    }, '=', count($slots))
+                    ->first();
+
+                return response()->json([
+                    'available' => $photographer !== null,
+                    'photographer_id' => $photographer?->id,
+                ]);
+            } else {
+                // For room booking, use customer-provided end_time or calculate from duration
+                $endTimeFormatted = $endTime 
+                    ? $endTime . ':00'
+                    : Carbon::createFromFormat('H:i', $startTime)->addMinutes($durationMinutes)->format('H:i:s');
+                $startTimeFormatted = $startTime . ':00';
+
+                // Check room schedules
+                $dayOfWeek = Carbon::parse($date)->dayOfWeek;
+                $schedules = \App\Models\RoomSchedule::where(function($q) use ($date, $dayOfWeek) {
+                    $q->where('date', $date)->orWhere(function($q2) use ($dayOfWeek) {
+                        $q2->whereNull('date')->where('day_of_week', $dayOfWeek);
+                    });
+                })
+                ->where('is_active', true)
+                ->get();
+
+                // Check if requested time falls within any active schedule window
+                $isInWindow = false;
+                foreach ($schedules as $sched) {
+                    if ($startTimeFormatted >= $sched->start_time && $endTime <= $sched->end_time) {
+                        $isInWindow = true;
+                        break;
+                    }
+                }
+
+                if (!$isInWindow) {
+                    return response()->json(['available' => false]);
+                }
+
+                // Check for booking conflicts
+                $conflict = BookingItem::whereHas('booking', function($q) {
+                    $q->whereIn('status', ['pending', 'confirmed', 'completed']);
+                })
+                    ->whereDate('scheduled_date', $date)
+                    ->where(function($q) use ($startTimeFormatted, $endTime) {
+                        $q->whereBetween('start_time', [$startTimeFormatted, $endTime])
+                            ->orWhereBetween('end_time', [$startTimeFormatted, $endTime])
+                            ->orWhere(function($q2) use ($startTimeFormatted, $endTime) {
+                                $q2->where('start_time', '<=', $startTimeFormatted)
+                                    ->where('end_time', '>=', $endTime);
+                            });
+                    })
+                    ->exists();
+
+                return response()->json(['available' => !$conflict]);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

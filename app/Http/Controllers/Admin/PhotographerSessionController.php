@@ -13,13 +13,75 @@ class PhotographerSessionController extends Controller
 {
     public function index(Request $request)
     {
-        $date = $request->input('date', Carbon::today()->toDateString());
+        $year = $request->input('year');
+        $month = $request->input('month');
+        $day = $request->input('day');
+
         $photographerId = Auth::id();
+
+        // Determine the selected date
+        if ($year && $month && $day) {
+            $date = Carbon::createFromDate($year, $month, $day)->toDateString();
+        } else {
+            $date = Carbon::today()->toDateString();
+        }
 
         $sessions = PhotographerSession::where('date', $date)
             ->where('photographer_id', $photographerId)
             ->orderBy('start_time')
             ->get();
+
+        // Get Available Options
+        // Get years from data, but always include past and next year
+        $dataYears = PhotographerSession::where('photographer_id', $photographerId)
+            ->selectRaw('YEAR(date) as year')
+            ->distinct()
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
+
+        $currentYear = Carbon::today()->year;
+        $availableYears = array_unique(array_merge(
+            $dataYears,
+            [$currentYear, $currentYear - 1, $currentYear + 1]
+        ));
+        rsort($availableYears);
+        $availableYears = array_values($availableYears);
+
+        // Months: All 12 months if year is selected
+        $availableMonths = [];
+        if ($year) {
+            // Get months that have data
+            $dataMonths = PhotographerSession::where('photographer_id', $photographerId)
+                ->whereYear('date', $year)
+                ->selectRaw('MONTH(date) as month')
+                ->distinct()
+                ->orderBy('month', 'desc')
+                ->pluck('month')
+                ->toArray();
+            
+            // Always show all months (1-12) for the selected year
+            $availableMonths = range(1, 12);
+        }
+
+        // Days: Available if Year and Month are selected
+        $availableDays = [];
+        if ($year && $month) {
+            $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
+            
+            // Get days that have data
+            $dataDays = PhotographerSession::where('photographer_id', $photographerId)
+                ->whereYear('date', $year)
+                ->whereMonth('date', $month)
+                ->selectRaw('DAY(date) as day')
+                ->distinct()
+                ->orderBy('day', 'desc')
+                ->pluck('day')
+                ->toArray();
+            
+            // Always show all days (1-31 or less based on month)
+            $availableDays = range(1, $daysInMonth);
+        }
 
         // Operasional 05:00 - 20:30 (31 sesi)
         $grid = $this->generateSessionGrid($date, $sessions);
@@ -27,6 +89,16 @@ class PhotographerSessionController extends Controller
         return Inertia::render('Photographer/Sessions', [
             'grid' => $grid,
             'selectedDate' => $date,
+            'filters' => [
+                'year' => $year,
+                'month' => $month,
+                'day' => $day,
+            ],
+            'options' => [
+                'years' => $availableYears,
+                'months' => $availableMonths,
+                'days' => $availableDays,
+            ]
         ]);
     }
 
@@ -136,6 +208,16 @@ class PhotographerSessionController extends Controller
             ]);
         }
 
+        // Redirect with filter params if provided
+        $redirectUrl = '/photographer/sessions';
+        if ($request->has('year') || $request->has('month') || $request->has('day')) {
+            $params = [];
+            if ($request->has('year')) $params['year'] = $request->input('year');
+            if ($request->has('month')) $params['month'] = $request->input('month');
+            if ($request->has('day')) $params['day'] = $request->input('day');
+            return back()->with('filters', $params);
+        }
+
         return back();
     }
 
@@ -170,4 +252,40 @@ class PhotographerSessionController extends Controller
 
         return $grid;
     }
+
+    public function reservations(Request $request)
+    {
+        $photographerId = Auth::id();
+        
+        // Get all booked sessions for this photographer with booking details
+        $sessions = PhotographerSession::where('photographer_id', $photographerId)
+            ->where('status', 'booked')
+            ->with(['bookingItem.booking', 'bookingItem.package'])
+            ->orderBy('date', 'desc')
+            ->orderBy('start_time', 'desc')
+            ->get();
+
+        $reservations = $sessions->map(function($session) {
+            return [
+                'id' => $session->id,
+                'date' => $session->date,
+                'time' => Carbon::createFromTimeString($session->start_time)->format('H:i'),
+                'time_full' => $session->start_time,
+                'customer_name' => $session->bookingItem?->booking?->name ?? 'GUEST',
+                'customer_email' => $session->bookingItem?->booking?->email ?? '-',
+                'customer_phone' => $session->bookingItem?->booking?->phone ?? '-',
+                'package_name' => $session->bookingItem?->package?->name ?? 'N/A',
+                'package_price' => $session->bookingItem?->package?->price ?? 0,
+                'booking_id' => $session->bookingItem?->booking_id ?? null,
+                'booking_item_id' => $session->booking_item_id,
+                'offset_minutes' => $session->offset_minutes,
+                'offset_description' => $session->offset_description,
+            ];
+        });
+
+        return Inertia::render('Photographer/Reservations', [
+            'reservations' => $reservations
+        ]);
+    }
+
 }

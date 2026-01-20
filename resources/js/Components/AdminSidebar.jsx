@@ -139,6 +139,7 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                     {user.role === 'photographer' && (
                         <div className="space-y-1">
                             {renderMenuItem({ label: 'Jadwal Sesi', href: `${prefix}/sessions`, icon: CalendarDaysIcon })}
+                            {renderMenuItem({ label: 'Jadwal Reservasi', href: `${prefix}/reservations`, icon: CalendarDaysIcon })}
                         </div>
                     )}
 
