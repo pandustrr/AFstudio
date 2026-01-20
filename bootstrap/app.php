@@ -21,6 +21,16 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
         ]);
+
+        $middleware->redirectGuestsTo(function ($request) {
+            if ($request->is('photographer*')) {
+                return route('photographer.login');
+            }
+            if ($request->is('editor*')) {
+                return route('editor.login');
+            }
+            return route('login');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

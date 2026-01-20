@@ -8,12 +8,18 @@ export default function DeleteConfirmModal({ isOpen, onClose, onConfirm, title, 
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
             {/* Simple Overlay */}
             <div
-                className="absolute inset-0 bg-black/40 transition-opacity animate-fade-in"
+                className="absolute inset-0 bg-transparent transition-opacity animate-fade-in"
                 onClick={onClose}
             ></div>
 
             {/* Compact Modal Container */}
             <div className="relative bg-white dark:bg-brand-black border border-black/10 dark:border-white/10 rounded-xl w-full max-w-sm shadow-[0_20px_50px_rgba(0,0,0,0.3)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] animate-scale-in overflow-hidden">
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-brand-black/20 dark:text-brand-white/20 hover:text-brand-red transition-all"
+                >
+                    <XMarkIcon className="w-4 h-4" />
+                </button>
                 <div className="p-6">
                     <div className="flex items-start space-x-4">
                         <div className="shrink-0 w-10 h-10 bg-red-100 dark:bg-red-500/10 rounded-full flex items-center justify-center">

@@ -19,6 +19,12 @@ class Cart extends Model
         'start_time',
         'end_time',
         'room_id',
+        'photographer_id',
+        'session_ids',
+    ];
+
+    protected $casts = [
+        'session_ids' => 'array',
     ];
 
     public function user(): BelongsTo

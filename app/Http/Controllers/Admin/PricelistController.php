@@ -25,6 +25,7 @@ class PricelistController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'type' => 'required|in:room,photographer',
         ]);
 
         PricelistCategory::create($validated);
@@ -36,6 +37,7 @@ class PricelistController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'type' => 'required|in:room,photographer',
         ]);
 
         $category->update($validated);
@@ -89,6 +91,7 @@ class PricelistController extends Controller
             'price_numeric' => 'nullable|numeric',
             'features' => 'nullable|array',
             'is_popular' => 'boolean',
+            'max_sessions' => 'required|integer|min:1',
         ]);
 
         PricelistPackage::create($validated);
@@ -104,6 +107,7 @@ class PricelistController extends Controller
             'price_numeric' => 'nullable|numeric',
             'features' => 'nullable|array',
             'is_popular' => 'boolean',
+            'max_sessions' => 'required|integer|min:1',
         ]);
 
         $package->update($validated);

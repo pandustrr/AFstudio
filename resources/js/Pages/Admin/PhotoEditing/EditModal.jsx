@@ -12,7 +12,8 @@ export default function EditModal({ session, onClose }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        put(`/admin/photo-editing/${session.id}`, {
+        const prefix = window.location.pathname.startsWith('/editor') ? '/editor' : '/admin';
+        put(`${prefix}/photo-editing/${session.id}`, {
             onSuccess: () => onClose(),
         });
     };
