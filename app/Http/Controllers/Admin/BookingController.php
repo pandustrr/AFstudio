@@ -18,16 +18,18 @@ class BookingController extends Controller
         $month = $request->input('month');
         $day = $request->input('day');
         $status = $request->input('status');
-        $roomId = $request->input('room_id');
         $search = $request->input('search');
+        $photographerId = $request->input('photographer_id');
 
         $query = \App\Models\BookingItem::query()
-            ->with(['booking.user', 'package.subCategory']);
+            ->with(['booking.user', 'package.subCategory', 'photographer']);
 
-        // Filter by Room
-        if ($roomId != '') {
-            $query->where('room_id', $roomId);
+        // Filter by Photographer
+        if ($photographerId) {
+            $query->where('photographer_id', $photographerId);
         }
+
+
 
         // Search in Booking metadata
         if ($search) {
@@ -110,15 +112,15 @@ class BookingController extends Controller
 
         return Inertia::render('Admin/Bookings/Index', [
             'bookingItems' => $items,
-            'rooms' => \App\Models\Room::all(),
             'filters' => [
                 'year' => $year,
                 'month' => $month,
                 'day' => $day,
                 'status' => $status ?? 'all',
-                'room_id' => $roomId,
-                'search' => $search
+                'search' => $search,
+                'photographer_id' => $photographerId,
             ],
+            'photographers' => \App\Models\User::where('role', 'photographer')->get(),
             'options' => [
                 'years' => $availableYears,
                 'months' => $availableMonths,
@@ -133,7 +135,7 @@ class BookingController extends Controller
 
         return Inertia::render('Admin/Bookings/Show', [
             'booking' => $booking,
-            'rooms' => \App\Models\Room::all(),
+            'photographers' => \App\Models\User::where('role', 'photographer')->get(),
         ]);
     }
 
@@ -168,7 +170,7 @@ class BookingController extends Controller
     public function updateItem(Request $request, BookingItem $item)
     {
         $validated = $request->validate([
-            'room_id' => 'required|exists:rooms,id',
+            'photographer_id' => 'nullable|exists:users,id',
             'scheduled_date' => 'required|date',
             'start_time' => 'required',
             'end_time' => 'required',

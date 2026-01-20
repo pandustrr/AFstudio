@@ -76,6 +76,42 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         }
     }, [date, roomId, photographerId]);
 
+    // Hoisted function to avoid ReferenceError
+    function handleIdentityConfirmed(name) {
+        const cleanName = name.trim().toUpperCase().replace(/\s+/g, '');
+        const randomStr = Math.random().toString(36).substring(2, 7).toUpperCase();
+        const newUid = `${cleanName}-${randomStr}`;
+
+        localStorage.setItem('afstudio_cart_uid', newUid);
+        setShowNamePrompt(false);
+        processCart(newUid);
+    }
+
+    const fetchAvailability = async () => {
+        setLoading(true);
+        setError(null);
+        setSlots([]);
+        setSelectedSlot(null);
+
+        try {
+            const response = await axios.get('/schedule/check', {
+                params: {
+                    date: date,
+                    room_id: roomId,
+                    package_id: packageData.id
+                }
+            });
+            // Fix: API returns available_slots and per_room_info
+            setSlots(response.data.available_slots || []);
+            setRoomInfos(response.data.per_room_info || []);
+        } catch (err) {
+            console.error("Availability check failed", err);
+            setError("Gagal memuat jadwal.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const fetchPhotographerAvailability = async () => {
         setLoading(true);
         setError(null);
@@ -251,7 +287,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                             <HomeIcon className="w-4 h-4" /> Pilih Ruangan Studio
                                                         </label>
                                                         <div className="grid grid-cols-3 gap-3">
-                                                            {(roomInfos.length > 0 ? roomInfos : rooms).map((room) => (
+                                                            {(roomInfos?.length > 0 ? roomInfos : rooms).map((room) => (
                                                                 <button
                                                                     key={room.id}
                                                                     onClick={() => setRoomId(room.id)}
@@ -278,11 +314,11 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                 <div className="text-center py-10 bg-black/5 rounded-2xl animate-pulse"><p className="text-xs font-bold uppercase tracking-widest opacity-20">Memeriksa...</p></div>
                                                             ) : error ? (
                                                                 <div className="p-4 bg-red-50 text-red-700 rounded-xl text-xs font-bold">{error}</div>
-                                                            ) : slots.length === 0 ? (
+                                                            ) : (slots?.length === 0) ? (
                                                                 <p className="text-center py-10 text-xs font-bold uppercase opacity-20">Tidak ada jadwal.</p>
                                                             ) : (
                                                                 <div className="grid grid-cols-3 gap-3 max-h-60 overflow-y-auto pr-1">
-                                                                    {slots.map((slot) => (
+                                                                    {(slots || []).map((slot) => (
                                                                         <button
                                                                             key={slot}
                                                                             onClick={() => setSelectedSlot(slot)}
@@ -304,7 +340,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                             <UserIcon className="w-4 h-4" /> Pilih Fotografer
                                                         </label>
                                                         <div className="grid grid-cols-2 gap-3">
-                                                            {photographers.map((fg) => (
+                                                            {(photographers || []).map((fg) => (
                                                                 <button
                                                                     key={fg.id}
                                                                     onClick={() => setPhotographerId(fg.id)}
@@ -317,7 +353,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                 </button>
                                                             ))}
                                                         </div>
-                                                        {photographers.length === 0 && !loading && (
+                                                        {(photographers?.length === 0) && !loading && (
                                                             <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Tidak ada fotografer tersedia pada tanggal ini.</p>
                                                         )}
                                                     </div>
@@ -327,7 +363,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                         <div className="space-y-3">
                                                             <div className="flex justify-between items-center">
                                                                 <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
-                                                                    <ClockIcon className="w-4 h-4" /> Pilih Sesi ({selectedSessions.length}/{maxSessions})
+                                                                    <ClockIcon className="w-4 h-4" /> Pilih Sesi ({(selectedSessions || []).length}/{maxSessions})
                                                                 </label>
                                                             </div>
 
@@ -335,12 +371,12 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                 <div className="text-center py-10 bg-black/5 rounded-2xl animate-pulse"></div>
                                                             ) : (
                                                                 <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto pr-1">
-                                                                    {slots.map((session) => (
+                                                                    {(slots || []).map((session) => (
                                                                         <button
                                                                             key={session.id}
                                                                             onClick={() => toggleSession(session.id)}
-                                                                            disabled={session.status === 'booked' || (session.status === 'off' && !selectedSessions.includes(session.id))}
-                                                                            className={`py-3 rounded-lg text-[10px] font-black transition-all border-2 ${selectedSessions.includes(session.id)
+                                                                            disabled={session.status === 'booked' || (session.status === 'off' && !(selectedSessions || []).includes(session.id))}
+                                                                            className={`py-3 rounded-lg text-[10px] font-black transition-all border-2 ${(selectedSessions || []).includes(session.id)
                                                                                 ? 'bg-green-500 border-green-500 text-white shadow-lg'
                                                                                 : session.status === 'open'
                                                                                     ? 'bg-white dark:bg-white/5 border-brand-gold/30 text-brand-black dark:text-brand-white'

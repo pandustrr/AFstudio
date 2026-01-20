@@ -97,18 +97,9 @@ Route::prefix('admin')->group(function () {
             ->parameters(['bookings' => 'booking']);
         Route::patch('/booking-items/{item}', [\App\Http\Controllers\Admin\BookingController::class, 'updateItem'])->name('admin.booking-items.update');
 
-        Route::resource('rooms', \App\Http\Controllers\Admin\RoomController::class)
-            ->only(['index', 'store', 'update', 'destroy'])
-            ->names('admin.rooms');
-
         Route::resource('photographers', \App\Http\Controllers\Admin\PhotographerController::class)
             ->only(['index', 'store', 'update', 'destroy'])
             ->names('admin.photographers');
-
-        // Room Schedule
-        Route::get('/rooms/{room}/schedule', [\App\Http\Controllers\Admin\RoomScheduleController::class, 'show'])->name('admin.rooms.schedule.show');
-        Route::post('/rooms/{room}/schedule', [\App\Http\Controllers\Admin\RoomScheduleController::class, 'store'])->name('admin.rooms.schedule.store');
-        Route::delete('/rooms/{room}/schedule/{schedule}', [\App\Http\Controllers\Admin\RoomScheduleController::class, 'destroy'])->name('admin.rooms.schedule.destroy');
 
         Route::prefix('pricelist')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\PricelistController::class, 'index'])->name('admin.pricelist.index');
