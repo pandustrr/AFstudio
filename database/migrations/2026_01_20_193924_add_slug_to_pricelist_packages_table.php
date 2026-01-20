@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('pricelist_categories', function (Blueprint $table) {
-            $table->enum('type', ['room', 'photographer'])->default('room')->after('name');
+        Schema::table('pricelist_packages', function (Blueprint $table) {
+            $table->string('slug')->after('name')->nullable();
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('pricelist_categories', function (Blueprint $table) {
-            //
+        Schema::table('pricelist_packages', function (Blueprint $table) {
+            $table->dropColumn('slug');
         });
     }
 };

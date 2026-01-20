@@ -6,7 +6,7 @@ import { router, usePage } from '@inertiajs/react';
 import IdentityPromptModal from './Modals/IdentityPromptModal';
 import SuccessModal from './Modals/SuccessModal';
 
-export default function ScheduleModal({ isOpen, onClose, packageData, rooms: initialRooms = [] }) {
+export default function ScheduleModal({ isOpen, onClose, packageData, rooms: initialRooms = [], canBook = false }) {
     const { flash } = usePage().props;
     const [date, setDate] = useState('');
     const [roomId, setRoomId] = useState(null);
@@ -77,14 +77,14 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
 
     // Fetch availability when date, room, or photographer changes
     useEffect(() => {
-        if (date && packageData) {
+        if (date && packageData && canBook) {
             if (isPhotographerMode) {
                 fetchPhotographerAvailability();
             } else if (roomId) {
                 fetchAvailability();
             }
         }
-    }, [date, roomId, photographerId]);
+    }, [date, roomId, photographerId, canBook]);
 
     // Hoisted function to avoid ReferenceError
     function handleIdentityConfirmed(name) {
@@ -215,6 +215,8 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         });
     };
 
+    const whatsappLink = `https://wa.me/6281230487469?text=Halo%20Admin%2C%20saya%20tertarik%20dengan%20paket%20${encodeURIComponent(packageData?.name || '')}.%20Boleh%20mohon%20info%20lebih%20lanjut%3F`;
+
     return (
         <>
             <Transition appear show={isOpen} as={Fragment}>
@@ -244,7 +246,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                     <h4 className="font-bold text-brand-red text-sm uppercase tracking-wide mb-2">Paket Dipilih</h4>
                                                     <p className="text-brand-black dark:text-brand-white font-black text-2xl mb-1 leading-tight">{packageData?.name}</p>
                                                     <div className="text-brand-gold font-black italic text-xl">
-                                                        {packageData?.price_numeric ? formatPrice(packageData.price_numeric) : packageData?.price_display}
+                                                        {packageData?.price_display ? packageData.price_display : (packageData?.price_numeric ? formatPrice(packageData.price_numeric) : '')}
                                                     </div>
                                                 </div>
 
@@ -269,151 +271,179 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
 
                                         {/* Right Column: Form */}
                                         <div className="space-y-6">
-                                            {/* Date Selection */}
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
-                                                    <CalendarIcon className="w-4 h-4" /> Pilih Tanggal Booking
-                                                </label>
-                                                <div className="relative group">
-                                                    <input
-                                                        type="date"
-                                                        value={date}
-                                                        min={new Date().toISOString().split('T')[0]}
-                                                        onChange={(e) => setDate(e.target.value)}
-                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                                                    />
-                                                    <div className="w-full bg-black/5 dark:bg-white/5 border-2 border-transparent group-hover:border-brand-gold/30 rounded-2xl px-5 py-4 text-brand-black dark:text-brand-white font-bold text-lg capitalize flex items-center justify-between transition-all">
-                                                        <span>
-                                                            {date ? new Date(date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : 'Pilih Tanggal'}
-                                                        </span>
-                                                        <CalendarIcon className="w-5 h-5 opacity-20 group-hover:opacity-100 group-hover:text-brand-gold transition-all" />
+                                            {!canBook ? (
+                                                <div className="h-full flex flex-col justify-center items-center text-center space-y-6">
+                                                    <div className="w-16 h-16 bg-brand-gold/10 rounded-full flex items-center justify-center mb-2">
+                                                        <UserIcon className="w-8 h-8 text-brand-gold" />
                                                     </div>
+                                                    <div>
+                                                        <h4 className="text-xl font-black uppercase text-brand-black dark:text-brand-white mb-2">
+                                                            Konsultasi Paket
+                                                        </h4>
+                                                        <p className="text-xs text-brand-black/60 dark:text-brand-white/60 leading-relaxed max-w-xs mx-auto">
+                                                            Untuk pemesanan paket ini, silakan hubungi admin kami terlebih dahulu untuk memastikan ketersediaan dan detail sesi.
+                                                        </p>
+                                                    </div>
+
+                                                    <a
+                                                        href={whatsappLink}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-2 px-8 py-4 bg-green-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-green-700 hover:scale-105 transition-all shadow-xl"
+                                                    >
+                                                        <span>Hubungi Admin</span>
+                                                        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.248-.57-.397m-5.473 7.846h-3.021a8.532 8.532 0 01-6.732-4.2l-.721 1.055-3.033.407 1.844-3.565a8.498 8.498 0 01-.734-2.228 8.544 8.544 0 011.536-5.525l.488-.692 3.033.407-1.844 3.565a6.526 6.526 0 00.569 1.636 6.58 6.58 0 004.862 3.864z" /></svg>
+                                                    </a>
                                                 </div>
-                                            </div>
-
-                                            {!isPhotographerMode ? (
-                                                <>
-                                                    {/* Room Selection */}
-                                                    <div className="space-y-3">
-                                                        <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
-                                                            <HomeIcon className="w-4 h-4" /> Pilih Ruangan Studio
-                                                        </label>
-                                                        <div className="grid grid-cols-3 gap-3">
-                                                            {(roomInfos?.length > 0 ? roomInfos : rooms).map((room) => (
-                                                                <button
-                                                                    key={room.id}
-                                                                    onClick={() => setRoomId(room.id)}
-                                                                    disabled={room.is_open === false}
-                                                                    className={`py-4 px-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${roomId === room.id
-                                                                        ? 'bg-brand-gold border-brand-gold text-brand-black shadow-lg scale-105'
-                                                                        : 'bg-transparent border-black/5 dark:border-white/5 text-brand-black/40 dark:text-brand-white/40 hover:border-brand-gold/50 hover:bg-black/5'
-                                                                        } ${room.is_open === false ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
-                                                                >
-                                                                    {room.label || room.name} {room.is_open === false ? '(TUTUP)' : ''}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Time Slots */}
-                                                    {date && (
-                                                        <div className="space-y-3">
-                                                            <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
-                                                                <ClockIcon className="w-4 h-4" /> Jadwal Tersedia
-                                                            </label>
-
-                                                            {loading ? (
-                                                                <div className="text-center py-10 bg-black/5 rounded-2xl animate-pulse"><p className="text-xs font-bold uppercase tracking-widest opacity-20">Memeriksa...</p></div>
-                                                            ) : error ? (
-                                                                <div className="p-4 bg-red-50 text-red-700 rounded-xl text-xs font-bold">{error}</div>
-                                                            ) : (slots?.length === 0) ? (
-                                                                <p className="text-center py-10 text-xs font-bold uppercase opacity-20">Tidak ada jadwal.</p>
-                                                            ) : (
-                                                                <div className="grid grid-cols-3 gap-3 max-h-60 overflow-y-auto pr-1">
-                                                                    {(slots || []).map((slot) => (
-                                                                        <button
-                                                                            key={slot}
-                                                                            onClick={() => setSelectedSlot(slot)}
-                                                                            className={`py-3 rounded-xl text-xs font-black transition-all border-2 ${selectedSlot === slot ? 'bg-brand-gold border-brand-gold text-brand-black' : 'bg-white dark:bg-white/5 border-black/5 hover:border-brand-gold/50'}`}
-                                                                        >
-                                                                            {getSlotDisplay(slot)}
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </>
                                             ) : (
                                                 <>
-                                                    {/* Photographer Selection */}
-                                                    <div className="space-y-3">
+                                                    {/* Date Selection */}
+                                                    <div className="space-y-2">
                                                         <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
-                                                            <UserIcon className="w-4 h-4" /> Pilih Fotografer
+                                                            <CalendarIcon className="w-4 h-4" /> Pilih Tanggal Booking
                                                         </label>
-                                                        <div className="grid grid-cols-2 gap-3">
-                                                            {(photographers || []).map((fg) => (
-                                                                <button
-                                                                    key={fg.id}
-                                                                    onClick={() => setPhotographerId(fg.id)}
-                                                                    className={`py-4 px-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${photographerId === fg.id
-                                                                        ? 'bg-brand-gold border-brand-gold text-brand-black shadow-lg'
-                                                                        : 'bg-transparent border-black/5 dark:border-white/5 text-brand-black/40 dark:text-brand-white/40 hover:border-brand-gold/50 hover:bg-black/5'
-                                                                        }`}
-                                                                >
-                                                                    {fg.name}
-                                                                </button>
-                                                            ))}
+                                                        <div className="relative group">
+                                                            <input
+                                                                type="date"
+                                                                value={date}
+                                                                min={new Date().toISOString().split('T')[0]}
+                                                                onChange={(e) => setDate(e.target.value)}
+                                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                            />
+                                                            <div className="w-full bg-black/5 dark:bg-white/5 border-2 border-transparent group-hover:border-brand-gold/30 rounded-2xl px-5 py-4 text-brand-black dark:text-brand-white font-bold text-lg capitalize flex items-center justify-between transition-all">
+                                                                <span>
+                                                                    {date ? new Date(date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : 'Pilih Tanggal'}
+                                                                </span>
+                                                                <CalendarIcon className="w-5 h-5 opacity-20 group-hover:opacity-100 group-hover:text-brand-gold transition-all" />
+                                                            </div>
                                                         </div>
-                                                        {(photographers?.length === 0) && !loading && (
-                                                            <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Tidak ada fotografer tersedia pada tanggal ini.</p>
-                                                        )}
                                                     </div>
 
-                                                    {/* Session Selection */}
-                                                    {photographerId && (
-                                                        <div className="space-y-3">
-                                                            <div className="flex justify-between items-center">
+                                                    {!isPhotographerMode ? (
+                                                        <>
+                                                            {/* Room Selection */}
+                                                            <div className="space-y-3">
                                                                 <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
-                                                                    <ClockIcon className="w-4 h-4" /> Pilih Sesi ({(selectedSessions || []).length}/{maxSessions})
+                                                                    <HomeIcon className="w-4 h-4" /> Pilih Ruangan Studio
                                                                 </label>
-                                                            </div>
-
-                                                            {loading ? (
-                                                                <div className="text-center py-10 bg-black/5 rounded-2xl animate-pulse"></div>
-                                                            ) : (
-                                                                <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto pr-1">
-                                                                    {(slots || []).map((session) => (
+                                                                <div className="grid grid-cols-3 gap-3">
+                                                                    {(roomInfos?.length > 0 ? roomInfos : rooms).map((room) => (
                                                                         <button
-                                                                            key={session.id}
-                                                                            onClick={() => toggleSession(session.id)}
-                                                                            disabled={session.status === 'booked' || (session.status === 'off' && !(selectedSessions || []).includes(session.id))}
-                                                                            className={`py-3 rounded-lg text-[10px] font-black transition-all border-2 ${(selectedSessions || []).includes(session.id)
-                                                                                ? 'bg-green-500 border-green-500 text-white shadow-lg'
-                                                                                : session.status === 'open'
-                                                                                    ? 'bg-white dark:bg-white/5 border-brand-gold/30 text-brand-black dark:text-brand-white'
-                                                                                    : 'bg-black/5 border-transparent opacity-20 cursor-not-allowed'
-                                                                                }`}
+                                                                            key={room.id}
+                                                                            onClick={() => setRoomId(room.id)}
+                                                                            disabled={room.is_open === false}
+                                                                            className={`py-4 px-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${roomId === room.id
+                                                                                ? 'bg-brand-gold border-brand-gold text-brand-black shadow-lg scale-105'
+                                                                                : 'bg-transparent border-black/5 dark:border-white/5 text-brand-black/40 dark:text-brand-white/40 hover:border-brand-gold/50 hover:bg-black/5'
+                                                                                } ${room.is_open === false ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
                                                                         >
-                                                                            {session.time}
-                                                                            {session.block && <div className="text-[6px] opacity-60">{session.block}</div>}
+                                                                            {room.label || room.name} {room.is_open === false ? '(TUTUP)' : ''}
                                                                         </button>
                                                                     ))}
                                                                 </div>
+                                                            </div>
+
+                                                            {/* Time Slots */}
+                                                            {date && (
+                                                                <div className="space-y-3">
+                                                                    <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
+                                                                        <ClockIcon className="w-4 h-4" /> Jadwal Tersedia
+                                                                    </label>
+
+                                                                    {loading ? (
+                                                                        <div className="text-center py-10 bg-black/5 rounded-2xl animate-pulse"><p className="text-xs font-bold uppercase tracking-widest opacity-20">Memeriksa...</p></div>
+                                                                    ) : error ? (
+                                                                        <div className="p-4 bg-red-50 text-red-700 rounded-xl text-xs font-bold">{error}</div>
+                                                                    ) : (slots?.length === 0) ? (
+                                                                        <p className="text-center py-10 text-xs font-bold uppercase opacity-20">Tidak ada jadwal.</p>
+                                                                    ) : (
+                                                                        <div className="grid grid-cols-3 gap-3 max-h-60 overflow-y-auto pr-1">
+                                                                            {(slots || []).map((slot) => (
+                                                                                <button
+                                                                                    key={slot}
+                                                                                    onClick={() => setSelectedSlot(slot)}
+                                                                                    className={`py-3 rounded-xl text-xs font-black transition-all border-2 ${selectedSlot === slot ? 'bg-brand-gold border-brand-gold text-brand-black' : 'bg-white dark:bg-white/5 border-black/5 hover:border-brand-gold/50'}`}
+                                                                                >
+                                                                                    {getSlotDisplay(slot)}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             )}
-                                                            {error && <p className="text-[9px] font-bold text-red-500 uppercase tracking-widest animate-shake">{error}</p>}
-                                                        </div>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            {/* Photographer Selection */}
+                                                            <div className="space-y-3">
+                                                                <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
+                                                                    <UserIcon className="w-4 h-4" /> Pilih Fotografer
+                                                                </label>
+                                                                <div className="grid grid-cols-2 gap-3">
+                                                                    {(photographers || []).map((fg) => (
+                                                                        <button
+                                                                            key={fg.id}
+                                                                            onClick={() => setPhotographerId(fg.id)}
+                                                                            className={`py-4 px-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${photographerId === fg.id
+                                                                                ? 'bg-brand-gold border-brand-gold text-brand-black shadow-lg'
+                                                                                : 'bg-transparent border-black/5 dark:border-white/5 text-brand-black/40 dark:text-brand-white/40 hover:border-brand-gold/50 hover:bg-black/5'
+                                                                                }`}
+                                                                        >
+                                                                            {fg.name}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                                {(photographers?.length === 0) && !loading && (
+                                                                    <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">Tidak ada fotografer tersedia pada tanggal ini.</p>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Session Selection */}
+                                                            {photographerId && (
+                                                                <div className="space-y-3">
+                                                                    <div className="flex justify-between items-center">
+                                                                        <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
+                                                                            <ClockIcon className="w-4 h-4" /> Pilih Sesi ({(selectedSessions || []).length}/{maxSessions})
+                                                                        </label>
+                                                                    </div>
+
+                                                                    {loading ? (
+                                                                        <div className="text-center py-10 bg-black/5 rounded-2xl animate-pulse"></div>
+                                                                    ) : (
+                                                                        <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto pr-1">
+                                                                            {(slots || []).map((session) => (
+                                                                                <button
+                                                                                    key={session.id}
+                                                                                    onClick={() => toggleSession(session.id)}
+                                                                                    disabled={session.status === 'booked' || (session.status === 'off' && !(selectedSessions || []).includes(session.id))}
+                                                                                    className={`py-3 rounded-lg text-[10px] font-black transition-all border-2 ${(selectedSessions || []).includes(session.id)
+                                                                                        ? 'bg-green-500 border-green-500 text-white shadow-lg'
+                                                                                        : session.status === 'open'
+                                                                                            ? 'bg-white dark:bg-white/5 border-brand-gold/30 text-brand-black dark:text-brand-white'
+                                                                                            : 'bg-black/5 border-transparent opacity-20 cursor-not-allowed'
+                                                                                        }`}
+                                                                                >
+                                                                                    {session.time}
+                                                                                    {session.block && <div className="text-[6px] opacity-60">{session.block}</div>}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                    {error && <p className="text-[9px] font-bold text-red-500 uppercase tracking-widest animate-shake">{error}</p>}
+                                                                </div>
+                                                            )}
+                                                        </>
                                                     )}
+
+                                                    <button
+                                                        onClick={handleSubmit}
+                                                        disabled={!date || loading}
+                                                        className="w-full py-5 bg-brand-black dark:bg-brand-white text-white dark:text-brand-black font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl disabled:opacity-50 mt-4"
+                                                    >
+                                                        Tambah ke Keranjang
+                                                    </button>
                                                 </>
                                             )}
-
-                                            <button
-                                                onClick={handleSubmit}
-                                                disabled={!date || loading}
-                                                className="w-full py-5 bg-brand-black dark:bg-brand-white text-white dark:text-brand-black font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl disabled:opacity-50 mt-4"
-                                            >
-                                                Tambah ke Keranjang
-                                            </button>
                                         </div>
                                     </div>
                                 </Dialog.Panel>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { Head, useForm, router } from '@inertiajs/react';
-import { PencilSquareIcon, TrashIcon, PlusIcon, ChevronRightIcon, ChevronDownIcon, StarIcon } from '@heroicons/react/24/outline';
+import { PencilSquareIcon, TrashIcon, PlusIcon, ChevronRightIcon, ChevronDownIcon, StarIcon, ShareIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import ManageCategoriesModal from './Partials/ManageCategoriesModal';
 import SubCategoryModal from './Partials/SubCategoryModal';
@@ -28,14 +28,59 @@ export default function Index({ categories }) {
         });
     };
 
+    const formatPrice = (price) => {
+        if (!price) return '';
+        const numericPrice = typeof price === 'string' ? parseFloat(price.replace(/[^0-9.-]+/g, "")) : price;
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0
+        }).format(numericPrice);
+    };
+
+    const [copyNotification, setCopyNotification] = useState(null);
+
+    const copyToClipboard = async (text) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopyNotification('Tautan berhasil disalin!');
+            setTimeout(() => setCopyNotification(null), 5000);
+        } catch (err) {
+            console.error('Failed to copy: ', err);
+        }
+    };
+
+    const getShareLink = (type, slug) => {
+        const baseUrl = window.location.origin;
+        if (type === 'all') return `${baseUrl}/share/SemuaKategori`;
+        if (type === 'category') return `${baseUrl}/share/c/${slug}`;
+        if (type === 'package') return `${baseUrl}/share/p/${slug}`;
+        return baseUrl;
+    };
+
+    // ...
+
+    // IN RENDER:
+
+    // ...
+
     return (
         <AdminLayout>
-            <Head title="Pricelist Management" />
+            <Head title="Kelola Pricelist" />
 
             <div className="pt-12 lg:pt-20 pb-20 px-6 max-w-7xl mx-auto">
-                <div className="mb-12">
-                    <h1 className="text-4xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-2">Pricelist</h1>
-                    <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest">Kelola kategori, sub-kategori, dan paket harga AFstudio.</p>
+                <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div>
+                        <h1 className="text-4xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-2 italic">Pricelist</h1>
+                        <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest">Kelola kategori, sub-kategori, dan paket harga AFstudio.</p>
+                    </div>
+                    <button
+                        onClick={() => copyToClipboard(getShareLink('all'))}
+                        className="flex items-center gap-2 px-6 py-3 bg-brand-gold text-brand-black rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg"
+                    >
+                        <ShareIcon className="w-4 h-4" />
+                        Bagikan Semua
+                    </button>
                 </div>
 
                 {/* Tabs for Categories & Category/Sub-Category Actions */}
@@ -79,6 +124,21 @@ export default function Index({ categories }) {
                 {/* Category Content */}
                 {categories.filter(c => c.id === activeCategoryId).map(category => (
                     <div key={category.id} className="space-y-8">
+                        {/* CATEGORY SHARE BUTTON HEADER */}
+                        <div className="flex items-center justify-between border-b border-black/5 dark:border-white/5 pb-4">
+                            <h2 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter italic">
+                                {category.name}
+                            </h2>
+                            <button
+                                onClick={() => copyToClipboard(getShareLink('category', category.slug))}
+                                className="flex items-center gap-2 px-4 py-2 bg-brand-gold/10 text-brand-gold rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-gold hover:text-brand-black transition-all"
+                            >
+                                <ShareIcon className="w-4 h-4" />
+                                Bagikan
+                            </button>
+                        </div>
+
+
                         <div className="grid grid-cols-1 gap-8">
                             {category.sub_categories.map(subCategory => (
                                 <div key={subCategory.id} className="bg-white dark:bg-white/3 border border-black/5 dark:border-white/5 rounded-3xl overflow-hidden shadow-sm">
@@ -120,7 +180,7 @@ export default function Index({ categories }) {
                                                                 {pkg.name}
                                                             </h4>
                                                             <div className={`text-lg font-black mt-0.5 ${pkg.is_popular ? 'text-brand-gold dark:text-brand-black' : 'text-brand-gold'}`}>
-                                                                {pkg.price_display}
+                                                                {pkg.price_display ? pkg.price_display : (pkg.price_numeric ? formatPrice(pkg.price_numeric) : '')}
                                                             </div>
                                                         </div>
                                                         {pkg.is_popular && <StarIconSolid className="w-3.5 h-3.5 text-brand-gold dark:text-brand-black" />}
@@ -143,6 +203,16 @@ export default function Index({ categories }) {
                                                     </ul>
 
                                                     <div className="flex items-center gap-1.5 justify-end pt-3 border-t border-black/5 dark:border-white/5">
+
+                                                        {/* Package Share Button */}
+                                                        <button
+                                                            onClick={() => copyToClipboard(getShareLink('package', pkg.slug))}
+                                                            className={`p-1.5 rounded-lg transition-all ${pkg.is_popular ? 'bg-white/10 dark:bg-black/10 hover:bg-white/20 dark:hover:bg-black/20 text-white dark:text-brand-black' : 'bg-black/5 dark:bg-white/5 hover:bg-black hover:text-white dark:hover:bg-brand-gold'}`}
+                                                            title="Bagikan Paket"
+                                                        >
+                                                            <ShareIcon className="w-3 h-3" />
+                                                        </button>
+
                                                         <button
                                                             onClick={() => setPackageModal({ show: true, pkg, subCategoryId: subCategory.id })}
                                                             className={`p-1.5 rounded-lg transition-all ${pkg.is_popular ? 'bg-white/10 dark:bg-black/10 hover:bg-white/20 dark:hover:bg-black/20 text-white dark:text-brand-black' : 'bg-black/5 dark:bg-white/5 hover:bg-black hover:text-white dark:hover:bg-brand-gold'}`}
@@ -178,6 +248,18 @@ export default function Index({ categories }) {
                 ))}
             </div>
 
+            {/* Notification Toast */}
+            {
+                copyNotification && (
+                    <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        <div className="bg-brand-black dark:bg-brand-gold text-white dark:text-brand-black px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest shadow-2xl flex items-center gap-3">
+                            <ShareIcon className="w-4 h-4" />
+                            {copyNotification}
+                        </div>
+                    </div>
+                )
+            }
+
             {/* Modals */}
             <ManageCategoriesModal
                 isOpen={manageCategoriesModal}
@@ -203,6 +285,6 @@ export default function Index({ categories }) {
                 title={deleteModal.title}
                 message={deleteModal.message}
             />
-        </AdminLayout>
+        </AdminLayout >
     );
 }

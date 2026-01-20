@@ -11,6 +11,7 @@ class PricelistPackage extends Model
     protected $fillable = [
         'sub_category_id',
         'name',
+        'slug',
         'price_display',
         'price_numeric',
         'is_popular',
@@ -18,6 +19,29 @@ class PricelistPackage extends Model
         'duration',
         'max_sessions',
     ];
+
+    public static function boot()
+    {
+        parent::boot();
+        static::creating(function ($package) {
+            // Get sub-category name for more descriptive slug
+            $subCategory = \App\Models\PricelistSubCategory::find($package->sub_category_id);
+            $subCategorySlug = $subCategory ? \Illuminate\Support\Str::slug($subCategory->name) : '';
+
+            // Create clean slug: subcategory-packagename
+            $baseSlug = $subCategorySlug ? $subCategorySlug . '-' . \Illuminate\Support\Str::slug($package->name) : \Illuminate\Support\Str::slug($package->name);
+
+            // Check for uniqueness and add number if needed
+            $slug = $baseSlug;
+            $count = 1;
+            while (\App\Models\PricelistPackage::where('slug', $slug)->exists()) {
+                $slug = $baseSlug . '-' . $count;
+                $count++;
+            }
+
+            $package->slug = $slug;
+        });
+    }
 
     protected $casts = [
         'features' => 'array',

@@ -27,6 +27,11 @@ Route::delete('/cart/{cart}', [CartController::class, 'destroy'])->name('cart.de
 Route::get('/schedule/check', [ScheduleController::class, 'checkAvailability'])->name('schedule.check');
 Route::get('/schedule/photographer', [ScheduleController::class, 'checkPhotographerAvailability'])->name('schedule.photographer');
 
+// Shared / Locked Routes
+Route::get('/share/SemuaKategori', [\App\Http\Controllers\SharedPricelistController::class, 'all'])->name('share.all');
+Route::get('/share/c/{slug}', [\App\Http\Controllers\SharedPricelistController::class, 'category'])->name('share.category');
+Route::get('/share/p/{slug}', [\App\Http\Controllers\SharedPricelistController::class, 'package'])->name('share.package');
+
 // Booking Routes (Guest & Auth)
 Route::get('/checkout', [BookingController::class, 'create'])->name('booking.create');
 Route::post('/checkout', [BookingController::class, 'store'])->name('booking.store');

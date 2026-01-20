@@ -6,6 +6,7 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId }) {
     const { data, setData, post, put, processing, errors, reset } = useForm({
         name: '',
         price_display: '',
+        price_numeric: '',
         features: [],
         sub_category_id: '',
         is_popular: false,
@@ -19,6 +20,7 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId }) {
             setData({
                 name: pkg.name || '',
                 price_display: pkg.price_display || '',
+                price_numeric: pkg.price_numeric || '',
                 features: pkg.features || [],
                 sub_category_id: pkg.sub_category_id || '',
                 is_popular: pkg.is_popular || false,
@@ -86,13 +88,23 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId }) {
                             {errors.name && <p className="mt-1 text-[10px] text-brand-red font-bold uppercase tracking-widest">{errors.name}</p>}
                         </div>
                         <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-2">Harga Display</label>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-2">Harga (Angka)</label>
+                            <input
+                                type="number"
+                                value={data.price_numeric}
+                                onChange={(e) => setData('price_numeric', e.target.value)}
+                                className="w-full bg-black/5 dark:bg-white/5 border-0 rounded-xl px-4 py-3 text-sm font-bold text-brand-black dark:text-brand-white focus:ring-2 focus:ring-brand-gold transition-all"
+                                placeholder="Contoh: 500000"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-2">Label Harga (Display)</label>
                             <input
                                 type="text"
                                 value={data.price_display}
                                 onChange={(e) => setData('price_display', e.target.value)}
                                 className="w-full bg-black/5 dark:bg-white/5 border-0 rounded-xl px-4 py-3 text-sm font-bold text-brand-black dark:text-brand-white focus:ring-2 focus:ring-brand-gold transition-all"
-                                placeholder="Contoh: 475k atau 1.500"
+                                placeholder="Contoh: 500k atau GRATIS"
                                 required
                             />
                         </div>

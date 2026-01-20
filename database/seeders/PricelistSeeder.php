@@ -23,11 +23,11 @@ class PricelistSeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         // Create All Categories first
-        $ultah = PricelistCategory::create(['name' => 'ULTAH & MATERNITY']);
-        $wedding = PricelistCategory::create(['name' => 'WEDDING']);
-        $shotVideo = PricelistCategory::create(['name' => 'SHOT VIDEO']);
-        $wisuda = PricelistCategory::create(['name' => 'wisuda baru']);
-        $paketWedding = PricelistCategory::create(['name' => 'Paket Wedding']);
+        $ultah = PricelistCategory::create(['name' => 'ULTAH & MATERNITY', 'type' => 'photographer']);
+        $wedding = PricelistCategory::create(['name' => 'WEDDING', 'type' => 'photographer']);
+        $shotVideo = PricelistCategory::create(['name' => 'SHOT VIDEO', 'type' => 'photographer']);
+        $wisuda = PricelistCategory::create(['name' => 'wisuda baru', 'type' => 'photographer']);
+        $paketWedding = PricelistCategory::create(['name' => 'Paket Wedding', 'type' => 'photographer']);
 
         // Data for Category: wisuda baru
         // Sub Category: wcc

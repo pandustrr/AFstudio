@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
+            $table->enum('type', ['room', 'photographer'])->default('photographer');
             $table->timestamps();
         });
 
@@ -33,6 +34,7 @@ return new class extends Migration
             $table->string('price_display');
             $table->decimal('price_numeric', 12, 2)->nullable();
             $table->integer('duration')->default(60)->comment('Duration in minutes');
+            $table->integer('max_sessions')->default(1);
             $table->json('features')->nullable();
             $table->boolean('is_popular')->default(false);
             $table->timestamps();

@@ -58,8 +58,8 @@ export default function ManageCategoriesModal({ isOpen, onClose, categories }) {
                                         onChange={(e) => setEditName(e.target.value)}
                                         className="flex-1 bg-white dark:bg-white/5 border-0 rounded-xl px-4 py-2 text-sm font-bold text-brand-black dark:text-brand-white focus:ring-2 focus:ring-brand-gold"
                                         autoFocus
-                                        onBlur={() => handleUpdate(category.id)}
-                                        onKeyPress={(e) => e.key === 'Enter' && handleUpdate(category.id)}
+                                        onBlur={() => handleUpdate(category.id, { name: editName, type: category.type })}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleUpdate(category.id, { name: editName, type: category.type })}
                                     />
                                 ) : (
                                     <div className="flex-1 flex flex-col gap-1 px-4 cursor-pointer" onClick={() => {
@@ -89,7 +89,7 @@ export default function ManageCategoriesModal({ isOpen, onClose, categories }) {
                                 <div className="flex items-center gap-1">
                                     {editingId === category.id ? (
                                         <button
-                                            onClick={() => handleUpdate(category.id)}
+                                            onClick={() => handleUpdate(category.id, { name: editName, type: category.type })}
                                             className="p-2 text-green-500 hover:bg-green-500/10 rounded-lg transition-all"
                                         >
                                             <CheckIcon className="w-4 h-4" />
