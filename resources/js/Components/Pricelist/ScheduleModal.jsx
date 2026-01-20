@@ -23,6 +23,16 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
 
     const rooms = initialRooms;
 
+    const formatPrice = (price) => {
+        if (!price) return '';
+        const numericPrice = typeof price === 'string' ? parseFloat(price.replace(/[^0-9.-]+/g, "")) : price;
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0
+        }).format(numericPrice);
+    };
+
     const getSlotDisplay = (startTime) => {
         if (!packageData?.duration) return startTime;
 
@@ -233,7 +243,9 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                 <div className="mb-6">
                                                     <h4 className="font-bold text-brand-red text-sm uppercase tracking-wide mb-2">Paket Dipilih</h4>
                                                     <p className="text-brand-black dark:text-brand-white font-black text-2xl mb-1 leading-tight">{packageData?.name}</p>
-                                                    <div className="text-brand-gold font-black italic text-xl">{packageData?.price_display}</div>
+                                                    <div className="text-brand-gold font-black italic text-xl">
+                                                        {packageData?.price_numeric ? formatPrice(packageData.price_numeric) : packageData?.price_display}
+                                                    </div>
                                                 </div>
 
                                                 <div className="space-y-3 pt-6 border-t border-brand-red/10 grow">
