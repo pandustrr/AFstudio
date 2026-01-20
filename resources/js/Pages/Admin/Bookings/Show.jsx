@@ -15,7 +15,7 @@ import {
     KeyIcon
 } from '@heroicons/react/24/outline';
 
-export default function BookingShow({ booking, rooms = [] }) {
+export default function BookingShow({ booking, photographers = [] }) {
     const { processing } = useForm();
 
     const updateStatus = (newStatus) => {
@@ -34,10 +34,7 @@ export default function BookingShow({ booking, rooms = [] }) {
         });
     };
 
-    const getRoomLabel = (id) => {
-        const room = rooms.find(r => r.id === parseInt(id));
-        return room ? room.label : `Room ${id}`;
-    };
+
 
     const formatPrice = (num) => {
         return new Intl.NumberFormat('id-ID', {
@@ -204,20 +201,20 @@ export default function BookingShow({ booking, rooms = [] }) {
                                                         </div>
                                                         <div className="flex items-center gap-3">
                                                             <div className="flex items-center gap-2 text-xs font-bold text-brand-black/60 dark:text-brand-white/60">
-                                                                <MapPinIcon className="w-4 h-4" />
+                                                                <UserIcon className="w-4 h-4" />
                                                                 <select
-                                                                    value={item.room_id || ''}
+                                                                    value={item.photographer_id || ''}
                                                                     onChange={(e) => updateItem(item, {
-                                                                        room_id: e.target.value,
+                                                                        photographer_id: e.target.value,
                                                                         scheduled_date: item.scheduled_date,
                                                                         start_time: item.start_time,
                                                                         end_time: item.end_time
                                                                     })}
                                                                     className="bg-transparent border-0 p-0 text-xs font-bold focus:ring-0 text-brand-black/60 dark:text-brand-white/60 cursor-pointer hover:text-brand-red transition-colors"
                                                                 >
-                                                                    <option value="" disabled>Select Room</option>
-                                                                    {rooms.map(room => (
-                                                                        <option key={room.id} value={room.id} className="text-black">{room.label}</option>
+                                                                    <option value="" disabled>Select Photographer</option>
+                                                                    {photographers.map(fg => (
+                                                                        <option key={fg.id} value={fg.id} className="text-black">{fg.name}</option>
                                                                     ))}
                                                                 </select>
                                                             </div>

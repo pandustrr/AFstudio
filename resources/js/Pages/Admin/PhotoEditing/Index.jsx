@@ -26,6 +26,8 @@ export default function Index({ sessions, filters, options }) {
         "Juli", "Agustus", "September", "Oktober", "November", "Desember"
     ];
 
+    const prefix = window.location.pathname.startsWith('/editor') ? '/editor' : '/admin';
+
     const handleFilter = (type, value) => {
         const newFilters = { ...filters, [type]: value };
 
@@ -40,7 +42,7 @@ export default function Index({ sessions, filters, options }) {
             newFilters.status = 'all';
         }
 
-        router.get('/admin/photo-editing', newFilters, {
+        router.get(`${prefix}/photo-editing`, newFilters, {
             preserveState: true,
             preserveScroll: true
         });
@@ -52,7 +54,7 @@ export default function Index({ sessions, filters, options }) {
         const month = today.getMonth() + 1;
         const day = today.getDate();
 
-        router.get('/admin/photo-editing', {
+        router.get(`${prefix}/photo-editing`, {
             ...filters,
             year: year.toString(),
             month: month.toString(),
@@ -67,7 +69,7 @@ export default function Index({ sessions, filters, options }) {
         if (!deleteSession) return;
 
         setIsDeleting(true);
-        router.delete(`/admin/photo-editing/${deleteSession.id}`, {
+        router.delete(`${prefix}/photo-editing/${deleteSession.id}`, {
             onSuccess: () => {
                 setDeleteSession(null);
                 setIsDeleting(false);

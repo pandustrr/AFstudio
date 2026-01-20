@@ -166,4 +166,49 @@ class ScheduleController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    public function checkPhotographerAvailability(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date|after_or_equal:today',
+            'package_id' => 'required|exists:pricelist_packages,id',
+            'photographer_id' => 'nullable|exists:users,id',
+        ]);
+
+        $date = $request->date;
+        $package = PricelistPackage::findOrFail($request->package_id);
+        $maxSessions = $package->max_sessions;
+
+        // Fetch photographers who have "open" sessions on this date
+        $photographers = \App\Models\User::where('role', 'photographer')
+            ->whereHas('photographerSessions', function ($q) use ($date) {
+                $q->where('date', $date)->where('status', 'open');
+            })
+            ->get(['id', 'name']);
+
+        $grid = [];
+        if ($request->photographer_id) {
+            $sessions = \App\Models\PhotographerSession::where('photographer_id', $request->photographer_id)
+                ->where('date', $date)
+                ->orderBy('start_time')
+                ->get();
+
+            // Format sessions for selection
+            foreach ($sessions as $session) {
+                $grid[] = [
+                    'id' => $session->id,
+                    'time' => Carbon::parse($session->start_time)->format('H:i'),
+                    'status' => $session->status,
+                    'block' => $session->block_identifier,
+                ];
+            }
+        }
+
+        return response()->json([
+            'date' => $date,
+            'max_sessions' => $maxSessions,
+            'photographers' => $photographers,
+            'sessions' => $grid,
+        ]);
+    }
 }

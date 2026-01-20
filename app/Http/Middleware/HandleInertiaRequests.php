@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Illuminate\Support\Facades\Auth;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -38,11 +39,22 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => function () use ($request) {
+                    if ($request->is('editor*')) {
+                        return Auth::guard('editor')->user();
+                    }
+                    if ($request->is('photographer*')) {
+                        return Auth::guard('photographer')->user();
+                    }
+                    if ($request->is('admin*')) {
+                        return Auth::guard('web')->user();
+                    }
+                    return $request->user();
+                },
             ],
             'flash' => [
-                'success' => fn () => $request->session()->get('success'),
-                'error' => fn () => $request->session()->get('error'),
+                'success' => fn() => $request->session()->get('success'),
+                'error' => fn() => $request->session()->get('error'),
             ],
         ];
     }

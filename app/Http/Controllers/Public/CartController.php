@@ -41,73 +41,111 @@ class CartController extends Controller
             'pricelist_package_id' => 'required|exists:pricelist_packages,id',
             'quantity' => 'nullable|integer|min:1',
             'scheduled_date' => 'required|date|after_or_equal:today',
-            'start_time' => 'required|date_format:H:i',
-            'room_id' => 'nullable|integer|in:1,2,3',
+            'start_time' => 'nullable|date_format:H:i',
+            'room_id' => 'nullable|integer',
+            'photographer_id' => 'nullable|exists:users,id',
+            'session_ids' => 'nullable|array',
+            'cart_uid' => 'required|string',
         ]);
 
-        $package = \App\Models\PricelistPackage::findOrFail($request->pricelist_package_id);
-        $duration = $package->duration ?? 60;
+        $package = \App\Models\PricelistPackage::with('subCategory.category')->findOrFail($request->pricelist_package_id);
+        $type = $package->subCategory->category->type ?? 'room';
 
-        $startTime = \Carbon\Carbon::parse($request->scheduled_date . ' ' . $request->start_time);
-        $endTime = $startTime->copy()->addMinutes($duration);
+        $data = [
+            'user_id' => Auth::id(),
+            'cart_uid' => $request->cart_uid,
+            'pricelist_package_id' => $request->pricelist_package_id,
+            'quantity' => 1,
+            'scheduled_date' => $request->scheduled_date,
+        ];
 
-        $assignedRoom = $request->room_id;
-
-        // If room_id provided, validate only that room
-        if ($assignedRoom) {
-            $isRoomTaken = \App\Models\BookingItem::whereHas('booking', function ($q) {
-                $q->whereIn('status', ['pending', 'confirmed', 'completed']);
-            })
-                ->where('scheduled_date', $request->scheduled_date)
-                ->where('room_id', $assignedRoom)
-                ->where(function ($query) use ($request, $endTime) {
-                    $query->where('start_time', '<', $endTime->format('H:i:s'))
-                        ->where('end_time', '>', $request->start_time);
-                })
-                ->exists();
-
-            if ($isRoomTaken) {
-                return redirect()->back()->with('error', 'Sorry, Room ' . $assignedRoom . ' is already booked for this time slot.');
+        if ($type === 'photographer') {
+            if (!$request->photographer_id || empty($request->session_ids)) {
+                return redirect()->back()->with('error', 'Silakan pilih fotografer dan sesi.');
             }
+
+            // Fetch sessions to determine start and end time for display
+            $sessions = \App\Models\PhotographerSession::whereIn('id', $request->session_ids)
+                ->orderBy('start_time')
+                ->get();
+
+            if ($sessions->isEmpty()) {
+                return redirect()->back()->with('error', 'Sesi tidak valid.');
+            }
+
+            $first = $sessions->first();
+            $last = $sessions->last();
+
+            // Logic: start time of first session, end time is start of last + 30 min
+            $startTime = \Carbon\Carbon::parse($first->start_time);
+            $endTime = \Carbon\Carbon::parse($last->start_time)->addMinutes(30);
+
+            $data['photographer_id'] = $request->photographer_id;
+            $data['session_ids'] = $request->session_ids;
+            $data['start_time'] = $startTime->format('H:i');
+            $data['end_time'] = $endTime->format('H:i');
         } else {
-            // Smart Slotting Fallback
-            for ($roomId = 1; $roomId <= 3; $roomId++) {
+            // Room Flow
+            if (!$request->start_time) {
+                return redirect()->back()->with('error', 'Silakan pilih jam.');
+            }
+
+            $duration = $package->duration ?? 60;
+            $startTime = \Carbon\Carbon::parse($request->scheduled_date . ' ' . $request->start_time);
+            $endTime = $startTime->copy()->addMinutes($duration);
+
+            $assignedRoom = $request->room_id;
+
+            // Room validation (already exists in original code, but cleaned up)
+            if ($assignedRoom) {
                 $isRoomTaken = \App\Models\BookingItem::whereHas('booking', function ($q) {
                     $q->whereIn('status', ['pending', 'confirmed', 'completed']);
                 })
                     ->where('scheduled_date', $request->scheduled_date)
-                    ->where('room_id', $roomId)
+                    ->where('room_id', $assignedRoom)
                     ->where(function ($query) use ($request, $endTime) {
                         $query->where('start_time', '<', $endTime->format('H:i:s'))
                             ->where('end_time', '>', $request->start_time);
                     })
                     ->exists();
 
-                if (!$isRoomTaken) {
-                    $assignedRoom = $roomId;
-                    break;
+                if ($isRoomTaken) {
+                    return redirect()->back()->with('error', 'Maaf, Ruangan ' . $assignedRoom . ' sudah ter-booking pada jam tersebut.');
+                }
+            } else {
+                // Smart Slotting
+                $rooms = \App\Models\Room::all();
+                foreach ($rooms as $room) {
+                    $isRoomTaken = \App\Models\BookingItem::whereHas('booking', function ($q) {
+                        $q->whereIn('status', ['pending', 'confirmed', 'completed']);
+                    })
+                        ->where('scheduled_date', $request->scheduled_date)
+                        ->where('room_id', $room->id)
+                        ->where(function ($query) use ($request, $endTime) {
+                            $query->where('start_time', '<', $endTime->format('H:i:s'))
+                                ->where('end_time', '>', $request->start_time);
+                        })
+                        ->exists();
+
+                    if (!$isRoomTaken) {
+                        $assignedRoom = $room->id;
+                        break;
+                    }
                 }
             }
+
+            if (!$assignedRoom) {
+                return redirect()->back()->with('error', 'Maaf, tidak ada ruangan tersedia pada jam ini.');
+            }
+
+            $data['room_id'] = $assignedRoom;
+            $data['start_time'] = $request->start_time;
+            $data['end_time'] = $endTime->format('H:i');
         }
 
-        if (!$assignedRoom) {
-            return redirect()->back()->with('error', 'Sorry, no rooms are available at this time. Please select another slot.');
-        }
+        Cart::create($data);
 
-        $uid = $request->header('X-Cart-UID') ?? $request->input('cart_uid') ?? $request->input('uid');
-
-        Cart::create([
-            'user_id' => Auth::id(),
-            'cart_uid' => $uid,
-            'pricelist_package_id' => $request->pricelist_package_id,
-            'quantity' => 1,
-            'scheduled_date' => $request->scheduled_date,
-            'start_time' => $request->start_time,
-            'end_time' => $endTime->format('H:i'),
-            'room_id' => $assignedRoom,
-        ]);
-
-        return redirect()->back()->with('success', 'Item and Schedule added to cart successfully!');
+        return redirect()->back()->with('success', 'Berhasil ditambahkan ke keranjang!');
     }
 
     /**

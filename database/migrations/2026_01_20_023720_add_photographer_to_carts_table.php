@@ -1,4 +1,3 @@
-
 <?php
 
 use Illuminate\Database\Migrations\Migration;
@@ -12,8 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->enum('role', ['admin', 'editor', 'photographer'])->default('admin')->after('password');
+        Schema::table('carts', function (Blueprint $table) {
+            $table->foreignId('photographer_id')->nullable()->constrained('users')->onDelete('set null')->after('room_id');
+            $table->json('session_ids')->nullable()->after('photographer_id');
         });
     }
 
@@ -22,8 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('role');
+        Schema::table('carts', function (Blueprint $table) {
+            //
         });
     }
 };

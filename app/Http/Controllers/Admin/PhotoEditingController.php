@@ -107,12 +107,14 @@ class PhotoEditingController extends Controller
 
     public function show(PhotoEditing $photoEditing)
     {
-        return redirect()->route('admin.photo-editing.index');
+        $route = request()->is('editor*') ? 'editor.photo-editing.index' : 'admin.photo-editing.index';
+        return redirect()->route($route);
     }
 
     public function edit(PhotoEditing $photoEditing)
     {
-        return redirect()->route('admin.photo-editing.index');
+        $route = request()->is('editor*') ? 'editor.photo-editing.index' : 'admin.photo-editing.index';
+        return redirect()->route($route);
     }
 
     public function update(Request $request, PhotoEditing $photoEditing)
