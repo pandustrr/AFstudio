@@ -21,6 +21,16 @@ export default function Pricelist({ categories, rooms }) {
         setIsScheduleModalOpen(true);
     };
 
+    const formatPrice = (price) => {
+        if (!price) return '';
+        const numericPrice = typeof price === 'string' ? parseFloat(price.replace(/[^0-9.-]+/g, "")) : price;
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0
+        }).format(numericPrice);
+    };
+
     // Initialize/Reset sub-category when main category changes
     useEffect(() => {
         // Default to 'all' if there are sub-categories, otherwise null
@@ -145,7 +155,7 @@ export default function Pricelist({ categories, rooms }) {
                                         <div className="mb-6 md:mb-8 text-center">
                                             <h3 className="text-lg md:text-xl font-black uppercase tracking-tighter mb-0.5 md:mb-1">{pkg.name}</h3>
                                             <div className="text-2xl md:text-3xl font-black text-brand-gold tracking-tight italic">
-                                                {pkg.price_display}
+                                                {pkg.price_numeric ? formatPrice(pkg.price_numeric) : pkg.price_display}
                                             </div>
                                         </div>
 
