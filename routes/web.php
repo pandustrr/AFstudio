@@ -25,7 +25,9 @@ Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
 Route::patch('/cart/{cart}', [CartController::class, 'update'])->name('cart.update');
 Route::delete('/cart/{cart}', [CartController::class, 'destroy'])->name('cart.destroy');
 Route::get('/schedule/check', [ScheduleController::class, 'checkAvailability'])->name('schedule.check');
-Route::get('/schedule/photographer', [ScheduleController::class, 'checkPhotographerAvailability'])->name('schedule.photographer');
+Route::get('/schedule/check-time', [ScheduleController::class, 'checkTimeAvailability'])->name('schedule.check-time');
+Route::get('/schedule/photographer-slots', [ScheduleController::class, 'getPhotographerTimeSlots']);
+Route::get('/schedule/check-photographer-availability', [ScheduleController::class, 'checkPhotographerAvailability']);
 
 // Shared / Locked Routes
 Route::get('/share/SemuaKategori', [\App\Http\Controllers\SharedPricelistController::class, 'all'])->name('share.all');
@@ -73,6 +75,8 @@ Route::prefix('photographer')->group(function () {
 
         Route::get('/sessions', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'index'])->name('photographer.sessions.index');
         Route::post('/sessions/toggle', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'toggle'])->name('photographer.sessions.toggle');
+        
+        Route::get('/reservations', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'reservations'])->name('photographer.reservations');
     });
 });
 

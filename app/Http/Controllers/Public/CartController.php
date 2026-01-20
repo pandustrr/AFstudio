@@ -42,9 +42,11 @@ class CartController extends Controller
             'quantity' => 'nullable|integer|min:1',
             'scheduled_date' => 'required|date|after_or_equal:today',
             'start_time' => 'nullable|date_format:H:i',
+            'end_time' => 'nullable|date_format:H:i',
             'room_id' => 'nullable|integer',
             'photographer_id' => 'nullable|exists:users,id',
             'session_ids' => 'nullable|array',
+            'sessions_needed' => 'nullable|integer|min:1',
             'cart_uid' => 'required|string',
         ]);
 
@@ -60,39 +62,63 @@ class CartController extends Controller
         ];
 
         if ($type === 'photographer') {
-            if (!$request->photographer_id || empty($request->session_ids)) {
-                return redirect()->back()->with('error', 'Silakan pilih fotografer dan sesi.');
+            // New flow: sessions_needed instead of photographer_id + session_ids
+            if ($request->has('sessions_needed')) {
+                // Auto-assign flow - photographer will be assigned during checkout
+                if (!$request->start_time || !$request->sessions_needed) {
+                    return redirect()->back()->with('error', 'Silakan pilih waktu mulai.');
+                }
+
+                $sessionsNeeded = $request->sessions_needed;
+                $startTime = \Carbon\Carbon::parse($request->start_time);
+                $endTime = $startTime->copy()->addMinutes($sessionsNeeded * 30);
+
+                $data['start_time'] = $startTime->format('H:i');
+                $data['end_time'] = $endTime->format('H:i');
+                $data['sessions_needed'] = $sessionsNeeded;
+                // photographer_id will be null, assigned during checkout
+            } else {
+                // Old flow: photographer_id + session_ids (legacy support)
+                if (!$request->photographer_id || empty($request->session_ids)) {
+                    return redirect()->back()->with('error', 'Silakan pilih fotografer dan sesi.');
+                }
+
+                // Fetch sessions to determine start and end time for display
+                $sessions = \App\Models\PhotographerSession::whereIn('id', $request->session_ids)
+                    ->orderBy('start_time')
+                    ->get();
+
+                if ($sessions->isEmpty()) {
+                    return redirect()->back()->with('error', 'Sesi tidak valid.');
+                }
+
+                $first = $sessions->first();
+                $last = $sessions->last();
+
+                // Logic: start time of first session, end time is start of last + 30 min
+                $startTime = \Carbon\Carbon::parse($first->start_time);
+                $endTime = \Carbon\Carbon::parse($last->start_time)->addMinutes(30);
+
+                $data['photographer_id'] = $request->photographer_id;
+                $data['session_ids'] = $request->session_ids;
+                $data['start_time'] = $startTime->format('H:i');
+                $data['end_time'] = $endTime->format('H:i');
             }
-
-            // Fetch sessions to determine start and end time for display
-            $sessions = \App\Models\PhotographerSession::whereIn('id', $request->session_ids)
-                ->orderBy('start_time')
-                ->get();
-
-            if ($sessions->isEmpty()) {
-                return redirect()->back()->with('error', 'Sesi tidak valid.');
-            }
-
-            $first = $sessions->first();
-            $last = $sessions->last();
-
-            // Logic: start time of first session, end time is start of last + 30 min
-            $startTime = \Carbon\Carbon::parse($first->start_time);
-            $endTime = \Carbon\Carbon::parse($last->start_time)->addMinutes(30);
-
-            $data['photographer_id'] = $request->photographer_id;
-            $data['session_ids'] = $request->session_ids;
-            $data['start_time'] = $startTime->format('H:i');
-            $data['end_time'] = $endTime->format('H:i');
         } else {
             // Room Flow
             if (!$request->start_time) {
-                return redirect()->back()->with('error', 'Silakan pilih jam.');
+                return redirect()->back()->with('error', 'Silakan pilih jam mulai.');
             }
 
-            $duration = $package->duration ?? 60;
-            $startTime = \Carbon\Carbon::parse($request->scheduled_date . ' ' . $request->start_time);
-            $endTime = $startTime->copy()->addMinutes($duration);
+            // Use customer-provided end_time or calculate from duration
+            if ($request->end_time) {
+                $startTime = \Carbon\Carbon::parse($request->scheduled_date . ' ' . $request->start_time);
+                $endTime = \Carbon\Carbon::parse($request->scheduled_date . ' ' . $request->end_time);
+            } else {
+                $duration = $package->duration ?? 60;
+                $startTime = \Carbon\Carbon::parse($request->scheduled_date . ' ' . $request->start_time);
+                $endTime = $startTime->copy()->addMinutes($duration);
+            }
 
             $assignedRoom = $request->room_id;
 
@@ -138,7 +164,45 @@ class CartController extends Controller
                 return redirect()->back()->with('error', 'Maaf, tidak ada ruangan tersedia pada jam ini.');
             }
 
+            // Auto-assign photographer who is available in this time window
+            $assignedPhotographer = null;
+            $sessionIds = [];
+            $photographers = \App\Models\User::where('role', 'photographer')->get();
+            
+            foreach ($photographers as $photographer) {
+                // Calculate sessions needed (30 minutes per session)
+                $durationInMinutes = abs($endTime->diffInMinutes($startTime));
+                $sessionsNeeded = ceil($durationInMinutes / 30);
+                
+                // Generate required time slots (H:i:s format)
+                $slots = [];
+                $time = $startTime->copy();
+                for ($i = 0; $i < $sessionsNeeded; $i++) {
+                    $slots[] = $time->format('H:i:s');
+                    $time->addMinutes(30);
+                }
+                
+                // Check if photographer has all required sessions available
+                $availableSessions = $photographer->sessions()
+                    ->where('date', $request->scheduled_date)
+                    ->whereIn('start_time', $slots)
+                    ->where('status', 'open')
+                    ->get();
+                
+                if ($availableSessions->count() === count($slots)) {
+                    $assignedPhotographer = $photographer->id;
+                    $sessionIds = $availableSessions->pluck('id')->toArray();
+                    break;
+                }
+            }
+
+            if (!$assignedPhotographer) {
+                return redirect()->back()->with('error', 'Maaf, tidak ada fotografer tersedia pada jam ini.');
+            }
+
             $data['room_id'] = $assignedRoom;
+            $data['photographer_id'] = $assignedPhotographer;
+            $data['session_ids'] = $sessionIds;
             $data['start_time'] = $request->start_time;
             $data['end_time'] = $endTime->format('H:i');
         }

@@ -19,7 +19,9 @@ class PageController extends Controller
 
     public function pricelist()
     {
-        $categories = \App\Models\PricelistCategory::with(['subCategories.packages'])->get();
+        $categories = \App\Models\PricelistCategory::with(['subCategories' => function($query) {
+            $query->with(['category', 'packages']);
+        }])->get();
         $rooms = \App\Models\Room::all();
         return Inertia::render('Pricelist', [
             'categories' => $categories,

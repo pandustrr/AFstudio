@@ -6,27 +6,62 @@ import {
     ClockIcon,
     CheckCircleIcon,
     XCircleIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon
+    ChevronDownIcon
 } from '@heroicons/react/24/outline';
 
-export default function Sessions({ grid, selectedDate }) {
+export default function Sessions({ grid, selectedDate, filters, options }) {
+    const monthNames = [
+        "", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+
     const handleToggle = (time_full, status) => {
         if (status === 'booked') return;
 
-        router.post('/photographer/sessions/toggle', {
+        const params = {
             date: selectedDate,
             start_time: time_full
-        }, {
+        };
+
+        if (filters.year) params.year = filters.year;
+        if (filters.month) params.month = filters.month;
+        if (filters.day) params.day = filters.day;
+
+        router.post('/photographer/sessions/toggle', params, {
             preserveScroll: true
         });
     };
 
-    const changeDate = (days) => {
-        const date = new Date(selectedDate);
-        date.setDate(date.getDate() + days);
-        const formattedDate = date.toISOString().split('T')[0];
-        router.get('/photographer/sessions', { date: formattedDate });
+    const handleFilter = (type, value) => {
+        const newFilters = { ...filters, [type]: value };
+
+        if (type === 'year') {
+            newFilters.month = '';
+            newFilters.day = '';
+        } else if (type === 'month') {
+            newFilters.day = '';
+        }
+
+        router.get('/photographer/sessions', newFilters, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
+    const setToday = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1;
+        const day = today.getDate();
+
+        router.get('/photographer/sessions', {
+            year: year.toString(),
+            month: month.toString(),
+            day: day.toString(),
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
     };
 
     return (
@@ -36,7 +71,7 @@ export default function Sessions({ grid, selectedDate }) {
             <div className="pt-8 lg:pt-16 pb-20 px-4 sm:px-6 min-h-screen max-w-7xl mx-auto">
                 {/* Header Section */}
                 <div className="bg-white dark:bg-white/3 p-6 rounded-2xl border border-black/5 dark:border-white/5 shadow-xl mb-8">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                         <div>
                             <h1 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter italic mb-1">Manajemen Sesi</h1>
                             <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-bold uppercase tracking-widest">
@@ -44,27 +79,71 @@ export default function Sessions({ grid, selectedDate }) {
                             </p>
                         </div>
 
-                        <div className="flex items-center gap-4 bg-black/5 dark:bg-white/5 p-2 rounded-xl">
-                            <button
-                                onClick={() => changeDate(-1)}
-                                className="p-2 hover:bg-white dark:hover:bg-brand-black rounded-lg transition-all"
-                            >
-                                <ChevronLeftIcon className="w-5 h-5" />
-                            </button>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                            {/* Compact Date Filters */}
+                            <div className="flex items-center gap-1 p-1.5 bg-white dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 w-fit shadow-sm">
+                                <div className="relative group">
+                                    <select
+                                        value={filters.year || ''}
+                                        onChange={(e) => handleFilter('year', e.target.value)}
+                                        className="appearance-none bg-transparent border-0 rounded-lg pl-3 pr-8 py-2 text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                                    >
+                                        <option value="" className="bg-white dark:bg-brand-black">Tahun</option>
+                                        {options.years.map((year) => (
+                                            <option key={year} value={year} className="bg-white dark:bg-brand-black">{year}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
+                                </div>
 
-                            <div className="flex items-center gap-3 px-4">
-                                <CalendarIcon className="w-5 h-5 text-brand-gold" />
-                                <span className="text-sm font-black uppercase tracking-tight">
-                                    {new Date(selectedDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                                </span>
+                                <div className="w-px h-4 bg-black/10 dark:bg-white/10"></div>
+
+                                <div className="relative group">
+                                    <select
+                                        value={filters.month || ''}
+                                        onChange={(e) => handleFilter('month', e.target.value)}
+                                        disabled={!filters.year}
+                                        className="appearance-none bg-transparent border-0 rounded-lg pl-3 pr-8 py-2 text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors disabled:opacity-30"
+                                    >
+                                        <option value="" className="bg-white dark:bg-brand-black">Bulan</option>
+                                        {options.months.map((month) => (
+                                            <option key={month} value={month} className="bg-white dark:bg-brand-black">{monthNames[month]}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
+                                </div>
+
+                                <div className="w-px h-4 bg-black/10 dark:bg-white/10"></div>
+
+                                <div className="relative group">
+                                    <select
+                                        value={filters.day || ''}
+                                        onChange={(e) => handleFilter('day', e.target.value)}
+                                        disabled={!filters.month}
+                                        className="appearance-none bg-transparent border-0 rounded-lg pl-3 pr-8 py-2 text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors disabled:opacity-30"
+                                    >
+                                        <option value="" className="bg-white dark:bg-brand-black">Tgl</option>
+                                        {options.days.map((day) => (
+                                            <option key={day} value={day} className="bg-white dark:bg-brand-black">{day}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
+                                </div>
                             </div>
 
                             <button
-                                onClick={() => changeDate(1)}
-                                className="p-2 hover:bg-white dark:hover:bg-brand-black rounded-lg transition-all"
+                                onClick={setToday}
+                                className="px-4 py-2 bg-brand-gold text-brand-black rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-brand-gold/90 transition-all shrink-0"
                             >
-                                <ChevronRightIcon className="w-5 h-5" />
+                                Hari Ini
                             </button>
+
+                            <div className="flex items-center gap-3 px-4 bg-black/5 dark:bg-white/5 p-2 rounded-xl">
+                                <CalendarIcon className="w-5 h-5 text-brand-gold" />
+                                <span className="text-sm font-black uppercase tracking-tight text-brand-black dark:text-brand-white">
+                                    {new Date(selectedDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>

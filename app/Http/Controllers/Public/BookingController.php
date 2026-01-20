@@ -129,9 +129,53 @@ class BookingController extends Controller
                     'photographer_id' => $cart->photographer_id,
                 ]);
 
-                // If this is a photographer flow, update sessions
+                // Handle photographer booking
                 if ($cart->photographer_id && $cart->session_ids) {
+                    // Old flow: pre-selected photographer and sessions
                     \App\Models\PhotographerSession::whereIn('id', $cart->session_ids)
+                        ->update([
+                            'status' => 'booked',
+                            'booking_item_id' => $item->id,
+                        ]);
+                } elseif ($cart->sessions_needed && !$cart->photographer_id) {
+                    // New flow: auto-assign photographer
+                    $sessionsNeeded = $cart->sessions_needed;
+                    $startTime = $cart->start_time;
+                    $date = $cart->scheduled_date;
+
+                    // Generate consecutive time slots
+                    $slots = [];
+                    $time = \Carbon\Carbon::createFromTimeString($startTime);
+                    for ($i = 0; $i < $sessionsNeeded; $i++) {
+                        $slots[] = $time->format('H:i:s');
+                        $time->addMinutes(30);
+                    }
+
+                    // Find photographer who has ALL slots open
+                    $photographer = \App\Models\User::where('role', 'photographer')
+                        ->whereHas('sessions', function($query) use ($date, $slots) {
+                            $query->where('date', $date)
+                                ->whereIn('start_time', $slots)
+                                ->where('status', 'open');
+                        }, '=', count($slots))
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (!$photographer) {
+                        throw new \Exception('Slot waktu tidak tersedia lagi. Silakan pilih waktu lain.');
+                    }
+
+                    // Update booking item with assigned photographer
+                    $item->update(['photographer_id' => $photographer->id]);
+
+                    // Book the sessions
+                    $sessionIds = \App\Models\PhotographerSession::where('photographer_id', $photographer->id)
+                        ->where('date', $date)
+                        ->whereIn('start_time', $slots)
+                        ->where('status', 'open')
+                        ->pluck('id');
+
+                    \App\Models\PhotographerSession::whereIn('id', $sessionIds)
                         ->update([
                             'status' => 'booked',
                             'booking_item_id' => $item->id,
