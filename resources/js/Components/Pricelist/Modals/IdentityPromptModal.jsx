@@ -12,7 +12,7 @@ export default function IdentityPromptModal({ isOpen, onClose, onConfirm }) {
 
     return (
         <Transition appear show={isOpen} as={Fragment}>
-            <Dialog as="div" className="relative z-60" onClose={onClose}>
+            <Dialog as="div" className="relative z-[9999]" onClose={onClose}>
                 <Transition.Child
                     as={Fragment}
                     enter="ease-out duration-300"
@@ -22,7 +22,7 @@ export default function IdentityPromptModal({ isOpen, onClose, onConfirm }) {
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <div className="fixed inset-0 bg-transparent" />
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
                 </Transition.Child>
 
                 <div className="fixed inset-0 overflow-y-auto">

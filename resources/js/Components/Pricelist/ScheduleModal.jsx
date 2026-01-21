@@ -155,10 +155,10 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
 
     const checkTimeAvailability = async (time, endTimeVal = null) => {
         if (!time || !date) return;
-        
+
         setAvailabilityStatus('checking');
         setError(null);
-        
+
         try {
             const params = {
                 date: date,
@@ -169,7 +169,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                 params.end_time = endTimeVal;
             }
             const response = await axios.get('/schedule/check-time', { params });
-            
+
             if (response.data.available) {
                 setAvailabilityStatus('available');
             } else {
@@ -197,6 +197,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     };
 
     const handleSubmit = () => {
+        console.log('=== HANDLE SUBMIT ===');
         if (!date) return;
         if (!startTime) {
             setError('Pilih waktu mulai.');
@@ -210,15 +211,21 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         setError(null);
 
         let uid = localStorage.getItem('afstudio_cart_uid');
+        console.log('UID:', uid);
         if (!uid || !uid.includes('-')) {
+            console.log('No UID, showing IdentityPromptModal');
             setShowNamePrompt(true);
             return;
         }
 
+        console.log('Processing cart with UID:', uid);
         processCart(uid);
     };
 
     const processCart = (uid) => {
+        console.log('=== PROCESS CART START ===');
+        console.log('Current state - date:', date, 'startTime:', startTime, 'endTime:', endTime);
+        
         const payload = {
             pricelist_package_id: packageData.id,
             quantity: 1,
@@ -236,20 +243,32 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             }
         }
 
+        console.log('Sending payload:', payload);
+
         router.post('/cart', payload, {
             headers: { 'X-Cart-UID': uid },
             onSuccess: (page) => {
+                console.log('=== PROCESS CART SUCCESS ===');
+                console.log('Page props:', page.props);
                 if (!page.props.flash?.error) {
-                    onClose();
                     if (page.props.flash?.success) {
+                        console.log('Success message found:', page.props.flash.success);
                         setCurrentUID(uid);
                         setShowSuccessUID(true);
                     }
+                    // Close modal after showing success (delay for user to see success state)
+                    setTimeout(() => {
+                        console.log('Closing ScheduleModal');
+                        onClose();
+                    }, 500);
                 } else {
+                    console.log('Error from server:', page.props.flash.error);
                     setError(page.props.flash.error);
                 }
             },
             onError: (errors) => {
+                console.log('=== PROCESS CART ERROR ===');
+                console.log('Errors:', errors);
                 const firstError = Object.values(errors).join(', ');
                 setError(firstError || "Gagal menambahkan ke keranjang.");
             }

@@ -59,7 +59,7 @@ class PhotographerSessionController extends Controller
                 ->orderBy('month', 'desc')
                 ->pluck('month')
                 ->toArray();
-            
+
             // Always show all months (1-12) for the selected year
             $availableMonths = range(1, 12);
         }
@@ -68,7 +68,7 @@ class PhotographerSessionController extends Controller
         $availableDays = [];
         if ($year && $month) {
             $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
-            
+
             // Get days that have data
             $dataDays = PhotographerSession::where('photographer_id', $photographerId)
                 ->whereYear('date', $year)
@@ -78,7 +78,7 @@ class PhotographerSessionController extends Controller
                 ->orderBy('day', 'desc')
                 ->pluck('day')
                 ->toArray();
-            
+
             // Always show all days (1-31 or less based on month)
             $availableDays = range(1, $daysInMonth);
         }
@@ -104,8 +104,22 @@ class PhotographerSessionController extends Controller
 
     public function adminIndex(Request $request)
     {
-        $date = $request->input('date', Carbon::today()->toDateString());
+        $year = $request->input('year');
+        $month = $request->input('month');
+        $day = $request->input('day');
         $photographerId = $request->input('photographer_id');
+
+        // Determine the selected date
+        if ($year && $month && $day) {
+            $date = Carbon::createFromDate($year, $month, $day)->toDateString();
+        } else {
+            $date = $request->input('date', Carbon::today()->toDateString());
+            // If date is provided but not year/month/day, parse it to set filters
+            $carbonDate = Carbon::parse($date);
+            $year = $year ?: $carbonDate->year;
+            $month = $month ?: $carbonDate->month;
+            $day = $day ?: $carbonDate->day;
+        }
 
         $photographers = \App\Models\User::where('role', 'photographer')->get();
 
@@ -120,11 +134,30 @@ class PhotographerSessionController extends Controller
 
         $grid = $photographerId ? $this->generateSessionGrid($date, $sessions) : [];
 
+        // Get Available Options
+        $currentYear = Carbon::today()->year;
+        $availableYears = range($currentYear - 1, $currentYear + 2);
+
+        $availableMonths = range(1, 12);
+
+        $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
+        $availableDays = range(1, $daysInMonth);
+
         return Inertia::render('Admin/Photographers/PhotographerSessions', [
             'photographers' => $photographers,
             'grid' => $grid,
             'selectedDate' => $date,
             'selectedPhotographerId' => $photographerId,
+            'filters' => [
+                'year' => (string)$year,
+                'month' => (string)$month,
+                'day' => (string)$day,
+            ],
+            'options' => [
+                'years' => $availableYears,
+                'months' => $availableMonths,
+                'days' => $availableDays,
+            ]
         ]);
     }
 
@@ -256,7 +289,7 @@ class PhotographerSessionController extends Controller
     public function reservations(Request $request)
     {
         $photographerId = Auth::id();
-        
+
         // Get all booked sessions for this photographer with booking details
         $sessions = PhotographerSession::where('photographer_id', $photographerId)
             ->where('status', 'booked')
@@ -265,7 +298,7 @@ class PhotographerSessionController extends Controller
             ->orderBy('start_time', 'desc')
             ->get();
 
-        $reservations = $sessions->map(function($session) {
+        $reservations = $sessions->map(function ($session) {
             return [
                 'id' => $session->id,
                 'date' => $session->date,
@@ -287,5 +320,4 @@ class PhotographerSessionController extends Controller
             'reservations' => $reservations
         ]);
     }
-
 }

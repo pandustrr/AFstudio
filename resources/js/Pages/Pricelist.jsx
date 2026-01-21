@@ -54,7 +54,7 @@ export default function Pricelist({ categories, rooms, locked }) {
         <div className="min-h-screen bg-brand-white dark:bg-brand-black transition-colors duration-300">
             <Head title="Price List - AFSTUDIO" />
 
-            {!locked && <Navbar />}
+            <Navbar />
 
             {/* Schedule Modal */}
             <ScheduleModal
@@ -244,7 +244,7 @@ export default function Pricelist({ categories, rooms, locked }) {
                                                         : 'bg-black/5 dark:bg-white/10 text-brand-black dark:text-brand-white hover:bg-brand-black hover:text-white dark:hover:bg-brand-gold dark:hover:text-brand-black shadow-sm'
                                                         }`}
                                                 >
-                                                    Lihat Detail
+                                                    {locked ? 'Tambah ke Keranjang' : 'Lihat Detail'}
                                                 </button>
                                             </div>
                                         </div>
