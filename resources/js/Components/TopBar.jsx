@@ -3,7 +3,7 @@ import { usePage } from '@inertiajs/react';
 import ThemeToggle from '@/Components/ThemeToggle';
 import { useTheme } from '@/Contexts/ThemeContext';
 
-export default function TopbarPhoto() {
+export default function TopBar() {
     const { auth, url } = usePage().props;
     const { theme, toggleTheme } = useTheme();
 

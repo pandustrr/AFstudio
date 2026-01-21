@@ -7,6 +7,7 @@ use App\Models\Cart;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Log;
 
 class CartController extends Controller
 {
@@ -52,6 +53,22 @@ class CartController extends Controller
 
         $package = \App\Models\PricelistPackage::with('subCategory.category')->findOrFail($request->pricelist_package_id);
         $type = $package->subCategory->category->type ?? 'room';
+
+        Log::info('Cart Store Debug', [
+            'package_id' => $request->pricelist_package_id,
+            'package_name' => $package->name,
+            'category_type' => $type,
+            'has_start_time' => $request->has('start_time'),
+            'has_end_time' => $request->has('end_time'),
+            'has_photographer_id' => $request->has('photographer_id'),
+            'request_data' => $request->all()
+        ]);
+
+        // SMART TYPE DETECTION: If start_time + end_time provided, it's a ROOM booking
+        if ($request->has('start_time') && $request->has('end_time') && !$request->has('photographer_id')) {
+            $type = 'room';
+            Log::info('Auto-detected ROOM booking based on payload');
+        }
 
         $data = [
             'user_id' => Auth::id(),
@@ -105,6 +122,12 @@ class CartController extends Controller
                 $data['end_time'] = $endTime->format('H:i');
             }
         } else {
+            // ROOM FLOW - Default for non-photographer packages
+            Log::info('Processing ROOM booking', [
+                'type' => $type,
+                'start_time' => $request->start_time,
+                'end_time' => $request->end_time
+            ]);
             // Room Flow
             if (!$request->start_time) {
                 return redirect()->back()->with('error', 'Silakan pilih jam mulai.');
@@ -208,6 +231,11 @@ class CartController extends Controller
         }
 
         Cart::create($data);
+
+        // Return proper response for Inertia
+        if ($request->wantsJson() || $request->header('X-Inertia')) {
+            return back()->with('success', 'Berhasil ditambahkan ke keranjang!');
+        }
 
         return redirect()->back()->with('success', 'Berhasil ditambahkan ke keranjang!');
     }

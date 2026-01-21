@@ -4,7 +4,7 @@ import { useTheme } from '../Contexts/ThemeContext';
 import AdminSidebar from '../Components/AdminSidebar';
 import { usePage, Link } from '@inertiajs/react';
 import { UserCircleIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import TopbarPhoto from '@/Pages/Admin/Photographers/TopbarPhoto';
+import TopBar from '@/Components/TopBar';
 
 export default function AdminLayout({ children, showToggle = true, showSidebar = true }) {
     const { theme, toggleTheme } = useTheme();
@@ -38,7 +38,7 @@ export default function AdminLayout({ children, showToggle = true, showSidebar =
                 )}
 
                 {/* TopBar Component */}
-                {showSidebar && <TopbarPhoto />}
+                {showSidebar && <TopBar />}
 
                 {showToggle && !showSidebar && (
                     <div className="fixed top-8 right-8 z-100 flex items-center space-x-4">
