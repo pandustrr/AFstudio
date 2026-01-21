@@ -225,7 +225,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     const processCart = (uid) => {
         console.log('=== PROCESS CART START ===');
         console.log('Current state - date:', date, 'startTime:', startTime, 'endTime:', endTime);
-        
+
         const payload = {
             pricelist_package_id: packageData.id,
             quantity: 1,
