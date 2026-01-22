@@ -8,7 +8,8 @@ import {
     ClockIcon,
     CalendarDaysIcon,
     XMarkIcon,
-    ChevronDownIcon
+    ChevronDownIcon,
+    DocumentArrowDownIcon
 } from '@heroicons/react/24/outline';
 
 export default function BookingIndex({ bookingItems, filters, options, photographers = [] }) {
@@ -283,12 +284,22 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
                                                         </p>
                                                     </div>
                                                     {item.booking?.id && (
-                                                        <Link
-                                                            href={`/admin/bookings/${item.booking.id}`}
-                                                            className="shrink-0 bg-brand-black dark:bg-brand-white text-white dark:text-brand-black p-2 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-md"
-                                                        >
-                                                            <EyeIcon className="w-4 h-4" />
-                                                        </Link>
+                                                        <div className="flex items-center gap-1.5 shrink-0">
+                                                            <a
+                                                                href={`/admin/bookings/${item.booking.id}/invoice`}
+                                                                target="_blank"
+                                                                title="Generate Invoice"
+                                                                className="bg-brand-gold/10 text-brand-gold p-2 rounded-xl hover:bg-brand-gold hover:text-brand-black transition-all shadow-sm"
+                                                            >
+                                                                <DocumentArrowDownIcon className="w-4 h-4" />
+                                                            </a>
+                                                            <Link
+                                                                href={`/admin/bookings/${item.booking.id}`}
+                                                                className="bg-brand-black dark:bg-brand-white text-white dark:text-brand-black p-2 rounded-xl hover:scale-110 active:scale-95 transition-all shadow-md"
+                                                            >
+                                                                <EyeIcon className="w-4 h-4" />
+                                                            </Link>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>

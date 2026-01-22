@@ -9,6 +9,7 @@ use Inertia\Inertia;
 
 use App\Models\PhotoEditing;
 use App\Models\BookingItem;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class BookingController extends Controller
 {
@@ -179,5 +180,14 @@ class BookingController extends Controller
         $item->update($validated);
 
         return redirect()->back()->with('success', 'Booking item updated successfully.');
+    }
+
+    public function downloadInvoice(Booking $booking)
+    {
+        $booking->load(['items.package.subCategory', 'user']);
+
+        $pdf = PDF::loadView('pdf.invoice', compact('booking'));
+
+        return $pdf->stream('Invoice-' . $booking->booking_code . '.pdf');
     }
 }

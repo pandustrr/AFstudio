@@ -12,7 +12,8 @@ import {
     CheckCircleIcon,
     XCircleIcon,
     ArrowPathIcon,
-    KeyIcon
+    KeyIcon,
+    DocumentArrowDownIcon
 } from '@heroicons/react/24/outline';
 
 export default function BookingShow({ booking, photographers = [] }) {
@@ -125,6 +126,14 @@ export default function BookingShow({ booking, photographers = [] }) {
                                     <ArrowPathIcon className="w-4 h-4" /> Reset to Pending
                                 </button>
                             )}
+
+                            <a
+                                href={`/admin/bookings/${booking.id}/invoice`}
+                                target="_blank"
+                                className="flex items-center gap-2 px-6 py-3 bg-brand-gold text-brand-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg"
+                            >
+                                <DocumentArrowDownIcon className="w-4 h-4" /> Generate Invoice
+                            </a>
                         </div>
                     </div>
 

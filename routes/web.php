@@ -75,7 +75,7 @@ Route::prefix('photographer')->group(function () {
 
         Route::get('/sessions', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'index'])->name('photographer.sessions.index');
         Route::post('/sessions/toggle', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'toggle'])->name('photographer.sessions.toggle');
-        
+
         Route::get('/reservations', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'reservations'])->name('photographer.reservations');
     });
 });
@@ -100,6 +100,7 @@ Route::prefix('admin')->group(function () {
         Route::post('/about', [\App\Http\Controllers\Admin\AboutController::class, 'update'])->name('admin.about.update');
 
         // Bookings
+        Route::get('/bookings/{booking}/invoice', [\App\Http\Controllers\Admin\BookingController::class, 'downloadInvoice'])->name('admin.bookings.invoice');
         Route::resource('bookings', \App\Http\Controllers\Admin\BookingController::class)
             ->only(['index', 'show', 'update'])
             ->names('admin.bookings')

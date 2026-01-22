@@ -94,11 +94,15 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
 
     // Hoisted function to avoid ReferenceError
     function handleIdentityConfirmed(name) {
-        const cleanName = name.trim().toUpperCase().replace(/\s+/g, '');
-        const randomStr = Math.random().toString(36).substring(2, 7).toUpperCase();
-        const newUid = `${cleanName}-${randomStr}`;
+        // Generate a random 5-digit number
+        const randomNumber = Math.floor(10000 + Math.random() * 90000);
+        const newUid = `AF-${randomNumber}`;
 
+        // Optional: Store the name separately if needed elsewhere, 
+        // but the UID itself is now generic as requested.
+        localStorage.setItem('afstudio_customer_name', name.trim());
         localStorage.setItem('afstudio_cart_uid', newUid);
+
         setShowNamePrompt(false);
         processCart(newUid);
     }

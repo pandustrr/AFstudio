@@ -19,7 +19,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
     const user = auth?.user || {};
 
     const { data, setData, post, processing, errors } = useForm({
-        name: user.name || '',
+        name: user.name || localStorage.getItem('afstudio_customer_name') || '',
         university: '',
         domicile: '',
         phone: '',
