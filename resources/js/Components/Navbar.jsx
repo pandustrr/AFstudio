@@ -210,7 +210,7 @@ export default function Navbar() {
                                                     type="text"
                                                     value={inputUid}
                                                     onChange={(e) => setInputUid(e.target.value)}
-                                                    placeholder="Contoh: PANDU-123456"
+                                                    placeholder="Contoh: AF-12345"
                                                     className="w-full bg-black/5 dark:bg-white/5 border-2 border-transparent focus:border-brand-gold focus:ring-0 rounded-2xl px-5 py-4 pr-12 text-brand-black dark:text-brand-white font-black tracking-widest uppercase placeholder:text-black/20 dark:placeholder:text-white/20 transition-all font-mono"
                                                     autoFocus
                                                 />

@@ -208,11 +208,13 @@ export default function Pricelist({ categories, rooms, locked }) {
                                     {sub.packages.map((pkg) => (
                                         <div
                                             key={pkg.id}
-                                            className={`relative group p-5 md:p-7 rounded-[40px] border transition-all duration-500 flex flex-col w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.5rem)] xl:w-[calc(25%-1.5rem)] max-w-sm ${pkg.is_popular
+                                            className={`relative group overflow-hidden p-5 md:p-7 rounded-[40px] border transition-all duration-500 flex flex-col w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.5rem)] xl:w-[calc(25%-1.5rem)] max-w-sm ${pkg.is_popular
                                                 ? 'bg-brand-black text-white border-brand-black shadow-2xl shadow-brand-red/10 ring-4 ring-brand-red/5'
                                                 : 'bg-white dark:bg-white/5 border-black/5 dark:border-white/5 text-brand-black dark:text-brand-white'
                                                 } hover:-translate-y-2`}
                                         >
+                                            <div className="absolute inset-0 bg-linear-to-r from-brand-gold/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+
                                             {pkg.is_popular && (
                                                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-brand-red text-white rounded-full text-[7px] md:text-[8px] font-black uppercase tracking-widest shadow-lg">
                                                     <FireIcon className="w-2.5 h-2.5 md:w-3 md:h-3" />
@@ -266,7 +268,7 @@ export default function Pricelist({ categories, rooms, locked }) {
                 <section className="pb-20 md:pb-28 px-4 md:px-6">
                     <div className="max-w-4xl mx-auto rounded-[40px] overflow-hidden relative group">
                         <div className="absolute inset-0 bg-brand-black dark:bg-white/5 transform group-hover:scale-[1.01] transition-transform duration-700"></div>
-                        <div className="absolute inset-0 bg-gradient-to-r from-brand-gold/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                        <div className="absolute inset-0 bg-linear-to-r from-brand-gold/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
 
                         <div className="relative p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-10 text-center md:text-left">
                             <div className="flex-1 space-y-4">
