@@ -103,7 +103,7 @@ class BookingController extends Controller
             $booking = Booking::create([
                 'user_id' => Auth::id(),
                 'guest_uid' => $uid,
-                'booking_code' => 'AF-' . strtoupper(uniqid()),
+                'booking_code' => $uid,
                 'name' => $request->name,
                 'phone' => $request->phone,
                 'university' => $request->university,
@@ -137,6 +137,7 @@ class BookingController extends Controller
                         ->update([
                             'status' => 'booked',
                             'booking_item_id' => $item->id,
+                            'cart_uid' => $uid,
                         ]);
                 } elseif ($cart->sessions_needed && !$cart->photographer_id) {
                     // New flow: auto-assign photographer
@@ -180,6 +181,7 @@ class BookingController extends Controller
                         ->update([
                             'status' => 'booked',
                             'booking_item_id' => $item->id,
+                            'cart_uid' => $uid,
                         ]);
                 }
             }

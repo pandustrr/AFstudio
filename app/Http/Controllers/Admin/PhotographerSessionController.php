@@ -289,12 +289,19 @@ class PhotographerSessionController extends Controller
     public function reservations(Request $request)
     {
         $photographerId = Auth::id();
+        $sessionIdFilter = $request->input('session_id');
 
         // Get all booked sessions for this photographer with booking details
-        $sessions = PhotographerSession::where('photographer_id', $photographerId)
+        $query = PhotographerSession::where('photographer_id', $photographerId)
             ->where('status', 'booked')
-            ->with(['bookingItem.booking', 'bookingItem.package'])
-            ->orderBy('date', 'desc')
+            ->with(['bookingItem.booking', 'bookingItem.package']);
+
+        // Apply session ID filter if provided
+        if ($sessionIdFilter) {
+            $query->where('id', $sessionIdFilter);
+        }
+
+        $sessions = $query->orderBy('date', 'desc')
             ->orderBy('start_time', 'desc')
             ->get();
 
@@ -316,8 +323,23 @@ class PhotographerSessionController extends Controller
             ];
         });
 
+        // Get all session IDs for filter dropdown
+        $allSessions = PhotographerSession::where('photographer_id', $photographerId)
+            ->where('status', 'booked')
+            ->orderBy('date', 'desc')
+            ->orderBy('start_time', 'desc')
+            ->get(['id', 'date', 'start_time'])
+            ->map(function ($session) {
+                return [
+                    'id' => $session->id,
+                    'label' => 'Session #' . $session->id . ' - ' . Carbon::parse($session->date)->format('d M Y') . ' ' . Carbon::createFromTimeString($session->start_time)->format('H:i')
+                ];
+            });
+
         return Inertia::render('Photographer/Reservations', [
-            'reservations' => $reservations
+            'reservations' => $reservations,
+            'allSessions' => $allSessions,
+            'selectedSessionId' => $sessionIdFilter
         ]);
     }
 }
