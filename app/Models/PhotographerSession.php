@@ -8,6 +8,7 @@ class PhotographerSession extends Model
 {
     protected $fillable = [
         'photographer_id',
+        'cart_uid',
         'date',
         'start_time',
         'status',
