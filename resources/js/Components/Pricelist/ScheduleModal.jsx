@@ -164,11 +164,15 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         setError(null);
 
         try {
+            const cartUid = localStorage.getItem('afstudio_cart_uid');
             const params = {
                 date: date,
                 start_time: time,
                 package_id: packageData.id
             };
+            if (cartUid) {
+                params.cart_uid = cartUid;
+            }
             if (endTimeVal && !isPhotographerMode) {
                 params.end_time = endTimeVal;
             }
