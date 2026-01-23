@@ -29,6 +29,8 @@ class DummyBookingSeeder extends Seeder
 
         $scheduledDate = now()->addDays(7);
 
+        $guestUid = 'AF-' . rand(10000, 99999);
+
         $booking = Booking::create([
             'name' => 'Budi Santoso',
             'phone' => '08123456789',
@@ -38,7 +40,8 @@ class DummyBookingSeeder extends Seeder
             'location' => 'Studio AF',
             'total_price' => $package->price_numeric,
             'status' => 'pending',
-            'guest_uid' => uniqid('guest_'),
+            'guest_uid' => $guestUid,
+            'booking_code' => 'AF-' . strtoupper(uniqid()),
         ]);
 
         BookingItem::create([

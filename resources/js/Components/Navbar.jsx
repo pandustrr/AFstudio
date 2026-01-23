@@ -35,8 +35,9 @@ export default function Navbar() {
         // Get UID for cart link
         const uid = localStorage.getItem('afstudio_cart_uid');
         if (uid) {
-            // Force reset if UID is in old format (no dash)
-            if (!uid.includes('-')) {
+            // Force reset if UID is NOT in correct format AF-{5digits}
+            const validFormat = /^AF-\d{5}$/.test(uid);
+            if (!validFormat) {
                 localStorage.removeItem('afstudio_cart_uid');
                 setCartUid(null);
                 setInputUid('');

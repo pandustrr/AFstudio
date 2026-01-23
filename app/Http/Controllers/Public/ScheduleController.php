@@ -261,6 +261,7 @@ class ScheduleController extends Controller
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'nullable|date_format:H:i',
             'package_id' => 'required|exists:pricelist_packages,id',
+            'cart_uid' => 'nullable|string',
         ]);
 
         try {
@@ -283,12 +284,30 @@ class ScheduleController extends Controller
                     $time->addMinutes(30);
                 }
 
-                // Find photographer with ALL slots available
+                // Get session IDs already in cart with same cart_uid (to exclude them)
+                $cartSessionIds = [];
+                if ($request->cart_uid) {
+                    $cartsWithSessions = \App\Models\Cart::where('cart_uid', $request->cart_uid)
+                        ->whereNotNull('session_ids')
+                        ->get();
+                    
+                    foreach ($cartsWithSessions as $cart) {
+                        $sessionIds = $cart->session_ids ?? [];
+                        $cartSessionIds = array_merge($cartSessionIds, $sessionIds);
+                    }
+                }
+
+                // Find photographer with ALL slots available (excluding sessions already in cart)
                 $photographer = \App\Models\User::where('role', 'photographer')
-                    ->whereHas('sessions', function($query) use ($date, $slots) {
+                    ->whereHas('sessions', function($query) use ($date, $slots, $cartSessionIds) {
                         $query->where('date', $date)
                             ->whereIn('start_time', $slots)
                             ->where('status', 'open');
+                        
+                        // Exclude sessions already in customer's cart
+                        if (!empty($cartSessionIds)) {
+                            $query->whereNotIn('id', $cartSessionIds);
+                        }
                     }, '=', count($slots))
                     ->first();
 

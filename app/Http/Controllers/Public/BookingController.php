@@ -103,6 +103,7 @@ class BookingController extends Controller
             $booking = Booking::create([
                 'user_id' => Auth::id(),
                 'guest_uid' => $uid,
+                'booking_code' => 'AF-' . strtoupper(uniqid()),
                 'name' => $request->name,
                 'phone' => $request->phone,
                 'university' => $request->university,

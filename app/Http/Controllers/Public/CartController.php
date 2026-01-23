@@ -109,6 +109,25 @@ class CartController extends Controller
                     return redirect()->back()->with('error', 'Sesi tidak valid.');
                 }
 
+                // Validate all sessions are still available (open status)
+                if ($sessions->where('status', '!=', 'open')->count() > 0) {
+                    return redirect()->back()->with('error', 'Beberapa sesi sudah di-booking customer lain. Silakan pilih sesi yang lain.');
+                }
+
+                // Check if any of these sessions are already in cart with same cart_uid
+                $existingCartWithSessions = \App\Models\Cart::where('cart_uid', $request->cart_uid)
+                    ->whereNotNull('session_ids')
+                    ->get();
+
+                foreach ($existingCartWithSessions as $existingCart) {
+                    $existingSessions = $existingCart->session_ids ?? [];
+                    $newSessions = $request->session_ids ?? [];
+                    $overlap = array_intersect($existingSessions, $newSessions);
+                    if (!empty($overlap)) {
+                        return redirect()->back()->with('error', 'Sesi ini sudah ada di keranjang Anda.');
+                    }
+                }
+
                 $first = $sessions->first();
                 $last = $sessions->last();
 
