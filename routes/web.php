@@ -37,7 +37,10 @@ Route::get('/share/p/{slug}', [\App\Http\Controllers\SharedPricelistController::
 // Booking Routes (Guest & Auth)
 Route::get('/checkout', [BookingController::class, 'create'])->name('booking.create');
 Route::post('/checkout', [BookingController::class, 'store'])->name('booking.store');
+use App\Http\Controllers\Public\PdfController;
+
 Route::get('/booking/{code}', [BookingController::class, 'show'])->name('booking.show');
+Route::get('/pdf/booking/{bookingCode}', [PdfController::class, 'bookingInvoice'])->name('booking.pdf');
 Route::post('/checkout/upload-proof', [BookingController::class, 'uploadProof'])->name('checkout.upload-proof');
 Route::get('/api/booking/{id}/proof-status', [BookingController::class, 'getProofStatus']);
 
