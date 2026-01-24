@@ -44,7 +44,7 @@ export default function Index({ categories }) {
         const totalMinutes = maxSessions * 30;
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
-        
+
         if (hours === 0) return `${minutes}m`;
         if (minutes === 0) return `${hours}h`;
         return `${hours}h ${minutes}m`;
@@ -203,7 +203,12 @@ export default function Index({ categories }) {
                                                         {pkg.is_popular && <StarIconSolid className="w-3.5 h-3.5 text-brand-gold dark:text-brand-black" />}
                                                     </div>
 
-                                                    <ul className="space-y-1.5 mb-6 min-h-[60px]">
+                                                    <ul
+                                                        className="
+                                                            space-y-1.5 mb-6
+                                                            min-h-[60px]
+                                                        "
+                                                    >
                                                         {(pkg.features || []).slice(0, 4).map((feature, idx) => (
                                                             <li key={idx} className="flex items-start gap-1.5">
                                                                 <ChevronRightIcon className={`w-2.5 h-2.5 mt-0.5 shrink-0 ${pkg.is_popular ? 'text-white/60 dark:text-brand-black/60' : 'text-brand-black/20 dark:text-brand-white/20'}`} />

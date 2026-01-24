@@ -660,7 +660,14 @@ export default function SelectorPhoto() {
                                                                 </button>
                                                             </div>
                                                             <div className="flex items-center justify-center space-x-2">
-                                                                <span className="text-[9px] font-black uppercase tracking-widest text-brand-gold truncate max-w-[150px]">{reviewPhoto.name}</span>
+                                                                <span
+                                                                    className="
+                                                                        text-[9px] font-black uppercase tracking-widest
+                                                                        text-brand-gold truncate max-w-[150px]
+                                                                    "
+                                                                >
+                                                                    {reviewPhoto.name}
+                                                                </span>
                                                                 <span className="text-[8px] font-bold text-brand-black/20 dark:text-brand-white/20">{(reviewPhoto.size / 1024 / 1024).toFixed(2)} MB</span>
                                                             </div>
                                                         </div>

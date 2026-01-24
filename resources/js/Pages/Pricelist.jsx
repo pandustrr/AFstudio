@@ -46,7 +46,7 @@ export default function Pricelist({ categories, rooms, locked }) {
         const totalMinutes = maxSessions * 30;
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
-        
+
         if (hours === 0) return `${minutes}m`;
         if (minutes === 0) return `${hours}h`;
         return `${hours}h ${minutes}m`;
@@ -177,12 +177,23 @@ export default function Pricelist({ categories, rooms, locked }) {
 
             {/* Content Section */}
             {/* Content Section */}
-            <section className="pb-20 px-4 md:px-6 max-w-7xl mx-auto min-h-[500px] relative">
+            <section
+                className="
+                    pb-20 px-4 md:px-6 max-w-7xl mx-auto min-h-[500px] relative
+                "
+            >
 
                 {/* Overlay for Public View (!locked) */}
                 {!locked && (
                     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center p-6 bg-brand-white/50 dark:bg-brand-black/50 backdrop-blur-[2px]">
-                        <div className="bg-white/80 dark:bg-black/80 p-8 md:p-12 rounded-[32px] shadow-2xl border border-white/20 dark:border-white/10 max-w-lg w-full transform hover:scale-105 transition-all duration-500">
+                        <div
+                            className="
+                                bg-white/80 dark:bg-black/80 p-8 md:p-12 rounded-[32px]
+                                shadow-2xl border border-white/20 dark:border-white/10
+                                max-w-lg w-full transform hover:scale-105
+                                transition-all duration-500
+                            "
+                        >
                             <div className="w-16 h-16 md:w-20 md:h-20 bg-brand-gold/20 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
                                 <SparklesIcon className="w-8 h-8 md:w-10 md:h-10 text-brand-gold" />
                             </div>

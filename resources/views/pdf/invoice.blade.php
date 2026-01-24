@@ -8,84 +8,86 @@
         body {
             font-family: 'Times New Roman', Times, serif;
             margin: 0;
-            padding: 40px;
+            padding: 25px;
             color: #000;
-            line-height: 1.4;
-            font-size: 11pt;
+            line-height: 1.3;
+            font-size: 10pt;
         }
 
         .header {
             text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         .company-name {
-            font-size: 24pt;
+            font-size: 18pt;
             font-weight: bold;
-            margin-bottom: 5px;
-            letter-spacing: 2px;
+            margin-bottom: 3px;
+            letter-spacing: 0.5px;
         }
 
         .company-details {
-            font-size: 10pt;
+            font-size: 9pt;
         }
 
         .invoice-title-box {
             text-align: right;
-            margin-bottom: 40px;
+            margin-bottom: 8px;
         }
 
         .invoice-header {
-            font-size: 18pt;
+            font-size: 14pt;
             font-weight: bold;
             text-transform: uppercase;
             border-bottom: 1px solid #000;
             display: inline-block;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
 
         .ref-number {
-            font-size: 12pt;
+            font-size: 10pt;
             font-weight: bold;
         }
 
         .meta-table {
             width: 100%;
-            margin-bottom: 30px;
+            margin-bottom: 12px;
             border-collapse: collapse;
+            font-size: 9pt;
         }
 
         .meta-table td {
             vertical-align: top;
-            padding-bottom: 10px;
+            padding-bottom: 3px;
         }
 
         .meta-label {
-            width: 120px;
+            width: 75px;
             font-weight: bold;
         }
 
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
+            margin-bottom: 12px;
         }
 
         .data-table th {
-            border-top: 2px solid #000;
-            border-bottom: 2px solid #000;
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
             text-align: left;
-            padding: 8px;
+            padding: 5px 6px;
             font-weight: bold;
             text-transform: uppercase;
-            font-size: 10pt;
+            font-size: 9pt;
         }
 
         .data-table td {
-            border-bottom: 1px solid #ccc;
-            padding: 8px;
+            border-bottom: 0.5px solid #ccc;
+            padding: 5px 6px;
+            font-size: 9pt;
         }
 
         .data-table .price-col {
@@ -110,16 +112,18 @@
         .totals-label {
             display: table-cell;
             text-align: right;
-            padding: 5px 20px 5px 0;
+            padding: 3px 12px 3px 0;
             font-weight: bold;
+            font-size: 9pt;
         }
 
         .totals-value {
             display: table-cell;
             text-align: right;
-            width: 120px;
-            padding: 5px 8px;
-            border-bottom: 1px solid #eee;
+            width: 110px;
+            padding: 3px 6px;
+            border-bottom: 0.5px solid #eee;
+            font-size: 9pt;
         }
 
         .grand-total .totals-value {
@@ -128,21 +132,22 @@
         }
 
         .payment-status-box {
-            border: 2px solid #000;
-            padding: 10px 20px;
+            border: 1px solid #000;
+            padding: 7px 14px;
             text-align: center;
             font-weight: bold;
             text-transform: uppercase;
             display: inline-block;
-            margin-top: 20px;
+            margin-top: 6px;
+            font-size: 9pt;
         }
 
         .footer {
-            margin-top: 80px;
+            margin-top: 6px;
             text-align: center;
-            font-size: 9pt;
-            border-top: 1px solid #ccc;
-            padding-top: 10px;
+            font-size: 8pt;
+            border-top: 0.5px solid #ccc;
+            padding-top: 4px;
         }
     </style>
 </head>
@@ -179,6 +184,10 @@
                     <tr>
                         <td class="meta-label">Lokasi:</td>
                         <td>{{ $booking->location }}</td>
+                    </tr>
+                    <tr>
+                        <td class="meta-label">UID:</td>
+                        <td style="font-weight: bold; font-family: monospace;">{{ $booking->guest_uid ?? $booking->booking_code }}</td>
                     </tr>
                 </table>
             </td>
@@ -247,99 +256,88 @@
         </div>
     </div>
 
-    <div style="margin-top: 30px;">
+    <div style="margin-top: 5px;">
         <div class="payment-status-box">
             STATUS BOOKING: {{ strtoupper($booking->status) }}
         </div>
     </div>
 
     @if($booking->notes)
-    <div style="margin-top: 30px; border-top: 1px dotted #000; padding-top: 10px;">
-        <strong>Catatan Tambahan:</strong><br>
-        {{ $booking->notes }}
+    <div style="margin-top: 5px; border-top: 0.5px dotted #000; padding-top: 3px; font-size: 7pt;">
+        <strong>Catatan:</strong> {{ substr($booking->notes, 0, 100) }}
     </div>
     @endif
 
     @if($booking->paymentProof && $booking->paymentProof->count() > 0)
-    <div style="margin-top: 30px; border: 2px solid #000; padding: 20px; background-color: #f5f5f5;">
-        <div style="border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
-            <strong style="font-size: 12pt;">📸 BUKTI PEMBAYARAN YANG DIUNGGAH</strong>
+    <div style="margin-top: 6px; border: 1px solid #000; padding: 8px; background-color: #f5f5f5;">
+        <div style="border-bottom: 1px solid #000; padding-bottom: 3px; margin-bottom: 5px;">
+            <strong style="font-size: 9pt;">BUKTI PEMBAYARAN</strong>
         </div>
 
-        <table style="width: 100%; margin-bottom: 15px; font-size: 10pt;">
-            <tr style="border-bottom: 1px solid #ccc;">
-                <td style="padding: 8px 0; font-weight: bold; width: 30%;">Status Verifikasi:</td>
-                <td style="padding: 8px 0; text-transform: uppercase; font-weight: bold;">
+        <table style="width: 100%; margin-bottom: 5px; font-size: 8pt;">
+            <tr style="border-bottom: 0.5px solid #ccc;">
+                <td style="padding: 2px 0; font-weight: bold; width: 35%;">Status:</td>
+                <td style="padding: 2px 0; text-transform: uppercase; font-weight: bold; font-size: 8pt;">
                     @if($booking->paymentProof->first()->status === 'verified')
-                        ✓ TERVERIFIKASI
+                        ✓ VERIF
                     @elseif($booking->paymentProof->first()->status === 'rejected')
                         ✗ DITOLAK
                     @else
-                        ⏳ MENUNGGU VERIFIKASI
+                        MENUNGGU
                     @endif
                 </td>
             </tr>
-            <tr style="border-bottom: 1px solid #ccc;">
-                <td style="padding: 8px 0; font-weight: bold;">Nama File:</td>
-                <td style="padding: 8px 0;">{{ $booking->paymentProof->first()->file_name }}</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #ccc;">
-                <td style="padding: 8px 0; font-weight: bold;">Ukuran:</td>
-                <td style="padding: 8px 0;">{{ number_format($booking->paymentProof->first()->file_size / 1024 / 1024, 2) }} MB</td>
-            </tr>
-            <tr style="border-bottom: 1px solid #ccc;">
-                <td style="padding: 8px 0; font-weight: bold;">Waktu Upload:</td>
-                <td style="padding: 8px 0;">{{ \Carbon\Carbon::parse($booking->paymentProof->first()->created_at)->format('d/m/Y H:i') }}</td>
-            </tr>
-            @if($booking->paymentProof->first()->verified_at)
-            <tr style="border-bottom: 1px solid #ccc;">
-                <td style="padding: 8px 0; font-weight: bold;">Waktu Verifikasi:</td>
-                <td style="padding: 8px 0;">{{ \Carbon\Carbon::parse($booking->paymentProof->first()->verified_at)->format('d/m/Y H:i') }}</td>
-            </tr>
-            @endif
-            @if($booking->paymentProof->first()->admin_notes)
             <tr>
-                <td style="padding: 8px 0; font-weight: bold; vertical-align: top;">Catatan Admin:</td>
-                <td style="padding: 8px 0;">{{ $booking->paymentProof->first()->admin_notes }}</td>
+                <td style="padding: 2px 0; font-weight: bold;">File:</td>
+                <td style="padding: 2px 0; font-size: 8pt;">{{ substr($booking->paymentProof->first()->file_name, 0, 30) }}</td>
             </tr>
-            @endif
         </table>
 
         @if($booking->paymentProof->first()->file_type && str_contains($booking->paymentProof->first()->file_type, 'image'))
-        <div style="border-top: 2px solid #000; padding-top: 15px; text-align: center;">
-            <p style="margin: 0 0 10px 0; font-weight: bold; font-size: 10pt;">PREVIEW BUKTI PEMBAYARAN:</p>
+        <div style="border-top: 1px solid #000; padding-top: 3px; text-align: center;">
+            <p style="margin: 2px 0 3px 0; font-weight: bold; font-size: 8pt;">PREVIEW:</p>
             @php
                 $filePath = $booking->paymentProof->first()->file_path;
-                // Gunakan public path yang sudah di-symlink
-                $imagePath = public_path('storage/' . $filePath);
-                $fileExists = @file_exists($imagePath);
+                $storagePath = storage_path('app/public/' . $filePath);
+                $publicPath = public_path('storage/' . $filePath);
+
+                $imageFile = null;
+                if (file_exists($storagePath)) {
+                    $imageFile = $storagePath;
+                } elseif (file_exists($publicPath)) {
+                    $imageFile = $publicPath;
+                }
             @endphp
-            @if($fileExists)
-            <img src="{{ asset('storage/' . $filePath) }}"
-                 alt="Bukti Pembayaran"
-                 style="max-width: 100%; max-height: 400px; border: 2px solid #333; margin-top: 10px; padding: 5px; background-color: #fff;">
+            @if($imageFile)
+            @php
+                $imageData = file_get_contents($imageFile);
+                $base64 = base64_encode($imageData);
+                $mimeType = $booking->paymentProof->first()->file_type;
+                $dataUrl = 'data:' . $mimeType . ';base64,' . $base64;
+            @endphp
+            <img src="{{ $dataUrl }}"
+                 alt="Bukti"
+                 style="max-width: 100%; max-height: 140px; border: 0.5px solid #333; margin-top: 2px; padding: 2px; background-color: #fff;">
             @else
-            <div style="padding: 20px; background-color: #fff3cd; border: 2px solid #ffc107; margin-top: 10px;">
-                <span style="font-size: 9pt; color: #856404;">
-                    ℹ️ File gambar tidak dapat ditampilkan dalam PDF ini<br>
-                    Path: {{ $filePath }}<br>
-                    Silakan periksa di portal online untuk preview lengkap
-                </span>
+            <div style="padding: 4px; background-color: #fffacd; border: 0.5px solid #999; margin-top: 2px; font-size: 7pt;">
+                ℹ️ Gambar tidak dapat ditampilkan
             </div>
             @endif
         </div>
         @endif
     </div>
     @else
-    <div style="margin-top: 30px; border: 2px dashed #ccc; padding: 15px; background-color: #fffacd; text-align: center;">
-        <strong style="font-size: 11pt;">⚠️ BUKTI PEMBAYARAN: BELUM DIUNGGAH</strong><br>
-        <span style="font-size: 9pt;">Pelanggan diminta untuk mengunggah bukti pembayaran melalui portal online.</span>
+    <div style="margin-top: 6px; border: 0.5px dashed #999; padding: 4px; background-color: #fffacd; text-align: center; font-size: 8pt;">
+        ⚠️ BUKTI PEMBAYARAN: BELUM DIUNGGAH
     </div>
     @endif
 
     <div class="footer">
-        Terima kasih atas kepercayaan Anda menggunakan jasa AF STUDIO.<br>
-        Simpan dokumen ini sebagai bukti transaksi yang sah.
+        Terima kasih atas kepercayaan Anda menggunakan jasa AF STUDIO<br>
+        <span style="font-size: 7pt; margin-top: 2px; display: block;">
+            <strong>Akses Selector Foto:</strong> Gunakan UID <strong>{{ $booking->guest_uid ?? $booking->booking_code }}</strong>
+            di halaman /selector-photo untuk memilih dan mengedit foto Anda
+        </span>
     </div>
 
 </body>

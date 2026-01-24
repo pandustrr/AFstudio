@@ -35,7 +35,7 @@ export default function Reservations({ reservations, allSessions, selectedSessio
     const uniqueUIDs = [...new Set(reservations.map(r => r.cart_uid))].sort();
 
     // Filter reservations based on customer name search
-    const filteredReservations = reservations.filter(r => 
+    const filteredReservations = reservations.filter(r =>
         r.customer_name.toLowerCase().includes(searchCustomerName.toLowerCase())
     );
 
@@ -88,7 +88,7 @@ export default function Reservations({ reservations, allSessions, selectedSessio
                                 Lihat semua reservasi booking dari customer
                             </p>
                         </div>
-                        
+
                         {/* Filters Section */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Search by Customer Name */}
@@ -162,7 +162,11 @@ export default function Reservations({ reservations, allSessions, selectedSessio
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-4 flex-1">
-                                            <UserIcon className="w-6 h-6 text-brand-gold flex-shrink-0" />
+                                            <UserIcon
+                                                className="
+                                                    w-6 h-6 text-brand-gold flex-shrink-0
+                                                "
+                                            />
                                             <div className="flex-1">
                                                 <h3 className="text-lg font-black text-brand-black dark:text-brand-white uppercase tracking-tight">
                                                     {group.customer_name}
@@ -171,7 +175,11 @@ export default function Reservations({ reservations, allSessions, selectedSessio
                                                     UID: {group.cart_uid}
                                                 </p>
                                             </div>
-                                            <div className="text-right flex-shrink-0">
+                                            <div
+                                                className="
+                                                    text-right flex-shrink-0
+                                                "
+                                            >
                                                 <p className="text-2xl font-black text-brand-gold">
                                                     {group.sessions.length}
                                                 </p>
@@ -249,13 +257,13 @@ export default function Reservations({ reservations, allSessions, selectedSessio
                                                             <EnvelopeIcon className="w-4 h-4 text-brand-gold" />
                                                             <span className="text-[9px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Kontak</span>
                                                         </div>
-                                                        <a 
+                                                        <a
                                                             href={`mailto:${group.customer_email}`}
                                                             className="text-[9px] font-bold text-brand-black/60 dark:text-brand-white/60 hover:text-brand-gold transition-colors"
                                                         >
                                                             {group.customer_email}
                                                         </a>
-                                                        <a 
+                                                        <a
                                                             href={`tel:${group.customer_phone}`}
                                                             className="text-[9px] font-bold text-brand-black/60 dark:text-brand-white/60 hover:text-brand-gold transition-colors"
                                                         >

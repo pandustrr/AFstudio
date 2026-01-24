@@ -51,9 +51,9 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
 
         setValidatingCode(true);
         try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
                              document.querySelector('input[name="_token"]')?.value;
-            
+
             const response = await fetch('/api/referral-codes/validate', {
                 method: 'POST',
                 headers: {
@@ -94,7 +94,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
 
     const calculateDiscount = () => {
         if (!appliedDiscount) return 0;
-        
+
         if (appliedDiscount.discount_type === 'percentage') {
             return (total * appliedDiscount.discount_value) / 100;
         } else {
@@ -108,7 +108,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
     const submit = (e) => {
         e.preventDefault();
         console.log('Submitting form with data:', data);
-        
+
         post('/checkout', {
             preserveScroll: true,
             headers: {
@@ -339,7 +339,12 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                                 Order Summary
                             </h2>
 
-                            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                            <div
+                                className="
+                                    space-y-4 max-h-[400px]
+                                    overflow-y-auto pr-2 custom-scrollbar
+                                "
+                            >
                                 {carts.map((cart) => (
                                     <div key={cart.id} className="pb-4 border-b border-black/5 dark:border-white/5 last:border-0">
                                         <div className="flex gap-4 mb-2">

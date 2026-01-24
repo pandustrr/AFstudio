@@ -189,10 +189,11 @@ class BookingController extends Controller
         $pdf = PDF::loadView('pdf.invoice', compact('booking'))
             ->setOptions([
                 'isHtml5ParserEnabled' => true,
-                'isRemoteEnabled' => true,
-                'isFontSubsettingEnabled' => true,
-            ]);
+                'isRemoteEnabled' => false,
+                'isFontSubsettingEnabled' => false,
+            ])
+            ->setWarnings(false);
 
-        return $pdf->download('Invoice-' . $booking->booking_code . '.pdf');
+        return $pdf->stream('Invoice-' . $booking->booking_code . '.pdf');
     }
 }
