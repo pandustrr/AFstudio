@@ -3,7 +3,6 @@ import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon, CalendarIcon, ClockIcon, HomeIcon, ExclamationTriangleIcon, UserIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { router, usePage } from '@inertiajs/react';
-import IdentityPromptModal from './Modals/IdentityPromptModal';
 import SuccessModal from './Modals/SuccessModal';
 
 export default function ScheduleModal({ isOpen, onClose, packageData, rooms: initialRooms = [] }) {
@@ -18,7 +17,6 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
 
     // Modal controls
     const [showSuccessUID, setShowSuccessUID] = useState(false);
-    const [showNamePrompt, setShowNamePrompt] = useState(false);
     const [currentUID, setCurrentUID] = useState('');
 
     const rooms = initialRooms;
@@ -97,18 +95,12 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     }, [date, photographerId]);
 
     // Hoisted function to avoid ReferenceError
-    function handleIdentityConfirmed(name) {
+    function generateAndStoreUID() {
         // Generate a random 5-digit number
         const randomNumber = Math.floor(10000 + Math.random() * 90000);
         const newUid = `AF-${randomNumber}`;
-
-        // Optional: Store the name separately if needed elsewhere, 
-        // but the UID itself is now generic as requested.
-        localStorage.setItem('afstudio_customer_name', name.trim());
         localStorage.setItem('afstudio_cart_uid', newUid);
-
-        setShowNamePrompt(false);
-        processCart(newUid);
+        return newUid;
     }
 
     const fetchPhotographerAvailability = async () => {
@@ -222,8 +214,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
 
         let uid = localStorage.getItem('afstudio_cart_uid');
         if (!uid || !uid.includes('-')) {
-            setShowNamePrompt(true);
-            return;
+            uid = generateAndStoreUID();
         }
 
         processCart(uid);
@@ -431,13 +422,6 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                     </div>
                 </Dialog>
             </Transition>
-
-            {/* Name Prompt Modal */}
-            <IdentityPromptModal
-                isOpen={showNamePrompt}
-                onClose={() => setShowNamePrompt(false)}
-                onConfirm={handleIdentityConfirmed}
-            />
 
             {/* UID Success Modal */}
             <SuccessModal

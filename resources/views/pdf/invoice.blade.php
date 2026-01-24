@@ -200,15 +200,15 @@
             <tr>
                 <td>
                     <strong>{{ $item->package->name }}</strong><br>
-                    <span style="font-size: 10pt; font-style: italic;">{{ $item->package->subCategory->name }}</span>
+                    <span style="font-size: 9pt; font-style: italic; color: #666;">{{ $item->package->subCategory->name }}</span>
                 </td>
-                <td>
-                    {{ \Carbon\Carbon::parse($item->scheduled_date)->format('d/m/Y') }}<br>
-                    {{ substr($item->start_time, 0, 5) }} - {{ substr($item->end_time, 0, 5) }} WIB
+                <td style="font-size: 10pt;">
+                    <strong>{{ \Carbon\Carbon::parse($item->scheduled_date)->format('d/m/Y') }}</strong><br>
+                    <span style="font-size: 9pt;">{{ substr($item->start_time, 0, 5) }} - {{ substr($item->end_time, 0, 5) }} WIB</span>
                 </td>
-                <td class="qty-col">{{ $item->quantity }}</td>
+                <td class="qty-col" style="font-weight: bold;">{{ $item->quantity }}</td>
                 <td class="price-col">{{ number_format($item->price, 0, ',', '.') }}</td>
-                <td class="price-col">{{ number_format($item->subtotal, 0, ',', '.') }}</td>
+                <td class="price-col"><strong>{{ number_format($item->subtotal, 0, ',', '.') }}</strong></td>
             </tr>
             @endforeach
         </tbody>
@@ -219,7 +219,7 @@
             <div class="totals-label">Subtotal</div>
             <div class="totals-value">{{ number_format($booking->total_price, 0, ',', '.') }}</div>
         </div>
-        
+
         @if($booking->discount_amount > 0)
         <div class="totals-row" style="background-color: #f0f8ff; padding: 5px 0;">
             <div class="totals-label">
@@ -230,13 +230,13 @@
             </div>
             <div class="totals-value" style="background-color: #f0f8ff;">- {{ number_format($booking->discount_amount, 0, ',', '.') }}</div>
         </div>
-        
+
         <div class="totals-row" style="border-top: 2px solid #000;">
             <div class="totals-label" style="font-weight: bold; font-size: 12pt;">Total Akhir (Setelah Diskon)</div>
             <div class="totals-value" style="border-bottom: 2px solid #000; font-weight: bold; font-size: 12pt;">{{ number_format($booking->total_price - $booking->discount_amount, 0, ',', '.') }}</div>
         </div>
         @endif
-        
+
         <div class="totals-row">
             <div class="totals-label">Uang Muka (DP 25%)</div>
             <div class="totals-value">- {{ number_format($booking->down_payment, 0, ',', '.') }}</div>
@@ -249,7 +249,7 @@
 
     <div style="margin-top: 30px;">
         <div class="payment-status-box">
-            STATUS: {{ strtoupper($booking->status) }}
+            STATUS BOOKING: {{ strtoupper($booking->status) }}
         </div>
     </div>
 
@@ -257,6 +257,83 @@
     <div style="margin-top: 30px; border-top: 1px dotted #000; padding-top: 10px;">
         <strong>Catatan Tambahan:</strong><br>
         {{ $booking->notes }}
+    </div>
+    @endif
+
+    @if($booking->paymentProof && $booking->paymentProof->count() > 0)
+    <div style="margin-top: 30px; border: 2px solid #000; padding: 20px; background-color: #f5f5f5;">
+        <div style="border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
+            <strong style="font-size: 12pt;">📸 BUKTI PEMBAYARAN YANG DIUNGGAH</strong>
+        </div>
+
+        <table style="width: 100%; margin-bottom: 15px; font-size: 10pt;">
+            <tr style="border-bottom: 1px solid #ccc;">
+                <td style="padding: 8px 0; font-weight: bold; width: 30%;">Status Verifikasi:</td>
+                <td style="padding: 8px 0; text-transform: uppercase; font-weight: bold;">
+                    @if($booking->paymentProof->first()->status === 'verified')
+                        ✓ TERVERIFIKASI
+                    @elseif($booking->paymentProof->first()->status === 'rejected')
+                        ✗ DITOLAK
+                    @else
+                        ⏳ MENUNGGU VERIFIKASI
+                    @endif
+                </td>
+            </tr>
+            <tr style="border-bottom: 1px solid #ccc;">
+                <td style="padding: 8px 0; font-weight: bold;">Nama File:</td>
+                <td style="padding: 8px 0;">{{ $booking->paymentProof->first()->file_name }}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #ccc;">
+                <td style="padding: 8px 0; font-weight: bold;">Ukuran:</td>
+                <td style="padding: 8px 0;">{{ number_format($booking->paymentProof->first()->file_size / 1024 / 1024, 2) }} MB</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #ccc;">
+                <td style="padding: 8px 0; font-weight: bold;">Waktu Upload:</td>
+                <td style="padding: 8px 0;">{{ \Carbon\Carbon::parse($booking->paymentProof->first()->created_at)->format('d/m/Y H:i') }}</td>
+            </tr>
+            @if($booking->paymentProof->first()->verified_at)
+            <tr style="border-bottom: 1px solid #ccc;">
+                <td style="padding: 8px 0; font-weight: bold;">Waktu Verifikasi:</td>
+                <td style="padding: 8px 0;">{{ \Carbon\Carbon::parse($booking->paymentProof->first()->verified_at)->format('d/m/Y H:i') }}</td>
+            </tr>
+            @endif
+            @if($booking->paymentProof->first()->admin_notes)
+            <tr>
+                <td style="padding: 8px 0; font-weight: bold; vertical-align: top;">Catatan Admin:</td>
+                <td style="padding: 8px 0;">{{ $booking->paymentProof->first()->admin_notes }}</td>
+            </tr>
+            @endif
+        </table>
+
+        @if($booking->paymentProof->first()->file_type && str_contains($booking->paymentProof->first()->file_type, 'image'))
+        <div style="border-top: 2px solid #000; padding-top: 15px; text-align: center;">
+            <p style="margin: 0 0 10px 0; font-weight: bold; font-size: 10pt;">PREVIEW BUKTI PEMBAYARAN:</p>
+            @php
+                $filePath = $booking->paymentProof->first()->file_path;
+                // Gunakan public path yang sudah di-symlink
+                $imagePath = public_path('storage/' . $filePath);
+                $fileExists = @file_exists($imagePath);
+            @endphp
+            @if($fileExists)
+            <img src="{{ asset('storage/' . $filePath) }}"
+                 alt="Bukti Pembayaran"
+                 style="max-width: 100%; max-height: 400px; border: 2px solid #333; margin-top: 10px; padding: 5px; background-color: #fff;">
+            @else
+            <div style="padding: 20px; background-color: #fff3cd; border: 2px solid #ffc107; margin-top: 10px;">
+                <span style="font-size: 9pt; color: #856404;">
+                    ℹ️ File gambar tidak dapat ditampilkan dalam PDF ini<br>
+                    Path: {{ $filePath }}<br>
+                    Silakan periksa di portal online untuk preview lengkap
+                </span>
+            </div>
+            @endif
+        </div>
+        @endif
+    </div>
+    @else
+    <div style="margin-top: 30px; border: 2px dashed #ccc; padding: 15px; background-color: #fffacd; text-align: center;">
+        <strong style="font-size: 11pt;">⚠️ BUKTI PEMBAYARAN: BELUM DIUNGGAH</strong><br>
+        <span style="font-size: 9pt;">Pelanggan diminta untuk mengunggah bukti pembayaran melalui portal online.</span>
     </div>
     @endif
 

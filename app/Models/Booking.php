@@ -28,4 +28,10 @@ class Booking extends Model
     {
         return $this->belongsTo(ReferralCode::class, 'referral_code_id');
     }
+
+    public function paymentProof(): HasMany
+    {
+        return $this->hasMany(PaymentProof::class);
+    }
+
 }

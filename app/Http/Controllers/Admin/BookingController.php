@@ -23,7 +23,7 @@ class BookingController extends Controller
         $photographerId = $request->input('photographer_id');
 
         $query = \App\Models\BookingItem::query()
-            ->with(['booking.user', 'package.subCategory', 'photographer']);
+            ->with(['booking.user', 'booking.paymentProof', 'package.subCategory', 'photographer']);
 
         // Filter by Photographer
         if ($photographerId) {
@@ -132,7 +132,7 @@ class BookingController extends Controller
 
     public function show(Booking $booking)
     {
-        $booking->load(['items.package.subCategory', 'user']);
+        $booking->load(['items.package.subCategory', 'user', 'paymentProof']);
 
         return Inertia::render('Admin/Bookings/Show', [
             'booking' => $booking,
@@ -184,10 +184,15 @@ class BookingController extends Controller
 
     public function downloadInvoice(Booking $booking)
     {
-        $booking->load(['items.package.subCategory', 'user']);
+        $booking->load(['items.package.subCategory', 'user', 'paymentProof']);
 
-        $pdf = PDF::loadView('pdf.invoice', compact('booking'));
+        $pdf = PDF::loadView('pdf.invoice', compact('booking'))
+            ->setOptions([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => true,
+                'isFontSubsettingEnabled' => true,
+            ]);
 
-        return $pdf->stream('Invoice-' . $booking->booking_code . '.pdf');
+        return $pdf->download('Invoice-' . $booking->booking_code . '.pdf');
     }
 }

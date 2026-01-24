@@ -289,16 +289,16 @@ class PhotographerSessionController extends Controller
     public function reservations(Request $request)
     {
         $photographerId = Auth::id();
-        $sessionIdFilter = $request->input('session_id');
+        $uidFilter = $request->input('uid');
 
         // Get all booked sessions for this photographer with booking details
         $query = PhotographerSession::where('photographer_id', $photographerId)
             ->where('status', 'booked')
             ->with(['bookingItem.booking', 'bookingItem.package']);
 
-        // Apply session ID filter if provided
-        if ($sessionIdFilter) {
-            $query->where('id', $sessionIdFilter);
+        // Apply UID filter if provided
+        if ($uidFilter) {
+            $query->where('cart_uid', $uidFilter);
         }
 
         $sessions = $query->orderBy('date', 'desc')
@@ -318,28 +318,23 @@ class PhotographerSessionController extends Controller
                 'package_price' => $session->bookingItem?->package?->price ?? 0,
                 'booking_id' => $session->bookingItem?->booking_id ?? null,
                 'booking_item_id' => $session->booking_item_id,
+                'cart_uid' => $session->cart_uid,
                 'offset_minutes' => $session->offset_minutes,
                 'offset_description' => $session->offset_description,
             ];
         });
 
-        // Get all session IDs for filter dropdown
+        // Get all booked sessions for this photographer - build reservations array
         $allSessions = PhotographerSession::where('photographer_id', $photographerId)
             ->where('status', 'booked')
             ->orderBy('date', 'desc')
             ->orderBy('start_time', 'desc')
-            ->get(['id', 'date', 'start_time'])
-            ->map(function ($session) {
-                return [
-                    'id' => $session->id,
-                    'label' => 'Session #' . $session->id . ' - ' . Carbon::parse($session->date)->format('d M Y') . ' ' . Carbon::createFromTimeString($session->start_time)->format('H:i')
-                ];
-            });
+            ->get(['id', 'date', 'start_time']);
 
         return Inertia::render('Photographer/Reservations', [
             'reservations' => $reservations,
-            'allSessions' => $allSessions,
-            'selectedSessionId' => $sessionIdFilter
+            'allSessions' => $allSessions->isEmpty() ? [] : $allSessions->toArray(),
+            'selectedSessionId' => $uidFilter
         ]);
     }
 }

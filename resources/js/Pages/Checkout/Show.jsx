@@ -1,10 +1,32 @@
-import React from 'react';
-import { Head, Link } from '@inertiajs/react';
+import React, { useState, useEffect } from 'react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
-import { CheckCircleIcon, QrCodeIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, QrCodeIcon, DocumentIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { PhoneIcon } from '@heroicons/react/24/solid';
 
 export default function CheckoutShow({ booking, rooms = [] }) {
+    const [proofFile, setProofFile] = useState(null);
+    const [proofUploaded, setProofUploaded] = useState(false);
+    const [uploadedProofStatus, setUploadedProofStatus] = useState(null);
+    const { post, processing, errors } = useForm();
+
+    useEffect(() => {
+        // Check if payment proof already exists
+        const checkProofStatus = async () => {
+            try {
+                const response = await fetch(`/api/booking/${booking.id}/proof-status`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setUploadedProofStatus(data.status);
+                    setProofUploaded(!!data.exists);
+                }
+            } catch (error) {
+                console.log('Error checking proof status:', error);
+            }
+        };
+
+        checkProofStatus();
+    }, [booking.id]);
 
     const getRoomLabel = (id) => {
         const room = rooms.find(r => r.id === parseInt(id));
@@ -28,7 +50,7 @@ export default function CheckoutShow({ booking, rooms = [] }) {
     });
 
     const message = `Halo Admin AF Studio, saya sudah melakukan booking dan pembayaran DP.
-    
+
 No. Booking: *${booking.booking_code}*
 Nama: ${booking.name}
 
@@ -37,10 +59,41 @@ ${itemsMessage}
 
 Total Biaya: ${formatPrice(booking.total_price)}
 DP yang ditransfer (25%): *${formatPrice(booking.down_payment)}*
- 
+
 Mohon konfirmasinya. Terima kasih!`;
 
     const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File terlalu besar. Maksimal 5MB.');
+                return;
+            }
+            setProofFile(file);
+        }
+    };
+
+    const handleUploadProof = (e) => {
+        e.preventDefault();
+        if (!proofFile) {
+            alert('Silakan pilih file bukti pembayaran terlebih dahulu.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('booking_id', booking.id);
+        formData.append('proof_file', proofFile);
+
+        router.post('/checkout/upload-proof', formData, {
+            onSuccess: () => {
+                setProofFile(null);
+                setProofUploaded(true);
+                setUploadedProofStatus('pending');
+            }
+        });
+    };
 
     return (
         <div className="min-h-screen bg-brand-white dark:bg-brand-black transition-colors duration-300 pb-20">
@@ -72,10 +125,9 @@ Mohon konfirmasinya. Terima kasih!`;
                             </span>
                         </div>
 
-                        {/* Placeholder QR Code - In real app use actual image */}
-                        <div className="bg-white p-4 rounded-xl mb-6 mx-auto w-48 h-48 flex items-center justify-center border border-black/10">
-                            {/* Replace with actual QR Image */}
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=AFSTUDIO-PAYMENT" alt="QRIS Payment" className="w-full h-full object-contain mix-blend-multiply" />
+                        {/* QRIS Payment Code */}
+                        <div className="bg-white p-4 rounded-xl mb-6 mx-auto w-56 h-auto flex items-center justify-center border border-black/10">
+                            <img src="/images/qris-afstudio.jpeg" alt="QRIS Payment AF Studio" className="w-full h-auto object-contain rounded-lg" />
                         </div>
 
                         {/* Booking Details Summary */}
@@ -131,19 +183,115 @@ Mohon konfirmasinya. Terima kasih!`;
                             </p>
                         </div>
 
-                        <a
-                            href={waLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-2 w-full py-4 bg-green-500 text-white font-black uppercase tracking-widest rounded-xl hover:bg-green-600 hover:scale-105 transition-all shadow-lg shadow-green-500/20"
-                        >
-                            <PhoneIcon className="w-5 h-5" />
-                            Send Proof via WhatsApp
-                        </a>
+                        {/* Upload Proof of Payment Section - REQUIRED FIRST STEP */}
+                        <div className="mb-8 pb-8 border-b border-black/10 dark:border-white/10">
+                            <form onSubmit={handleUploadProof} className="space-y-4">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <DocumentIcon className="w-5 h-5 text-brand-red" />
+                                    <span className="text-xs font-black uppercase tracking-widest text-brand-red">
+                                        ★ Upload Bukti Pembayaran Terlebih Dahulu (Wajib)
+                                    </span>
+                                </div>
 
-                        <p className="mt-4 text-[10px] text-brand-black/40 dark:text-brand-white/40 leading-tight">
-                            After payment, send the receipt to our admin via WhatsApp for instant confirmation.
-                        </p>
+                                <div className="relative">
+                                    <label htmlFor="proof_file" className="block">
+                                        <input
+                                            type="file"
+                                            id="proof_file"
+                                            name="proof_file"
+                                            accept="image/*,.pdf"
+                                            onChange={handleFileChange}
+                                            className="hidden"
+                                            required
+                                            disabled={proofUploaded}
+                                        />
+                                        <div className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
+                                            proofUploaded
+                                                ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
+                                                : proofFile
+                                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
+                                                : 'border-brand-black/20 dark:border-brand-white/20 hover:border-brand-black/40 dark:hover:border-brand-white/40'
+                                        }`}>
+                                            {proofUploaded ? (
+                                                <>
+                                                    <CheckIcon className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                                                    <p className="text-sm font-bold text-green-600 dark:text-green-400">Bukti Pembayaran Terverifikasi</p>
+                                                    <p className="text-[10px] text-green-600/60 dark:text-green-400/60 mt-1">
+                                                        Status: <span className="font-bold capitalize">{uploadedProofStatus}</span>
+                                                    </p>
+                                                </>
+                                            ) : proofFile ? (
+                                                <>
+                                                    <CheckIcon className="w-6 h-6 text-blue-500 mx-auto mb-2" />
+                                                    <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{proofFile.name}</p>
+                                                    <p className="text-xs text-blue-600/60 dark:text-blue-400/60 mt-1">
+                                                        {(proofFile.size / 1024 / 1024).toFixed(2)} MB
+                                                    </p>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <DocumentIcon className="w-8 h-8 text-brand-black/40 dark:text-brand-white/40 mx-auto mb-2" />
+                                                    <p className="text-xs font-bold text-brand-black/60 dark:text-brand-white/60">
+                                                        Click atau drag file bukti pembayaran
+                                                    </p>
+                                                    <p className="text-[10px] text-brand-black/40 dark:text-brand-white/40 mt-1">
+                                                        (JPG, PNG, PDF - Max 5MB)
+                                                    </p>
+                                                </>
+                                            )}
+                                        </div>
+                                    </label>
+                                </div>
+
+                                {errors.proof_file && (
+                                    <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
+                                        <p className="text-xs text-red-600 dark:text-red-400">{errors.proof_file}</p>
+                                    </div>
+                                )}
+
+                                {!proofUploaded && (
+                                    <button
+                                        type="submit"
+                                        disabled={!proofFile || processing}
+                                        className={`w-full py-4 font-black uppercase tracking-widest rounded-xl transition-all ${
+                                            proofFile && !processing
+                                                ? 'bg-blue-500 text-white hover:bg-blue-600 hover:scale-105 shadow-lg shadow-blue-500/20'
+                                                : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                                        }`}
+                                    >
+                                        {processing ? 'Uploading...' : 'Upload Bukti Pembayaran'}
+                                    </button>
+                                )}
+
+                                <p className="text-[10px] text-brand-black/40 dark:text-brand-white/40 leading-tight">
+                                    Upload screenshot/foto bukti transfer anda. Admin akan memverifikasi dalam beberapa menit.
+                                </p>
+                            </form>
+                        </div>
+
+                        {/* WhatsApp Button - ENABLED ONLY AFTER UPLOAD */}
+                        {proofUploaded ? (
+                            <>
+                                <a
+                                    href={waLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 w-full py-4 bg-green-500 text-white font-black uppercase tracking-widest rounded-xl hover:bg-green-600 hover:scale-105 transition-all shadow-lg shadow-green-500/20"
+                                >
+                                    <PhoneIcon className="w-5 h-5" />
+                                    Hubungi Admin via WhatsApp
+                                </a>
+
+                                <p className="mt-4 text-[10px] text-brand-black/40 dark:text-brand-white/40 leading-tight">
+                                    Bukti pembayaran sudah diunggah. Klik tombol di atas untuk menghubungi admin dan konfirmasi booking Anda.
+                                </p>
+                            </>
+                        ) : (
+                            <div className="w-full py-4 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest rounded-xl cursor-not-allowed text-center">
+                                <PhoneIcon className="w-5 h-5 inline-block mr-2" />
+                                Upload bukti pembayaran terlebih dahulu
+                            </div>
+                        )}
                     </div>
                 </div>
 

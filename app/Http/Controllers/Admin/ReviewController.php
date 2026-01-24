@@ -34,10 +34,10 @@ class ReviewController extends Controller
         }
 
         // Retain existing filter logic for time ranges if no specific date is selected or as an alternative
-        // However, user requested LIKE photo editing, which uses specific date dropdowns. 
+        // However, user requested LIKE photo editing, which uses specific date dropdowns.
         // We will prioritize the specific date filters if present.
-        // If the 'filter' param is passed (legacy/buttons), we can still use it if needed, 
-        // but typically the dropdowns replace the 'daily/weekly/monthly' buttons. 
+        // If the 'filter' param is passed (legacy/buttons), we can still use it if needed,
+        // but typically the dropdowns replace the 'daily/weekly/monthly' buttons.
         // Let's support both but specific dates take precedence or work alongside.
 
         if (!$year && !$month && !$day) {
