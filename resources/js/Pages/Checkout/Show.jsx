@@ -98,6 +98,29 @@ Mohon konfirmasinya. Terima kasih!`;
                             </p>
                         </div>
 
+                        {/* Discount Info */}
+                        {booking.discount_amount > 0 && (
+                            <div className="mb-4 text-left bg-green-50 dark:bg-green-950/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                                <p className="text-xs font-bold uppercase text-green-600 dark:text-green-400 mb-1">Discount Applied</p>
+                                <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                                    - {formatPrice(booking.discount_amount)}
+                                </p>
+                                {booking.referral_code && (
+                                    <p className="text-[10px] text-green-600/70 dark:text-green-400/70 mt-1">
+                                        Code: <span className="font-mono">{booking.referral_code.code}</span>
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Final Price */}
+                        <div className="mb-8 text-left bg-brand-gold/10 p-3 rounded-lg border border-brand-gold/20">
+                            <p className="text-xs font-bold uppercase text-brand-black/40 dark:text-brand-white/40 mb-1">Final Price (After Discount)</p>
+                            <p className="text-2xl font-black text-brand-red italic tracking-tight">
+                                {formatPrice(booking.total_price - booking.discount_amount)}
+                            </p>
+                        </div>
+
                         <div className="mb-8 text-left bg-brand-gold/10 p-4 rounded-xl border border-brand-gold/20">
                             <p className="text-xs font-bold uppercase text-brand-black/60 dark:text-brand-white/60 mb-1">Down Payment (Transfer Amount)</p>
                             <p className="text-3xl font-black text-brand-red italic tracking-tight">

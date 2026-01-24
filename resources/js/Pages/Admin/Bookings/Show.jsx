@@ -253,8 +253,31 @@ export default function BookingShow({ booking, photographers = [] }) {
 
                                 <div className="relative space-y-6">
                                     <div className="flex justify-between items-center pb-4 border-b border-white/10 dark:border-black/10">
-                                        <span className="text-xs font-bold uppercase tracking-widest opacity-60">Total Price</span>
+                                        <span className="text-xs font-bold uppercase tracking-widest opacity-60">Original Price</span>
                                         <span className="text-lg font-black italic tracking-tighter">{formatPrice(booking.total_price)}</span>
+                                    </div>
+
+                                    {/* Discount Section */}
+                                    {booking.discount_amount > 0 && (
+                                        <div className="bg-green-500/10 p-4 rounded-xl border border-green-500/30">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-green-400">Discount Applied</span>
+                                                {booking.referral_code && (
+                                                    <span className="text-[9px] font-mono text-green-400/70">{booking.referral_code.code}</span>
+                                                )}
+                                            </div>
+                                            <div className="flex justify-between items-center text-green-400 font-black text-xl italic tracking-tighter">
+                                                <span>- {formatPrice(booking.discount_amount)}</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Final Price */}
+                                    <div className="flex justify-between items-center pb-4 border-b border-white/10 dark:border-black/10 bg-brand-gold/10 p-3 rounded-lg">
+                                        <span className="text-xs font-bold uppercase tracking-widest opacity-70">Final Price</span>
+                                        <span className="text-xl font-black italic tracking-tighter">
+                                            {formatPrice(booking.total_price - booking.discount_amount)}
+                                        </span>
                                     </div>
 
                                     <div className="bg-brand-red/10 dark:bg-brand-red/5 p-4 rounded-xl border border-brand-red/20">
@@ -270,7 +293,7 @@ export default function BookingShow({ booking, photographers = [] }) {
                                     <div className="flex justify-between items-center pt-2">
                                         <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">Remaining (On the day)</span>
                                         <span className="text-xs font-black italic tracking-tighter opacity-60">
-                                            {formatPrice(booking.total_price - booking.down_payment)}
+                                            {formatPrice((booking.total_price - booking.discount_amount) - booking.down_payment)}
                                         </span>
                                     </div>
                                 </div>

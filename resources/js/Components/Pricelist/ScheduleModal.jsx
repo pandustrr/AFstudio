@@ -33,6 +33,18 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         }).format(numericPrice);
     };
 
+    const formatSessionDuration = (maxSessions) => {
+        if (!maxSessions) return '';
+        // 1 session = 30 menit
+        const totalMinutes = maxSessions * 30;
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        
+        if (hours === 0) return `${minutes}m`;
+        if (minutes === 0) return `${hours}h`;
+        return `${hours}h ${minutes}m`;
+    };
+
     const getSlotDisplay = (startTime) => {
         if (!packageData?.duration) return startTime;
 
@@ -55,10 +67,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     const [selectedSessions, setSelectedSessions] = useState([]);
     const [maxSessions, setMaxSessions] = useState(1);
     const [startTime, setStartTime] = useState('');
-    const [endTime, setEndTime] = useState('');
     const [availabilityStatus, setAvailabilityStatus] = useState(null);
-
-    const isPhotographerMode = packageData?.sub_category?.category?.type === 'photographer';
 
     // Reset state when modal opens/closes or package changes
     useEffect(() => {
@@ -67,30 +76,25 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
             setDate(today);
-            setRoomId(rooms.length > 0 ? rooms[0].id : null);
             setPhotographerId(null);
             setPhotographers([]);
             setSlots([]);
-            setRoomInfos([]);
             setSelectedSlot(null);
             setSelectedSessions([]);
             setStartTime('');
-            setEndTime('');
             setAvailabilityStatus(null);
             setError(null);
+            // Set maxSessions from package data
+            setMaxSessions(packageData?.max_sessions || 1);
         }
-    }, [isOpen, packageData, rooms]);
+    }, [isOpen, packageData]);
 
-    // Fetch availability when date, room, or photographer changes
+    // Fetch photographer availability when date changes
     useEffect(() => {
         if (date && packageData) {
-            if (isPhotographerMode) {
-                fetchPhotographerAvailability();
-            } else if (roomId) {
-                fetchAvailability();
-            }
+            fetchPhotographerAvailability();
         }
-    }, [date, roomId, photographerId]);
+    }, [date, photographerId]);
 
     // Hoisted function to avoid ReferenceError
     function handleIdentityConfirmed(name) {
@@ -107,87 +111,82 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         processCart(newUid);
     }
 
-    const fetchAvailability = async () => {
+    const fetchPhotographerAvailability = async () => {
         setLoading(true);
         setError(null);
         setSlots([]);
         setSelectedSlot(null);
 
         try {
-            const response = await axios.get('/schedule/check', {
+            const response = await axios.get('/schedule/photographer-slots', {
                 params: {
                     date: date,
-                    room_id: roomId,
                     package_id: packageData.id
                 }
             });
-            // Fix: API returns available_slots and per_room_info
-            setSlots(response.data.available_slots || []);
-            setRoomInfos(response.data.per_room_info || []);
+            // getPhotographerTimeSlots returns time_slots array
+            setSlots(response.data.time_slots.map((time, idx) => ({
+                id: idx,
+                start_time: time
+            })));
         } catch (err) {
-            console.error("Availability check failed", err);
-            setError("Gagal memuat jadwal.");
+            console.error("Photographer availability check failed", err);
+            setError(`Gagal memuat jadwal: ${err.response?.data?.message || err.message}`);
         } finally {
             setLoading(false);
         }
     };
 
-    const fetchPhotographerAvailability = async () => {
-        setLoading(true);
-        setError(null);
-        setSlots([]); // reuse as sessions list
-        setSelectedSessions([]);
-
-        try {
-            const response = await axios.get('/schedule/photographer', {
-                params: {
-                    date: date,
-                    package_id: packageData.id,
-                    photographer_id: photographerId
-                }
-            });
-            setPhotographers(response.data.photographers);
-            setSlots(response.data.sessions);
-            setMaxSessions(response.data.max_sessions);
-        } catch (err) {
-            console.error("FG Availability check failed", err);
-            setError(`Gagal memuat: ${err.response?.data?.message || err.message}`);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const checkTimeAvailability = async (time, endTimeVal = null) => {
-        if (!time || !date) return;
+    const checkTimeAvailability = async (startT, endT) => {
+        if (!startT || !endT || !date) return;
 
         setAvailabilityStatus('checking');
         setError(null);
 
         try {
-            const cartUid = localStorage.getItem('afstudio_cart_uid');
-            const params = {
-                date: date,
-                start_time: time,
-                package_id: packageData.id
-            };
-            if (cartUid) {
-                params.cart_uid = cartUid;
-            }
-            if (endTimeVal && !isPhotographerMode) {
-                params.end_time = endTimeVal;
-            }
-            const response = await axios.get('/schedule/check-time', { params });
+            // Calculate sessions from time range
+            const [startHour, startMin] = startT.split(':').map(Number);
+            const [endHour, endMin] = endT.split(':').map(Number);
+            
+            const startMinutes = startHour * 60 + startMin;
+            const endMinutes = endHour * 60 + endMin;
+            const durationMinutes = endMinutes - startMinutes;
+            const sessionsNeeded = Math.ceil(durationMinutes / 30);
 
+            if (sessionsNeeded > maxSessions) {
+                setAvailabilityStatus('full');
+                setError(`Durasi terlalu lama! Maksimal ${maxSessions} sesi (${formatSessionDuration(maxSessions)}), Anda memerlukan ${sessionsNeeded} sesi.`);
+                return;
+            }
+
+            if (durationMinutes <= 0) {
+                setAvailabilityStatus('full');
+                setError('Jam selesai harus lebih besar dari jam mulai.');
+                return;
+            }
+
+            // Check photographer availability
+            const response = await axios.get('/schedule/check-photographer-availability', {
+                params: {
+                    date: date,
+                    start_time: startT,
+                    sessions_needed: sessionsNeeded,
+                    package_id: packageData.id
+                }
+            });
+            
             if (response.data.available) {
+                setPhotographerId(response.data.photographer_id);
                 setAvailabilityStatus('available');
+                setSelectedSessions(sessionsNeeded); // Store sessions count
             } else {
                 setAvailabilityStatus('full');
-                setError(`Tidak ada yang tersedia pada jam ${time}.`);
+                setError('Tidak ada fotografer tersedia untuk waktu tersebut.');
             }
         } catch (err) {
             console.error("Time availability check failed", err);
             setAvailabilityStatus('full');
-            setError('Gagal mengecek ketersediaan.');
+            setError(`Gagal mengecek ketersediaan: ${err.response?.data?.message || err.message}`);
         }
     };
 
@@ -205,78 +204,58 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     };
 
     const handleSubmit = () => {
-        console.log('=== HANDLE SUBMIT ===');
         if (!date) return;
         if (!startTime) {
-            setError('Pilih waktu mulai.');
+            setError('Pilih jam mulai.');
             return;
         }
         if (availabilityStatus !== 'available') {
-            setError('Periksa ketersediaan terlebih dahulu.');
+            setError('Cek ketersediaan fotografer terlebih dahulu.');
+            return;
+        }
+        if (!photographerId) {
+            setError('Fotografer belum ditentukan.');
             return;
         }
 
         setError(null);
 
         let uid = localStorage.getItem('afstudio_cart_uid');
-        console.log('UID:', uid);
         if (!uid || !uid.includes('-')) {
-            console.log('No UID, showing IdentityPromptModal');
             setShowNamePrompt(true);
             return;
         }
 
-        console.log('Processing cart with UID:', uid);
         processCart(uid);
     };
 
     const processCart = (uid) => {
-        console.log('=== PROCESS CART START ===');
-        console.log('Current state - date:', date, 'startTime:', startTime, 'endTime:', endTime);
-
         const payload = {
             pricelist_package_id: packageData.id,
             quantity: 1,
             scheduled_date: date,
             start_time: startTime,
+            sessions_needed: selectedSessions > 0 ? selectedSessions : maxSessions,
+            photographer_id: photographerId,
             cart_uid: uid
         };
-
-        if (isPhotographerMode) {
-            // photographer_id will be auto-assigned if needed
-        } else {
-            // room_id will be auto-assigned by system
-            if (endTime) {
-                payload.end_time = endTime;
-            }
-        }
-
-        console.log('Sending payload:', payload);
 
         router.post('/cart', payload, {
             headers: { 'X-Cart-UID': uid },
             onSuccess: (page) => {
-                console.log('=== PROCESS CART SUCCESS ===');
-                console.log('Page props:', page.props);
                 if (!page.props.flash?.error) {
                     if (page.props.flash?.success) {
-                        console.log('Success message found:', page.props.flash.success);
                         setCurrentUID(uid);
                         setShowSuccessUID(true);
                     }
-                    // Close modal after showing success (delay for user to see success state)
                     setTimeout(() => {
-                        console.log('Closing ScheduleModal');
                         onClose();
                     }, 500);
                 } else {
-                    console.log('Error from server:', page.props.flash.error);
                     setError(page.props.flash.error);
                 }
             },
             onError: (errors) => {
-                console.log('=== PROCESS CART ERROR ===');
-                console.log('Errors:', errors);
                 const firstError = Object.values(errors).join(', ');
                 setError(firstError || "Gagal menambahkan ke keranjang.");
             }
@@ -297,7 +276,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                 <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-3xl bg-white dark:bg-brand-black border border-white/10 p-6 md:p-8 text-left align-middle shadow-[0_0_50px_0_rgba(0,0,0,0.3)] transition-all">
                                     <div className="flex justify-between items-center mb-8 border-b border-black/5 dark:border-white/5 pb-4">
                                         <Dialog.Title as="h3" className="text-xl font-black uppercase tracking-wider text-brand-black dark:text-brand-white">
-                                            {isPhotographerMode ? 'Booking Fotografer' : 'Detail Paket & Jadwal'}
+                                            Booking Fotografer
                                         </Dialog.Title>
                                         <button onClick={onClose} className="rounded-full p-1 hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
                                             <XMarkIcon className="w-6 h-6 text-brand-black dark:text-brand-white" />
@@ -328,7 +307,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                 <div className="mt-6 pt-4 border-t border-brand-red/10">
                                                     <p className="text-brand-black/60 dark:text-brand-white/60 text-xs font-bold uppercase tracking-widest leading-relaxed">
                                                         Durasi: <span className="text-brand-black dark:text-brand-white">
-                                                            {isPhotographerMode ? `${maxSessions} Sesi (@30 Min)` : `${packageData?.duration} Menit`}
+                                                            {maxSessions} Sesi ({formatSessionDuration(maxSessions)})
                                                         </span>
                                                     </p>
                                                 </div>
@@ -359,118 +338,82 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                 </div>
                                             </div>
 
-                                            {!isPhotographerMode ? (
-                                                <>
-                                                    {/* Time Input for Room Packages */}
-                                                    {date && (
-                                                        <div className="space-y-3">
-                                                            <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
-                                                                <ClockIcon className="w-4 h-4" /> Jam Mulai - Jam Selesai
-                                                            </label>
-                                                            <div className="flex gap-2">
-                                                                <input
-                                                                    type="time"
-                                                                    value={startTime}
-                                                                    onChange={(e) => {
-                                                                        setStartTime(e.target.value);
-                                                                        setAvailabilityStatus(null);
-                                                                    }}
-                                                                    min="09:00"
-                                                                    max="18:00"
-                                                                    className="flex-1 bg-black/5 dark:bg-white/5 border-2 border-black/5 dark:border-white/5 rounded-xl px-4 py-3 text-brand-black dark:text-brand-white font-bold placeholder-brand-black/40 focus:outline-none focus:border-brand-gold"
-                                                                    placeholder="Jam Mulai"
-                                                                />
-                                                                <span className="flex items-center text-brand-black/40 dark:text-brand-white/40 font-bold">-</span>
-                                                                <input
-                                                                    type="time"
-                                                                    value={endTime}
-                                                                    onChange={(e) => {
-                                                                        setEndTime(e.target.value);
-                                                                        setAvailabilityStatus(null);
-                                                                    }}
-                                                                    min={startTime || "09:00"}
-                                                                    max="20:00"
-                                                                    className="flex-1 bg-black/5 dark:bg-white/5 border-2 border-black/5 dark:border-white/5 rounded-xl px-4 py-3 text-brand-black dark:text-brand-white font-bold placeholder-brand-black/40 focus:outline-none focus:border-brand-gold"
-                                                                    placeholder="Jam Selesai"
-                                                                />
-                                                                <button
-                                                                    onClick={() => checkTimeAvailability(startTime, endTime)}
-                                                                    disabled={!startTime || !endTime}
-                                                                    className="px-6 py-3 bg-brand-gold text-brand-black font-black uppercase text-xs tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                >
-                                                                    Cek
-                                                                </button>
-                                                            </div>
+                                            {/* Time Input for Photographer Packages */}
+                                            {date && (
+                                                <div className="space-y-3">
+                                                    <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
+                                                        <ClockIcon className="w-4 h-4" /> Waktu Session
+                                                    </label>
+                                                    
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <label className="text-[10px] font-bold uppercase tracking-widest text-brand-black/50 dark:text-brand-white/50 block mb-2">Jam Mulai</label>
+                                                            <input
+                                                                type="time"
+                                                                value={startTime}
+                                                                onChange={(e) => {
+                                                                    setStartTime(e.target.value);
+                                                                    setAvailabilityStatus(null);
+                                                                }}
+                                                                min="05:00"
+                                                                max="20:00"
+                                                                className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/5 dark:border-white/5 rounded-xl px-4 py-3 text-brand-black dark:text-brand-white font-bold placeholder-brand-black/40 focus:outline-none focus:border-brand-gold"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] font-bold uppercase tracking-widest text-brand-black/50 dark:text-brand-white/50 block mb-2">Jam Selesai</label>
+                                                            <input
+                                                                type="time"
+                                                                value={
+                                                                    !startTime ? '' : 
+                                                                    (() => {
+                                                                        const [h, m] = startTime.split(':').map(Number);
+                                                                        const totalMin = h * 60 + m + maxSessions * 30;
+                                                                        const endH = Math.floor(totalMin / 60);
+                                                                        const endM = totalMin % 60;
+                                                                        return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+                                                                    })()
+                                                                }
+                                                                onChange={(e) => {
+                                                                    setAvailabilityStatus(null);
+                                                                }}
+                                                                disabled
+                                                                className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/5 dark:border-white/5 rounded-xl px-4 py-3 text-brand-black dark:text-brand-white font-bold opacity-50 cursor-not-allowed"
+                                                            />
+                                                        </div>
+                                                    </div>
 
-                                                            {availabilityStatus === 'checking' && (
-                                                                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl">
-                                                                    <p className="text-xs font-bold text-yellow-700 dark:text-yellow-400 uppercase tracking-widest animate-pulse">Memeriksa ketersediaan ruangan...</p>
-                                                                </div>
-                                                            )}
+                                                    {startTime && (
+                                                        <button
+                                                            onClick={() => {
+                                                                const [h, m] = startTime.split(':').map(Number);
+                                                                const totalMin = h * 60 + m + maxSessions * 30;
+                                                                const endH = Math.floor(totalMin / 60);
+                                                                const endM = totalMin % 60;
+                                                                const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+                                                                checkTimeAvailability(startTime, endTime);
+                                                            }}
+                                                            disabled={availabilityStatus === 'checking'}
+                                                            className="w-full px-6 py-3 bg-brand-gold text-brand-black font-black uppercase text-xs tracking-widest rounded-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            {availabilityStatus === 'checking' ? 'Mengecek...' : 'Cek Ketersediaan'}
+                                                        </button>
+                                                    )}
 
-                                                            {availabilityStatus === 'available' && (
-                                                                <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
-                                                                    <p className="text-xs font-bold text-green-700 dark:text-green-400 uppercase tracking-widest">✓ Ada ruangan kosong pada jam ini</p>
-                                                                </div>
-                                                            )}
-
-                                                            {availabilityStatus === 'full' && error && (
-                                                                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
-                                                                    <p className="text-xs font-bold text-red-700 dark:text-red-400 uppercase tracking-widest">{error}</p>
-                                                                </div>
-                                                            )}
+                                                    {availabilityStatus === 'available' && (
+                                                        <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                                                            <p className="text-xs font-bold text-green-700 dark:text-green-400 uppercase tracking-widest">
+                                                                ✓ Fotografer tersedia untuk {selectedSessions} sesi ({formatSessionDuration(selectedSessions)})
+                                                            </p>
                                                         </div>
                                                     )}
-                                                </>
-                                            ) : (
-                                                <>
-                                                    {/* Time Input for Photographer Packages */}
-                                                    {date && (
-                                                        <div className="space-y-3">
-                                                            <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
-                                                                <ClockIcon className="w-4 h-4" /> Waktu Mulai
-                                                            </label>
-                                                            <div className="flex gap-2">
-                                                                <input
-                                                                    type="time"
-                                                                    value={startTime}
-                                                                    onChange={(e) => {
-                                                                        setStartTime(e.target.value);
-                                                                        setAvailabilityStatus(null);
-                                                                    }}
-                                                                    min="05:00"
-                                                                    max="20:00"
-                                                                    className="flex-1 bg-black/5 dark:bg-white/5 border-2 border-black/5 dark:border-white/5 rounded-xl px-4 py-3 text-brand-black dark:text-brand-white font-bold placeholder-brand-black/40 focus:outline-none focus:border-brand-gold"
-                                                                />
-                                                                <button
-                                                                    onClick={() => checkTimeAvailability(startTime)}
-                                                                    disabled={!startTime}
-                                                                    className="px-6 py-3 bg-brand-gold text-brand-black font-black uppercase text-xs tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                >
-                                                                    Cek
-                                                                </button>
-                                                            </div>
 
-                                                            {availabilityStatus === 'checking' && (
-                                                                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl">
-                                                                    <p className="text-xs font-bold text-yellow-700 dark:text-yellow-400 uppercase tracking-widest animate-pulse">Memeriksa ketersediaan...</p>
-                                                                </div>
-                                                            )}
-
-                                                            {availabilityStatus === 'available' && (
-                                                                <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
-                                                                    <p className="text-xs font-bold text-green-700 dark:text-green-400 uppercase tracking-widest">✓ Tersedia pada jam ini</p>
-                                                                </div>
-                                                            )}
-
-                                                            {availabilityStatus === 'full' && error && (
-                                                                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
-                                                                    <p className="text-xs font-bold text-red-700 dark:text-red-400 uppercase tracking-widest">{error}</p>
-                                                                </div>
-                                                            )}
+                                                    {error && (
+                                                        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                                                            <p className="text-xs font-bold text-red-700 dark:text-red-400 uppercase tracking-widest">{error}</p>
                                                         </div>
                                                     )}
-                                                </>
+                                                </div>
                                             )}
 
                                             <button

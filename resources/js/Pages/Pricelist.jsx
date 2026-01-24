@@ -40,6 +40,18 @@ export default function Pricelist({ categories, rooms, locked }) {
         }).format(numericPrice);
     };
 
+    const formatSessionDuration = (maxSessions) => {
+        if (!maxSessions) return '';
+        // 1 session = 30 menit
+        const totalMinutes = maxSessions * 30;
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        
+        if (hours === 0) return `${minutes}m`;
+        if (minutes === 0) return `${hours}h`;
+        return `${hours}h ${minutes}m`;
+    };
+
     // Initialize/Reset sub-category when main category changes
     useEffect(() => {
         // Default to 'all' if there are sub-categories, otherwise null
@@ -227,6 +239,11 @@ export default function Pricelist({ categories, rooms, locked }) {
                                                 <div className="text-2xl md:text-3xl font-black text-brand-gold tracking-tight italic">
                                                     {pkg.price_display ? pkg.price_display : (pkg.price_numeric ? formatPrice(pkg.price_numeric) : '')}
                                                 </div>
+                                                {pkg.max_sessions && (
+                                                    <div className="text-xs md:text-sm font-bold text-brand-black/50 dark:text-brand-white/50 mt-1 uppercase tracking-wide">
+                                                        {formatSessionDuration(pkg.max_sessions)} Duration
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="space-y-3 md:space-y-4 mb-8 md:mb-10 grow">

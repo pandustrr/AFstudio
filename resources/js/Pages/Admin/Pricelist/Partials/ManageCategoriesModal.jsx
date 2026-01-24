@@ -8,7 +8,7 @@ export default function ManageCategoriesModal({ isOpen, onClose, categories }) {
 
     const { data, setData, post, processing, reset, errors } = useForm({
         name: '',
-        type: 'room',
+        type: 'photographer',
     });
 
     const handleAdd = (e) => {
@@ -75,17 +75,6 @@ export default function ManageCategoriesModal({ isOpen, onClose, categories }) {
                                     </div>
                                 )}
 
-                                {editingId === category.id && (
-                                    <select
-                                        value={category.type}
-                                        onChange={(e) => handleUpdate(category.id, { name: editName, type: e.target.value })}
-                                        className="bg-white dark:bg-white/10 border-0 rounded-lg px-2 py-1 text-[9px] font-black uppercase"
-                                    >
-                                        <option value="room">ROOM</option>
-                                        <option value="photographer">PHOTOGRAPHER</option>
-                                    </select>
-                                )}
-
                                 <div className="flex items-center gap-1">
                                     {editingId === category.id ? (
                                         <button
@@ -128,15 +117,8 @@ export default function ManageCategoriesModal({ isOpen, onClose, categories }) {
                                     <PlusIcon className="w-5 h-5" />
                                 </button>
                             </div>
-                            <div className="flex gap-4">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" checked={data.type === 'room'} onChange={() => setData('type', 'room')} />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest">Room</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" checked={data.type === 'photographer'} onChange={() => setData('type', 'photographer')} />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest">Photographer</span>
-                                </label>
+                            <div className="text-[10px] font-bold uppercase tracking-widest text-brand-black/50 dark:text-brand-white/50">
+                                Type: Photographer
                             </div>
                         </form>
                         {errors.name && <p className="mt-1 text-[10px] text-brand-red font-bold uppercase tracking-widest">{errors.name}</p>}

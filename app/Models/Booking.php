@@ -23,4 +23,9 @@ class Booking extends Model
     {
         return $this->hasMany(BookingItem::class);
     }
+
+    public function referralCode(): BelongsTo
+    {
+        return $this->belongsTo(ReferralCode::class, 'referral_code_id');
+    }
 }

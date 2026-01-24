@@ -54,6 +54,7 @@ class BookingController extends Controller
             'domicile' => 'nullable|string|max:255',
             'location' => 'required|string|max:255',
             'notes' => 'nullable|string',
+            'referral_code' => 'nullable|string',
         ]);
 
         try {
@@ -83,10 +84,25 @@ class BookingController extends Controller
                 return $cart->quantity * ($cart->package->price_numeric ?? 0);
             });
 
+            // Handle referral code and discount
+            $referralCode = null;
+            $discountAmount = 0;
+
+            if ($request->filled('referral_code')) {
+                $referralCode = \App\Models\ReferralCode::where('code', strtoupper($request->referral_code))->first();
+
+                if ($referralCode && $referralCode->isValid()) {
+                    $discountAmount = $referralCode->calculateDiscount($totalPrice);
+                    $referralCode->incrementUsage();
+                }
+            }
+
+            $finalPrice = $totalPrice - $discountAmount;
+
             // Calculate Down Payment
             // 25% of Total, rounded up to nearest 1.000 (thousands) for easier transfer
             // Example: 793.750 -> 794.000
-            $calculatedDP = ceil(($totalPrice * 0.25) / 1000) * 1000;
+            $calculatedDP = ceil(($finalPrice * 0.25) / 1000) * 1000;
 
             if ($calculatedDP < 100000) {
                 // If total is small (e.g. 50k), DP is full price.
@@ -96,14 +112,18 @@ class BookingController extends Controller
                 $calculatedDP = 100000;
             }
 
-            if ($calculatedDP > $totalPrice) {
-                $calculatedDP = $totalPrice;
+            if ($calculatedDP > $finalPrice) {
+                $calculatedDP = $finalPrice;
             }
+
+            // Generate unique booking code
+            $bookingCode = 'AF-' . strtoupper(uniqid());
 
             $booking = Booking::create([
                 'user_id' => Auth::id(),
                 'guest_uid' => $uid,
-                'booking_code' => $uid,
+                'booking_code' => $bookingCode,
+                'referral_code_id' => $referralCode?->id,
                 'name' => $request->name,
                 'phone' => $request->phone,
                 'university' => $request->university,
@@ -112,6 +132,7 @@ class BookingController extends Controller
                 'location' => $request->location,
                 'notes' => $request->notes,
                 'total_price' => $totalPrice,
+                'discount_amount' => $discountAmount,
                 'down_payment' => $calculatedDP,
                 'status' => 'pending',
             ]);
@@ -139,8 +160,36 @@ class BookingController extends Controller
                             'booking_item_id' => $item->id,
                             'cart_uid' => $uid,
                         ]);
+                } elseif ($cart->photographer_id && $cart->sessions_needed) {
+                    // New flow: photographer already checked/assigned, just book the sessions
+                    $sessionsNeeded = $cart->sessions_needed;
+                    $startTime = $cart->start_time;
+                    $date = $cart->scheduled_date;
+                    $photographerId = $cart->photographer_id;
+
+                    // Generate consecutive time slots
+                    $slots = [];
+                    $time = \Carbon\Carbon::createFromTimeString($startTime);
+                    for ($i = 0; $i < $sessionsNeeded; $i++) {
+                        $slots[] = $time->format('H:i:s');
+                        $time->addMinutes(30);
+                    }
+
+                    // Book the sessions for the assigned photographer
+                    $sessionIds = \App\Models\PhotographerSession::where('photographer_id', $photographerId)
+                        ->where('date', $date)
+                        ->whereIn('start_time', $slots)
+                        ->where('status', 'open')
+                        ->pluck('id');
+
+                    \App\Models\PhotographerSession::whereIn('id', $sessionIds)
+                        ->update([
+                            'status' => 'booked',
+                            'booking_item_id' => $item->id,
+                            'cart_uid' => $uid,
+                        ]);
                 } elseif ($cart->sessions_needed && !$cart->photographer_id) {
-                    // New flow: auto-assign photographer
+                    // Auto-assign photographer (fallback for old flow)
                     $sessionsNeeded = $cart->sessions_needed;
                     $startTime = $cart->start_time;
                     $date = $cart->scheduled_date;

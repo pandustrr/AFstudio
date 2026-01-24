@@ -42,6 +42,7 @@ class PricelistSeeder extends Seeder
             'price_display' => '100k',
             'price_numeric' => 100000,
             'duration' => 30,
+            'max_sessions' => 1,
             'features' => [
                 '1 WCC',
                 'sesi shot selama 20-30 menit (tanpa File mentah)',
@@ -58,6 +59,7 @@ class PricelistSeeder extends Seeder
             'price_display' => '200k',
             'price_numeric' => 200000,
             'duration' => 60,
+            'max_sessions' => 2,
             'features' => [
                 '1 WCC',
                 'shot selama 40-60 menit (tanpa File mentah)',
@@ -74,6 +76,7 @@ class PricelistSeeder extends Seeder
             'price_display' => '250k',
             'price_numeric' => 250000,
             'duration' => 60,
+            'max_sessions' => 2,
             'is_popular' => true,
             'features' => [
                 '1 WCC',
@@ -93,6 +96,7 @@ class PricelistSeeder extends Seeder
             'price_display' => '300k',
             'price_numeric' => 300000,
             'duration' => 60,
+            'max_sessions' => 2,
             'features' => [
                 '1 WCC',
                 'shot selama 60 menit',
@@ -120,7 +124,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Basic (1)',
             'price_display' => '550k',
             'price_numeric' => 550000,
-            'duration' => 240,
+            'duration' => 240, 'max_sessions' => 8,
             'features' => ['1 kamera', '1 personil', '1 disk', 'Editing 15-30 menit', 'Maks 4 jam kerja', 'File On drive']
         ]);
 
@@ -129,7 +133,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Standart (1:1)',
             'price_display' => '850k',
             'price_numeric' => 850000,
-            'duration' => 240,
+            'duration' => 240, 'max_sessions' => 8,
             'features' => ['1 kamera', '1 personil', '1 disk', 'Editing 15-30 menit', 'Maks 4 jam kerja', '1 proyeksi', 'Kabel hadmi untuk 1 proyeksi', 'File On drive']
         ]);
 
@@ -138,7 +142,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Luxury (2)',
             'price_display' => '850k',
             'price_numeric' => 850000,
-            'duration' => 360,
+            'duration' => 360, 'max_sessions' => 12,
             'features' => ['1-2 kamera', '1-2 personil', '2 disk', 'Editing 30-60 menit', 'Maks 6 jam kerja', 'file on flasdisk']
         ]);
 
@@ -147,7 +151,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Exclusive (2:4)',
             'price_display' => '1350k',
             'price_numeric' => 1350000,
-            'duration' => 360,
+            'duration' => 360, 'max_sessions' => 12,
             'is_popular' => true,
             'features' => ['2 kamera', '3 personil', 'System broadcasting', 'File jadi full acara', 'Maks 6 jam kerja', 'Proyeksi maks 4', 'HDMI untuk 4 proyeksi', 'file on flasdisk']
         ]);
@@ -157,7 +161,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Royal (1:1 strm)',
             'price_display' => '1450k',
             'price_numeric' => 1450000,
-            'duration' => 240,
+            'duration' => 240, 'max_sessions' => 8,
             'features' => ['1 kamera', '2 personil', 'System broadcasting', 'File jadi full acara', 'Maks 4 jam kerja', 'Maks 1 proyeksi', 'HDMI untuk 1 proyeksi', 'Live stream - Wifi lokasi', 'Sett up channel with operator', 'file on flasdisk']
         ]);
 
@@ -166,7 +170,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Royal exclusive (2:4 strm)',
             'price_display' => '1550k',
             'price_numeric' => 1550000,
-            'duration' => 360,
+            'duration' => 360, 'max_sessions' => 12,
             'features' => ['2 kamera', '3 personil', 'System broadcasting', 'File jadi full acara', 'Maks 6 jam kerja', 'Maks 4 proyeksi', 'HDMI untuk 4 proyeksi', 'Live stream - kuota dari operator', 'Sett up channel with operator', 'file on flasdisk']
         ]);
 
@@ -182,7 +186,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Basic',
             'price_display' => '475',
             'price_numeric' => 475000,
-            'duration' => 180,
+            'duration' => 180, 'max_sessions' => 6,
             'features' => ['unlimited files', 'maks 3 jam photo Session', 'oudoor session potrait', 'edits 20', 'File on gDrive']
         ]);
 
@@ -191,7 +195,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Standard',
             'price_display' => '750',
             'price_numeric' => 750000,
-            'duration' => 180,
+            'duration' => 180, 'max_sessions' => 6,
             'features' => ['unlimited files', 'maks 3 jam photo Session', 'oudoor session potrait', 'edits 30', 'File on Flashdisk']
         ]);
 
@@ -200,7 +204,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Exclusive',
             'price_display' => '800',
             'price_numeric' => 800000,
-            'duration' => 240,
+            'duration' => 240, 'max_sessions' => 8,
             'is_popular' => true,
             'features' => ['unlimited files', 'maks 4 jam photo Session', 'oudoor session potrait', 'edits 40', 'cetak 20 foto polaroid', '1 album polaroid', 'File on Flashdisk']
         ]);
@@ -216,7 +220,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Basic',
             'price_display' => '475k',
             'price_numeric' => 475000,
-            'duration' => 180,
+            'duration' => 180, 'max_sessions' => 6,
             'features' => ['Unlimited File', '1 Fg', 'softfile 100-300', 'Outdoor session', 'edit 20', 'durasi 3j', 'all file on google drive']
         ]);
 
@@ -225,7 +229,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Standart',
             'price_display' => '775k',
             'price_numeric' => 775000,
-            'duration' => 180,
+            'duration' => 180, 'max_sessions' => 6,
             'features' => ['Unlimited File', '1 fg', 'softfile 100-300', 'request sortir file', 'consept discuss', '1 book moodboard consept', 'Outdoor session', 'edit 30', 'durasi 3j', 'all file on google drive']
         ]);
 
@@ -234,7 +238,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Exclusive',
             'price_display' => '825k',
             'price_numeric' => 825000,
-            'duration' => 240,
+            'duration' => 240, 'max_sessions' => 8,
             'is_popular' => true,
             'features' => ['Unlimited File', '1 FG', 'softfile 300-700', 'request sortir file', 'Outdoor session', 'consept discuss', '1 book moodboard consept', 'cetak 1 x 12Rs', '1 frme 12Rs', 'edit 40', 'durasi 4j', 'all file on google drive']
         ]);
@@ -244,7 +248,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Royal Exclusive',
             'price_display' => '1500k',
             'price_numeric' => 1500000,
-            'duration' => 480,
+            'duration' => 480, 'max_sessions' => 16,
             'features' => ['Unlimited File', '2 FG', 'softfile 500-1000', 'request sortir file', 'consept discuss', '1 book moodboard consept', 'Outdoor session', 'cetak 2 x 14Rs', '2 frame 14Rs', 'Edit 80 edits', 'unlimited a day', 'file with FLASHDISK']
         ]);
 
@@ -259,7 +263,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Basic',
             'price_display' => '475k',
             'price_numeric' => 475000,
-            'duration' => 180,
+            'duration' => 180, 'max_sessions' => 6,
             'features' => ['Unlimited File', 'Maks 3 Jam pemotretan', '1 Fotografer', '20 edits foto', 'Pemotretan outdoor Request', 'All File On Drive']
         ]);
 
@@ -268,7 +272,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Standart',
             'price_display' => '750k',
             'price_numeric' => 750000,
-            'duration' => 180,
+            'duration' => 180, 'max_sessions' => 6,
             'features' => ['Unlimited File', 'Maks 3 Jam pemotretan', '1 Fotografer', 'Pemotretan outdoor Request', '20 edits foto', 'Cetak 20 foto uk 2R Polaroid', '1 Album 2R Polaroid', 'All File On Drive']
         ]);
 
@@ -277,7 +281,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Exclusive',
             'price_display' => '850k',
             'price_numeric' => 850000,
-            'duration' => 240,
+            'duration' => 240, 'max_sessions' => 8,
             'is_popular' => true,
             'features' => ['Unlimited File', 'Maks 4 Jam pemotretan', '2 Fotografer', 'Pemotretan outdoor Request', '40 edits foto', 'Cetak 40 foto uk 4R', '1 Album 4R', 'All File On Drive']
         ]);
@@ -287,7 +291,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Royal Exclusive',
             'price_display' => '1300k',
             'price_numeric' => 1300000,
-            'duration' => 240,
+            'duration' => 240, 'max_sessions' => 8,
             'features' => ['Unlimited File', 'Maks 4 Jam pemotretan', '2 Fotografer', 'Pemotretan outdoor Request', '85 edits foto', 'Cetak 85 foto uk 4R', '1 Album 4R Magnetic', 'All File On Drive']
         ]);
 
@@ -302,7 +306,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Basic',
             'price_display' => '600k',
             'price_numeric' => 600000,
-            'duration' => 360,
+            'duration' => 360, 'max_sessions' => 12,
             'features' => ['unlimited files', 'maks 6jam photo Session', 'oudoor session potrait', 'edits 20', 'Softfile only', 'File on gDrive']
         ]);
 
@@ -311,7 +315,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Standart',
             'price_display' => '850k',
             'price_numeric' => 850000,
-            'duration' => 360,
+            'duration' => 360, 'max_sessions' => 12,
             'features' => ['unlimited files', 'maks 6jam photo Session', 'pemotretan oudoor request', 'cetak 1 Roll/40 foto 4R', '1 album 4R', 'edits 40', 'File on gDrive']
         ]);
 
@@ -320,7 +324,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Exclusive',
             'price_display' => '1.500k',
             'price_numeric' => 1500000,
-            'duration' => 360,
+            'duration' => 360, 'max_sessions' => 12,
             'is_popular' => true,
             'features' => ['unlimited files', 'maks 6jam photo Session', 'pemotretan oudoor request', 'Cetak 85 foto 4R', '1 album magnetic', 'Edits 85 foto', 'file on flashdisk']
         ]);
@@ -330,7 +334,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Royal exclusive',
             'price_display' => '2.500k',
             'price_numeric' => 2500000,
-            'duration' => 360,
+            'duration' => 360, 'max_sessions' => 12,
             'features' => ['unlimited files', 'maks 6jam photo Session', 'pemotretan oudoor request', 'Cetak 80 - 120 foto', '1 album magazine 16 hal', 'Edits 120 foto', 'file on flashdisk']
         ]);
 
@@ -345,7 +349,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Basic',
             'price_display' => '750k',
             'price_numeric' => 750000,
-            'duration' => 480,
+            'duration' => 480, 'max_sessions' => 16,
             'features' => ['unlimited files', 'maks 8jam photo Session', 'pemotretan oudoor request', 'edits 25', 'Softfile only', 'File on gDrive']
         ]);
 
@@ -354,7 +358,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Standart',
             'price_display' => '925k',
             'price_numeric' => 925000,
-            'duration' => 480,
+            'duration' => 480, 'max_sessions' => 16,
             'features' => ['unlimited files', 'maks 8jam photo Session', 'pemotretan oudoor request', 'cetak 1 Roll/40 foto 4R', '1 album 4R', 'edits 40', 'File on gDrive']
         ]);
 
@@ -363,7 +367,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Exclusive',
             'price_display' => '1700',
             'price_numeric' => 1700000,
-            'duration' => 480,
+            'duration' => 480, 'max_sessions' => 16,
             'is_popular' => true,
             'features' => ['unlimited files', 'maks 8jam photo Session', 'pemotretan oudoor request', 'Cetak 85 foto 4R', '1 album magnetic', 'Edits 85 foto', 'file on flashdisk']
         ]);
@@ -373,7 +377,7 @@ class PricelistSeeder extends Seeder
             'name' => 'royal Exclusive',
             'price_display' => '2900k',
             'price_numeric' => 2900000,
-            'duration' => 600,
+            'duration' => 600, 'max_sessions' => 20,
             'features' => ['unlimited files', 'maks 10jam photo Session', 'pemotretan oudoor request', 'Cetak 80-120 foto', '1 album magazine', '1 tas koper magazine', 'Edits 120 foto', 'file on flashdisk']
         ]);
 
@@ -403,7 +407,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Standart',
             'price_display' => '550',
             'price_numeric' => 550000,
-            'duration' => 120,
+            'duration' => 120, 'max_sessions' => 4,
             'features' => [
                 'Unlimited files',
                 '2 jam maks pemotretan',
@@ -418,7 +422,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Exclusive',
             'price_display' => '600',
             'price_numeric' => 600000,
-            'duration' => 180,
+            'duration' => 180, 'max_sessions' => 6,
             'is_popular' => true,
             'features' => [
                 'Unlimited files',
@@ -434,7 +438,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Royal',
             'price_display' => '950k',
             'price_numeric' => 950000,
-            'duration' => 240,
+            'duration' => 240, 'max_sessions' => 8,
             'features' => [
                 'Unlimited files',
                 '4 jam maks pemotretan',
@@ -457,7 +461,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Basic',
             'price_display' => '1.000K',
             'price_numeric' => 1000000,
-            'duration' => 360,
+            'duration' => 360, 'max_sessions' => 12,
             'features' => [
                 'Prewedding (Unlimited files, 2 jam session, 1 lokasi, 20 edit, Softfile)',
                 'Akad (Unlimited files, 4 jam pemotretan, 1 fotografer, 40 edit)',
@@ -471,7 +475,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Standard',
             'price_display' => '1.300K',
             'price_numeric' => 1300000,
-            'duration' => 480,
+            'duration' => 480, 'max_sessions' => 16,
             'is_popular' => true,
             'features' => [
                 'Prewedding (Unlimited files, 2 jam session, 1 lokasi, 20 edit, Softfile)',
@@ -487,7 +491,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Exclusive',
             'price_display' => '2.000K',
             'price_numeric' => 2000000,
-            'duration' => 600,
+            'duration' => 600, 'max_sessions' => 20,
             'features' => [
                 'Prewedding (Unlimited files, 2 jam session, 1 lokasi, 20 edit, Softfile)',
                 'Akad & Resepsi (Unlimited files, 8 jam session, 2 fotografer, 80 edit)',
@@ -508,7 +512,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Basic',
             'price_display' => '1.200K',
             'price_numeric' => 1200000,
-            'duration' => 180,
+            'duration' => 180, 'max_sessions' => 6,
             'features' => [
                 'Unlimited files (Malsimal 3 jam pemotretan)',
                 '2 fotografer + Shot video dokumentasi',
@@ -523,7 +527,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Standard',
             'price_display' => '1.500K',
             'price_numeric' => 1500000,
-            'duration' => 360,
+            'duration' => 360, 'max_sessions' => 12,
             'features' => [
                 'Unlimited files (Maksimal 6 jam pemotretan)',
                 '2 fotografer + Shot video dokumentasi',
@@ -538,7 +542,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Exclusive',
             'price_display' => '1.700K',
             'price_numeric' => 1700000,
-            'duration' => 480,
+            'duration' => 480, 'max_sessions' => 16,
             'features' => [
                 'Unlimited files (Maksimal 8 jam pemotretan)',
                 '2 fotografer + Shot video dokumentasi',
@@ -553,7 +557,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Premium Exclusive',
             'price_display' => '2.300K',
             'price_numeric' => 2300000,
-            'duration' => 480,
+            'duration' => 480, 'max_sessions' => 16,
             'features' => [
                 'Unlimited files (Maksimal 8 jam pemotretan)',
                 '2 fotografer + Shot video dokumentasi',
@@ -574,7 +578,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Basic (3 Hours)',
             'price_display' => '650K',
             'price_numeric' => 650000,
-            'duration' => 180,
+            'duration' => 180, 'max_sessions' => 6,
             'features' => [
                 'Unlimited files (Maksimal 3 jam kerja)',
                 '20 foto edit + Pemotretan outdoor',
@@ -589,7 +593,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Standard (6 Hours)',
             'price_display' => '1.000K',
             'price_numeric' => 1000000,
-            'duration' => 360,
+            'duration' => 360, 'max_sessions' => 12,
             'features' => [
                 'Unlimited files (Maksimal 6 jam kerja)',
                 '40 foto edit + Cetak 40 foto 4R',
@@ -604,7 +608,7 @@ class PricelistSeeder extends Seeder
             'name' => 'Exclusive (8 Hours)',
             'price_display' => '1.200K',
             'price_numeric' => 1200000,
-            'duration' => 480,
+            'duration' => 480, 'max_sessions' => 16,
             'features' => [
                 'Unlimited files (Maksimal 8 jam session)',
                 '40 foto edit + Cetak 1 roll / 40 foto 4R',

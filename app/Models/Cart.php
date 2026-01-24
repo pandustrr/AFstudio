@@ -21,6 +21,7 @@ class Cart extends Model
         'room_id',
         'photographer_id',
         'session_ids',
+        'sessions_needed',
     ];
 
     protected $casts = [

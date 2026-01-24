@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
-import { ShieldCheckIcon, CalendarIcon, MapPinIcon, PhoneIcon, UserIcon, ChatBubbleBottomCenterTextIcon, ClockIcon, HomeIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { ShieldCheckIcon, CalendarIcon, MapPinIcon, PhoneIcon, UserIcon, ChatBubbleBottomCenterTextIcon, ClockIcon, HomeIcon, ShoppingCartIcon, TicketIcon } from '@heroicons/react/24/outline';
 
 export default function CheckoutCreate({ carts = [], rooms = [], photographers = [] }) {
     const { auth } = usePage().props;
+    const [appliedDiscount, setAppliedDiscount] = useState(null);
+    const [validatingCode, setValidatingCode] = useState(false);
 
     const getRoomLabel = (id) => {
         const room = rooms.find(r => r.id === parseInt(id));
@@ -25,6 +27,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
         phone: '',
         location: '',
         notes: '',
+        referral_code: '',
         cart_uid: localStorage.getItem('afstudio_cart_uid') || '',
     });
 
@@ -40,11 +43,86 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
         }).format(num);
     };
 
+    const validateReferralCode = async (code) => {
+        if (!code.trim()) {
+            setAppliedDiscount(null);
+            return;
+        }
+
+        setValidatingCode(true);
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+                             document.querySelector('input[name="_token"]')?.value;
+            
+            const response = await fetch('/api/referral-codes/validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken || '',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ code: code.toUpperCase() })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.valid) {
+                setAppliedDiscount(result.code);
+            } else {
+                setAppliedDiscount(null);
+                if (result.message) {
+                    console.warn('Referral validation:', result.message);
+                }
+            }
+        } catch (error) {
+            console.error('Error validating referral code:', error);
+            setAppliedDiscount(null);
+        } finally {
+            setValidatingCode(false);
+        }
+    };
+
+    const handleReferralCodeChange = (e) => {
+        const code = e.target.value;
+        setData('referral_code', code);
+        if (code.length > 2) {
+            validateReferralCode(code);
+        } else {
+            setAppliedDiscount(null);
+        }
+    };
+
+    const calculateDiscount = () => {
+        if (!appliedDiscount) return 0;
+        
+        if (appliedDiscount.discount_type === 'percentage') {
+            return (total * appliedDiscount.discount_value) / 100;
+        } else {
+            return Math.min(appliedDiscount.discount_value, total);
+        }
+    };
+
+    const discount = calculateDiscount();
+    const finalTotal = total - discount;
+
     const submit = (e) => {
         e.preventDefault();
+        console.log('Submitting form with data:', data);
+        
         post('/checkout', {
+            preserveScroll: true,
             headers: {
                 'X-Cart-UID': data.cart_uid
+            },
+            onError: (errors) => {
+                console.error('Checkout error:', errors);
+                window.scrollTo(0, 0);
+            },
+            onSuccess: () => {
+                console.log('Checkout successful!');
+            },
+            onFinish: () => {
+                console.log('Checkout finished');
             }
         });
     };
@@ -72,6 +150,18 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                         </div>
 
                         <form onSubmit={submit} className="space-y-6">
+                            {/* Error Messages */}
+                            {Object.keys(errors).length > 0 && (
+                                <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+                                    <p className="text-xs font-bold uppercase tracking-widest text-red-600 dark:text-red-400 mb-2">Validation Errors:</p>
+                                    <ul className="text-xs text-red-600 dark:text-red-400 space-y-1">
+                                        {Object.entries(errors).map(([field, message]) => (
+                                            <li key={field}>• {Array.isArray(message) ? message[0] : message}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
                             {/* Session UID (Read-only) */}
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/40 dark:text-brand-white/40">
@@ -195,6 +285,32 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                             {/* Notes */}
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/70 dark:text-brand-white/70">
+                                    <TicketIcon className="w-4 h-4" /> Kode Referral
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={data.referral_code}
+                                        onChange={handleReferralCodeChange}
+                                        className="w-full bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white uppercase"
+                                        placeholder="Masukkan kode referral (opsional)"
+                                    />
+                                    {validatingCode && (
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                            <div className="w-4 h-4 border-2 border-brand-gold border-t-transparent rounded-full animate-spin"></div>
+                                        </div>
+                                    )}
+                                </div>
+                                {appliedDiscount && (
+                                    <p className="text-xs font-bold text-green-600 dark:text-green-400">
+                                        ✓ Kode valid! Diskon {appliedDiscount.discount_type === 'percentage' ? `${appliedDiscount.discount_value}%` : `Rp${appliedDiscount.discount_value}`} diterapkan
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Catatan Tambahan */}
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/70 dark:text-brand-white/70">
                                     <ChatBubbleBottomCenterTextIcon className="w-4 h-4" /> Catatan Tambahan
                                 </label>
                                 <textarea
@@ -276,9 +392,15 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                                     <span>Subtotal</span>
                                     <span>{formatPrice(total)}</span>
                                 </div>
+                                {appliedDiscount && (
+                                    <div className="flex justify-between items-center text-xs font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 px-2 py-1 rounded">
+                                        <span>Diskon ({appliedDiscount.discount_type === 'percentage' ? `${appliedDiscount.discount_value}%` : 'Fixed'})</span>
+                                        <span>- {formatPrice(discount)}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between items-center text-xl font-black text-brand-red italic uppercase tracking-tighter">
                                     <span>Total</span>
-                                    <span>{formatPrice(total)}</span>
+                                    <span>{formatPrice(finalTotal || total)}</span>
                                 </div>
                             </div>
                         </div>

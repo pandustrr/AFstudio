@@ -38,6 +38,18 @@ export default function Index({ categories }) {
         }).format(numericPrice);
     };
 
+    const formatSessionDuration = (maxSessions) => {
+        if (!maxSessions) return '';
+        // 1 session = 30 menit
+        const totalMinutes = maxSessions * 30;
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        
+        if (hours === 0) return `${minutes}m`;
+        if (minutes === 0) return `${hours}h`;
+        return `${hours}h ${minutes}m`;
+    };
+
     const [copyNotification, setCopyNotification] = useState(null);
 
     const copyToClipboard = async (text) => {
@@ -182,6 +194,11 @@ export default function Index({ categories }) {
                                                             <div className={`text-lg font-black mt-0.5 ${pkg.is_popular ? 'text-brand-gold dark:text-brand-black' : 'text-brand-gold'}`}>
                                                                 {pkg.price_display ? pkg.price_display : (pkg.price_numeric ? formatPrice(pkg.price_numeric) : '')}
                                                             </div>
+                                                            {pkg.max_sessions && (
+                                                                <div className={`text-[8px] font-bold mt-1 ${pkg.is_popular ? 'text-white/70 dark:text-brand-black/70' : 'text-brand-black/50 dark:text-brand-white/50'}`}>
+                                                                    {formatSessionDuration(pkg.max_sessions)}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         {pkg.is_popular && <StarIconSolid className="w-3.5 h-3.5 text-brand-gold dark:text-brand-black" />}
                                                     </div>

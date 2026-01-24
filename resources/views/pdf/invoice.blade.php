@@ -219,13 +219,31 @@
             <div class="totals-label">Subtotal</div>
             <div class="totals-value">{{ number_format($booking->total_price, 0, ',', '.') }}</div>
         </div>
+        
+        @if($booking->discount_amount > 0)
+        <div class="totals-row" style="background-color: #f0f8ff; padding: 5px 0;">
+            <div class="totals-label">
+                Diskon
+                @if($booking->referral_code)
+                (Kode: {{ $booking->referral_code->code }})
+                @endif
+            </div>
+            <div class="totals-value" style="background-color: #f0f8ff;">- {{ number_format($booking->discount_amount, 0, ',', '.') }}</div>
+        </div>
+        
+        <div class="totals-row" style="border-top: 2px solid #000;">
+            <div class="totals-label" style="font-weight: bold; font-size: 12pt;">Total Akhir (Setelah Diskon)</div>
+            <div class="totals-value" style="border-bottom: 2px solid #000; font-weight: bold; font-size: 12pt;">{{ number_format($booking->total_price - $booking->discount_amount, 0, ',', '.') }}</div>
+        </div>
+        @endif
+        
         <div class="totals-row">
             <div class="totals-label">Uang Muka (DP 25%)</div>
             <div class="totals-value">- {{ number_format($booking->down_payment, 0, ',', '.') }}</div>
         </div>
         <div class="totals-row grand-total">
             <div class="totals-label">Sisa Tagihan (Pelunasan H-Day)</div>
-            <div class="totals-value">{{ number_format($booking->total_price - $booking->down_payment, 0, ',', '.') }}</div>
+            <div class="totals-value">{{ number_format(($booking->total_price - $booking->discount_amount) - $booking->down_payment, 0, ',', '.') }}</div>
         </div>
     </div>
 

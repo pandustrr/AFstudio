@@ -39,6 +39,8 @@ Route::get('/checkout', [BookingController::class, 'create'])->name('booking.cre
 Route::post('/checkout', [BookingController::class, 'store'])->name('booking.store');
 Route::get('/booking/{code}', [BookingController::class, 'show'])->name('booking.show');
 
+// Referral Code API routes
+Route::post('/api/referral-codes/validate', [\App\Http\Controllers\Admin\ReferralCodeController::class, 'validate']);
 
 // Photo Selector API routes
 Route::prefix('api/photo-selector')->group(function () {
@@ -136,5 +138,9 @@ Route::prefix('admin')->group(function () {
             Route::post('/offset', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'updateOffset'])->name('admin.photographer-sessions.offset');
             Route::post('/reschedule', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'reschedule'])->name('admin.photographer-sessions.reschedule');
         });
+
+        // Referral Codes
+        Route::resource('referral-codes', \App\Http\Controllers\Admin\ReferralCodeController::class)
+            ->names('admin.referral-codes');
     });
 });

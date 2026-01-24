@@ -11,7 +11,8 @@ import {
     UserIcon,
     ChevronDownIcon,
     ChevronRightIcon,
-    PencilSquareIcon
+    PencilSquareIcon,
+    TicketIcon
 } from '@heroicons/react/24/outline';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from '../Contexts/ThemeContext';
@@ -112,6 +113,7 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                         <>
                             {renderMenuItem({ label: 'About Page', href: `${prefix}/about`, icon: BuildingOfficeIcon })}
                             {renderMenuItem({ label: 'Pricelist', href: `${prefix}/pricelist`, icon: BanknotesIcon })}
+                            {renderMenuItem({ label: 'Referral Codes', href: `${prefix}/referral-codes`, icon: TicketIcon })}
 
                             {/* Photographer Group */}
                             {renderGroupHeader('Photographer', UserIcon, openGroups.photographer, () => toggleGroup('photographer'))}
