@@ -54,6 +54,7 @@ class BookingController extends Controller
             'domicile' => 'nullable|string|max:255',
             'location' => 'required|string|max:255',
             'notes' => 'nullable|string',
+            'payment_proof' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
 
         try {
@@ -90,7 +91,7 @@ class BookingController extends Controller
 
             if ($calculatedDP < 100000) {
                 // If total is small (e.g. 50k), DP is full price.
-                // Logic: Min(100k, Total) if 25% < 100k? 
+                // Logic: Min(100k, Total) if 25% < 100k?
                 // Requirement: Min 100k. But if Total < 100k?
                 // Let's assume Total matches. If Total < 100k, DP = Total.
                 $calculatedDP = 100000;
@@ -100,17 +101,35 @@ class BookingController extends Controller
                 $calculatedDP = $totalPrice;
             }
 
+            // Generate unique booking code: AF-36214 • anjay (or with suffix if duplicate)
+            $baseCode = $uid . ' • ' . $request->name;
+            $bookingCode = $baseCode;
+            $counter = 1;
+            while (Booking::where('booking_code', $bookingCode)->exists()) {
+                $bookingCode = $baseCode . ' #' . $counter;
+                $counter++;
+            }
+
+            // Handle payment proof upload if provided
+            $paymentProofPath = null;
+            if ($request->hasFile('payment_proof')) {
+                $file = $request->file('payment_proof');
+                $fileName = 'payment-' . $uid . '-' . time() . '.' . $file->getClientOriginalExtension();
+                $paymentProofPath = $file->storeAs('payment-proofs', $fileName, 'public');
+            }
+
             $booking = Booking::create([
                 'user_id' => Auth::id(),
                 'guest_uid' => $uid,
-                'booking_code' => $uid,
+                'booking_code' => $bookingCode,
                 'name' => $request->name,
                 'phone' => $request->phone,
                 'university' => $request->university,
                 'domicile' => $request->domicile,
-                'booking_date' => now(), // Use current timestamp for the transaction date
+                'booking_date' => now(),
                 'location' => $request->location,
                 'notes' => $request->notes,
+                'payment_proof' => $paymentProofPath,
                 'total_price' => $totalPrice,
                 'down_payment' => $calculatedDP,
                 'status' => 'pending',

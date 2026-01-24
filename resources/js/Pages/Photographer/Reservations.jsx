@@ -14,8 +14,8 @@ import {
 import { formatIDR } from '../../utils/formatters';
 
 export default function Reservations({ reservations, allSessions, selectedSessionId }) {
-    const [filterValue, setFilterValue] = useState(selectedSessionId || '');
-    const { get } = useForm();
+    const [filterSessionId, setFilterSessionId] = useState(selectedSessionId || '');
+    const [filterCustomerName, setFilterCustomerName] = useState('');
 
     const getDateDisplay = (dateString) => {
         return new Date(dateString).toLocaleDateString('id-ID', {
@@ -26,18 +26,30 @@ export default function Reservations({ reservations, allSessions, selectedSessio
         });
     };
 
-    const handleFilterChange = (e) => {
-        const value = e.target.value;
-        setFilterValue(value);
-        if (value) {
-            get(route('photographer.reservations', { session_id: value }));
-        }
+    // Filter reservations based on session_id and customer name
+    const getFilteredReservations = () => {
+        return reservations.filter((reservation) => {
+            const matchSession = !filterSessionId || reservation.session_id === filterSessionId;
+            const matchCustomer = !filterCustomerName ||
+                reservation.customer_name.toLowerCase().includes(filterCustomerName.toLowerCase());
+            return matchSession && matchCustomer;
+        });
+    };
+
+    const handleSessionFilterChange = (e) => {
+        setFilterSessionId(e.target.value);
+    };
+
+    const handleCustomerNameChange = (e) => {
+        setFilterCustomerName(e.target.value);
     };
 
     const handleClearFilter = () => {
-        setFilterValue('');
-        get(route('photographer.reservations'));
+        setFilterSessionId('');
+        setFilterCustomerName('');
     };
+
+    const filteredReservations = getFilteredReservations();
 
     return (
         <AdminLayout>
@@ -53,17 +65,25 @@ export default function Reservations({ reservations, allSessions, selectedSessio
                                 Lihat semua reservasi booking dari customer
                             </p>
                         </div>
-                        
+
                         {/* Filter Section */}
-                        <div className="flex flex-col gap-2">
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
-                                Filter by Session ID
-                            </label>
-                            <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-4 items-end w-full sm:w-auto">
+                            {/* Session ID Filter */}
+                            <div className="flex flex-col gap-2 flex-1 sm:flex-none">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
+                                    Session ID
+                                </label>
                                 <select
-                                    value={filterValue}
-                                    onChange={handleFilterChange}
-                                    className="px-3 py-2 rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-bold text-brand-black dark:text-brand-white focus:outline-none focus:ring-2 focus:ring-brand-gold"
+                                    value={filterSessionId}
+                                    onChange={handleSessionFilterChange}
+                                    className="px-4 py-2.5 rounded-lg border-2 border-brand-gold bg-white dark:bg-brand-black text-sm font-bold text-brand-black dark:text-brand-white focus:outline-none focus:ring-2 focus:ring-brand-gold transition-all appearance-none cursor-pointer"
+                                    style={{
+                                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23D4AF37' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundPosition: 'right 0.75rem center',
+                                        backgroundSize: '12px',
+                                        paddingRight: '2.5rem'
+                                    }}
                                 >
                                     <option value="">Semua Session</option>
                                     {allSessions && allSessions.map((session) => (
@@ -72,24 +92,40 @@ export default function Reservations({ reservations, allSessions, selectedSessio
                                         </option>
                                     ))}
                                 </select>
-                                {filterValue && (
-                                    <button
-                                        onClick={handleClearFilter}
-                                        className="p-2 rounded-lg bg-brand-red/10 hover:bg-brand-red/20 text-brand-red transition-colors"
-                                        title="Clear filter"
-                                    >
-                                        <XMarkIcon className="w-4 h-4" />
-                                    </button>
-                                )}
                             </div>
+
+                            {/* Customer Name Filter */}
+                            <div className="flex flex-col gap-2 flex-1 sm:flex-none">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
+                                    Nama Customer
+                                </label>
+                                <input
+                                    type="text"
+                                    value={filterCustomerName}
+                                    onChange={handleCustomerNameChange}
+                                    placeholder="Cari..."
+                                    className="px-4 py-2.5 rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-semibold text-brand-black dark:text-brand-white placeholder-brand-black/30 dark:placeholder-brand-white/30 focus:outline-none focus:ring-2 focus:ring-brand-gold transition-all"
+                                />
+                            </div>
+
+                            {/* Clear Button */}
+                            {(filterSessionId || filterCustomerName) && (
+                                <button
+                                    onClick={handleClearFilter}
+                                    className="px-4 py-2.5 rounded-lg bg-brand-red/10 hover:bg-brand-red/20 text-brand-red font-semibold transition-colors"
+                                    title="Clear all filters"
+                                >
+                                    Clear
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
 
                 {/* Reservations List */}
                 <div className="space-y-4">
-                    {reservations.length > 0 ? (
-                        reservations.map((reservation) => (
+                    {filteredReservations.length > 0 ? (
+                        filteredReservations.map((reservation) => (
                             <div
                                 key={reservation.id}
                                 className="bg-white dark:bg-white/3 border border-black/5 dark:border-white/5 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow"
@@ -178,7 +214,7 @@ export default function Reservations({ reservations, allSessions, selectedSessio
                         <div className="bg-white dark:bg-white/3 border border-dashed border-black/10 dark:border-white/10 rounded-2xl p-12 text-center">
                             <CalendarIcon className="w-12 h-12 text-brand-black/20 dark:text-brand-white/20 mx-auto mb-4" />
                             <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-bold uppercase tracking-widest italic">
-                                {filterValue ? 'Tidak ada reservasi untuk session yang dipilih' : 'Belum ada reservasi booking'}
+                                {filterSessionId || filterCustomerName ? 'Tidak ada reservasi sesuai filter' : 'Belum ada reservasi booking'}
                             </p>
                         </div>
                     )}

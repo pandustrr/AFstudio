@@ -25,6 +25,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
         phone: '',
         location: '',
         notes: '',
+        payment_proof: null,
         cart_uid: localStorage.getItem('afstudio_cart_uid') || '',
     });
 
@@ -42,9 +43,39 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
 
     const submit = (e) => {
         e.preventDefault();
-        post('/checkout', {
+        // Save nama ke localStorage untuk checkout berikutnya
+        localStorage.setItem('afstudio_customer_name', data.name);
+        localStorage.setItem('afstudio_cart_uid', data.cart_uid);
+
+        console.log('Form submitted with data:', data);
+        console.log('Cart UID:', data.cart_uid);
+
+        // Use FormData to support file upload
+        const formData = new FormData();
+        formData.append('name', data.name);
+        formData.append('phone', data.phone);
+        formData.append('university', data.university);
+        formData.append('domicile', data.domicile);
+        formData.append('location', data.location);
+        formData.append('notes', data.notes);
+        formData.append('cart_uid', data.cart_uid);
+        if (data.payment_proof) {
+            formData.append('payment_proof', data.payment_proof);
+        }
+
+        post('/checkout', formData, {
             headers: {
-                'X-Cart-UID': data.cart_uid
+                'X-Cart-UID': data.cart_uid,
+                'Content-Type': 'multipart/form-data'
+            },
+            onSuccess: (page) => {
+                console.log('Booking success! Redirecting...', page);
+            },
+            onError: (errors) => {
+                console.error('Booking error:', errors);
+            },
+            onFinish: () => {
+                console.log('Request finished');
             }
         });
     };
@@ -206,6 +237,28 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                                 {errors.notes && <p className="text-red-500 text-xs font-bold">{errors.notes}</p>}
                             </div>
 
+                            {/* Payment Proof Upload */}
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/70 dark:text-brand-white/70">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    Upload Bukti Pembayaran (Opsional)
+                                </label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={e => setData('payment_proof', e.target.files[0] || null)}
+                                    className="w-full bg-white dark:bg-white/5 border-2 border-dashed border-brand-gold/50 dark:border-brand-gold/30 rounded-xl px-4 py-6 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-black file:bg-brand-gold file:text-brand-black cursor-pointer hover:border-brand-gold/80 transition-colors"
+                                />
+                                {data.payment_proof && (
+                                    <p className="text-xs font-bold text-green-600 dark:text-green-400">
+                                        ✓ {data.payment_proof.name} ({(data.payment_proof.size / 1024).toFixed(2)} KB)
+                                    </p>
+                                )}
+                                {errors.payment_proof && <p className="text-red-500 text-xs font-bold">{errors.payment_proof}</p>}
+                            </div>
+
                             <button
                                 type="submit"
                                 disabled={processing}
@@ -213,6 +266,9 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                             >
                                 {processing ? 'Processing...' : 'Proceed to Payment'}
                             </button>
+                            <p className="text-[10px] text-brand-black/50 dark:text-brand-white/50 text-center mt-2">
+                                Jika sudah transfer, silakan upload bukti pembayaran untuk konfirmasi lebih cepat.
+                            </p>
                         </form>
                     </div>
 

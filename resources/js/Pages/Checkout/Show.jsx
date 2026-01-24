@@ -28,7 +28,7 @@ export default function CheckoutShow({ booking, rooms = [] }) {
     });
 
     const message = `Halo Admin AF Studio, saya sudah melakukan booking dan pembayaran DP.
-    
+
 No. Booking: *${booking.booking_code}*
 Nama: ${booking.name}
 
@@ -37,7 +37,7 @@ ${itemsMessage}
 
 Total Biaya: ${formatPrice(booking.total_price)}
 DP yang ditransfer (25%): *${formatPrice(booking.down_payment)}*
- 
+
 Mohon konfirmasinya. Terima kasih!`;
 
     const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
@@ -72,10 +72,13 @@ Mohon konfirmasinya. Terima kasih!`;
                             </span>
                         </div>
 
-                        {/* Placeholder QR Code - In real app use actual image */}
-                        <div className="bg-white p-4 rounded-xl mb-6 mx-auto w-48 h-48 flex items-center justify-center border border-black/10">
-                            {/* Replace with actual QR Image */}
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=AFSTUDIO-PAYMENT" alt="QRIS Payment" className="w-full h-full object-contain mix-blend-multiply" />
+                        {/* QRIS FK STUDIO */}
+                        <div className="bg-white p-4 rounded-xl mb-6 mx-auto w-56 h-80 flex items-center justify-center border border-black/10">
+                            <img
+                                src="/images/qris-afstudio.png"
+                                alt="QRIS Payment FK STUDIO"
+                                className="w-full h-full object-contain"
+                            />
                         </div>
 
                         {/* Booking Details Summary */}
@@ -90,6 +93,20 @@ Mohon konfirmasinya. Terima kasih!`;
                                 </div>
                             ))}
                         </div>
+
+                        {/* Display Payment Proof if uploaded */}
+                        {booking.payment_proof && (
+                            <div className="mb-6 text-left">
+                                <p className="text-xs font-bold uppercase text-brand-black/60 dark:text-brand-white/60 mb-2">Bukti Pembayaran</p>
+                                <div className="rounded-xl overflow-hidden border border-brand-gold/20 bg-black/5 dark:bg-white/5 p-2">
+                                    <img
+                                        src={`/storage/${booking.payment_proof}`}
+                                        alt="Bukti Pembayaran"
+                                        className="w-full h-auto max-h-80 object-contain rounded-lg"
+                                    />
+                                </div>
+                            </div>
+                        )}
 
                         <div className="mb-4 text-left">
                             <p className="text-xs font-bold uppercase text-brand-black/40 dark:text-brand-white/40 mb-1">Total Pricing</p>

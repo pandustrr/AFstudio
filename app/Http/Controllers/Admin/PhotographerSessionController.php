@@ -289,17 +289,11 @@ class PhotographerSessionController extends Controller
     public function reservations(Request $request)
     {
         $photographerId = Auth::id();
-        $sessionIdFilter = $request->input('session_id');
 
-        // Get all booked sessions for this photographer with booking details
+        // Get only sessions with actual bookings (not block sessions)
         $query = PhotographerSession::where('photographer_id', $photographerId)
-            ->where('status', 'booked')
+            ->whereNotNull('booking_item_id')
             ->with(['bookingItem.booking', 'bookingItem.package']);
-
-        // Apply session ID filter if provided
-        if ($sessionIdFilter) {
-            $query->where('id', $sessionIdFilter);
-        }
 
         $sessions = $query->orderBy('date', 'desc')
             ->orderBy('start_time', 'desc')
@@ -308,6 +302,7 @@ class PhotographerSessionController extends Controller
         $reservations = $sessions->map(function ($session) {
             return [
                 'id' => $session->id,
+                'session_id' => $session->bookingItem?->booking?->guest_uid ?? 'UNKNOWN',
                 'date' => $session->date,
                 'time' => Carbon::createFromTimeString($session->start_time)->format('H:i'),
                 'time_full' => $session->start_time,
@@ -323,23 +318,28 @@ class PhotographerSessionController extends Controller
             ];
         });
 
-        // Get all session IDs for filter dropdown
+        // Get all unique sessions for filter dropdown (only with bookings)
         $allSessions = PhotographerSession::where('photographer_id', $photographerId)
-            ->where('status', 'booked')
+            ->whereNotNull('booking_item_id')
+            ->with(['bookingItem.booking'])
             ->orderBy('date', 'desc')
             ->orderBy('start_time', 'desc')
-            ->get(['id', 'date', 'start_time'])
+            ->get(['id', 'date', 'start_time', 'booking_item_id'])
             ->map(function ($session) {
+                $guestUid = $session->bookingItem?->booking?->guest_uid ?? 'UNKNOWN';
+                $customerName = $session->bookingItem?->booking?->name ?? 'GUEST';
                 return [
-                    'id' => $session->id,
-                    'label' => 'Session #' . $session->id . ' - ' . Carbon::parse($session->date)->format('d M Y') . ' ' . Carbon::createFromTimeString($session->start_time)->format('H:i')
+                    'id' => $guestUid,
+                    'label' => $guestUid . ' - ' . $customerName
                 ];
-            });
+            })
+            ->unique('id')
+            ->values();
 
         return Inertia::render('Photographer/Reservations', [
             'reservations' => $reservations,
             'allSessions' => $allSessions,
-            'selectedSessionId' => $sessionIdFilter
+            'selectedSessionId' => null
         ]);
     }
 }
