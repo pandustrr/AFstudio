@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useForm, router } from '@inertiajs/react';
 import { XMarkIcon, TrashIcon, PlusIcon, CheckIcon } from '@heroicons/react/24/outline';
+import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
 
-export default function ManageCategoriesModal({ isOpen, onClose, categories }) {
+export default function ManageCategoriesModal({ isOpen, onClose, categories, onSuccess }) {
     const [editingId, setEditingId] = useState(null);
     const [editName, setEditName] = useState('');
+    const [deleteModal, setDeleteModal] = useState({ show: false, id: null, name: '' });
+    const [deleting, setDeleting] = useState(false);
 
     const { data, setData, post, processing, reset, errors } = useForm({
         name: '',
@@ -13,21 +16,61 @@ export default function ManageCategoriesModal({ isOpen, onClose, categories }) {
 
     const handleAdd = (e) => {
         e.preventDefault();
-        post('/admin/pricelist/category', {
-            onSuccess: () => reset(),
+        router.post('/admin/pricelist/category', data, {
+            preserveScroll: true,
+            onSuccess: () => {
+                reset();
+                if (onSuccess) {
+                    onSuccess('Kategori berhasil ditambahkan!', 'success');
+                }
+            },
+            onError: () => {
+                if (onSuccess) {
+                    onSuccess('Gagal menambahkan kategori!', 'error');
+                }
+            },
         });
     };
 
     const handleUpdate = (id, fields) => {
         router.put(`/admin/pricelist/category/${id}`, fields, {
-            onSuccess: () => setEditingId(null),
+            preserveScroll: true,
+            onSuccess: () => {
+                setEditingId(null);
+                if (onSuccess) {
+                    onSuccess('Kategori berhasil diperbarui!', 'success');
+                }
+            },
+            onError: () => {
+                if (onSuccess) {
+                    onSuccess('Gagal memperbarui kategori!', 'error');
+                }
+            },
         });
     };
 
     const handleDelete = (id, name) => {
-        if (confirm(`Hapus kategori ${name}? Semua sub-kategori dan paket di dalamnya akan ikut terhapus.`)) {
-            router.delete(`/admin/pricelist/category/${id}`);
-        }
+        setDeleteModal({ show: true, id, name });
+    };
+
+    const confirmDelete = () => {
+        setDeleting(true);
+        router.delete(`/admin/pricelist/category/${deleteModal.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setDeleting(false);
+                setDeleteModal({ show: false, id: null, name: '' });
+                if (onSuccess) {
+                    onSuccess('Kategori berhasil dihapus!', 'success');
+                }
+            },
+            onError: () => {
+                setDeleting(false);
+                if (onSuccess) {
+                    onSuccess('Gagal menghapus kategori!', 'error');
+                }
+            },
+        });
     };
 
     if (!isOpen) return null;
@@ -134,6 +177,15 @@ export default function ManageCategoriesModal({ isOpen, onClose, categories }) {
                     </button>
                 </div>
             </div>
+
+            <DeleteConfirmModal
+                isOpen={deleteModal.show}
+                onClose={() => setDeleteModal({ show: false, id: null, name: '' })}
+                onConfirm={confirmDelete}
+                title="Hapus Kategori"
+                message={`Yakin ingin menghapus kategori "${deleteModal.name}"? Semua sub-kategori dan paket di dalamnya akan ikut terhapus.`}
+                processing={deleting}
+            />
         </div>
     );
 }

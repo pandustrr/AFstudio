@@ -18,6 +18,7 @@ class PricelistPackage extends Model
         'features',
         'duration',
         'max_sessions',
+        'max_editing_quota',
     ];
 
     public static function boot()
