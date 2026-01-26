@@ -100,8 +100,8 @@ export default function Pricelist({ categories, rooms, locked }) {
                         <span className="text-[8px] font-black uppercase tracking-widest text-brand-gold">Private Access</span>
                     </div>
 
-                    {/* For package share: show vertical hierarchy */}
-                    {locked.type === 'package' && categories[0] ? (
+                    {/* For package or sub-category share: show Category name at top */}
+                    {(locked.type === 'package' || locked.type === 'sub-category') && categories[0] ? (
                         <div className="flex flex-col items-center gap-1">
                             {/* Category Name - Top, Larger Gold Title */}
                             <h2 className="text-3xl md:text-5xl font-black text-brand-gold uppercase tracking-tighter italic leading-tight">
@@ -112,7 +112,7 @@ export default function Pricelist({ categories, rooms, locked }) {
                             <div className="w-16 h-1.5 bg-brand-gold mt-8 rounded-full"></div>
                         </div>
                     ) : (
-                        /* For other locked types: show locked.name as title */
+                        /* For other locked types (all or category): show locked.name as title */
                         <h1 className="text-3xl md:text-5xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter italic mb-3">
                             {locked.name}
                         </h1>

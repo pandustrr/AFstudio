@@ -65,4 +65,24 @@ class SharedPricelistController extends Controller
             'rooms' => \App\Models\Room::all()
         ]);
     }
+
+    public function subCategory($slug)
+    {
+        $sub = \App\Models\PricelistSubCategory::where('slug', $slug)
+            ->with(['category', 'packages'])
+            ->firstOrFail();
+
+        $cat = $sub->category;
+        $cat->setRelation('subCategories', collect([$sub]));
+
+        return \Inertia\Inertia::render('Pricelist', [
+            'categories' => [$cat],
+            'locked' => [
+                'type' => 'sub-category',
+                'name' => $sub->name,
+                'sub_category_id' => $sub->id
+            ],
+            'rooms' => \App\Models\Room::all()
+        ]);
+    }
 }
