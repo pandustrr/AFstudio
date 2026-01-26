@@ -32,11 +32,13 @@ Route::get('/schedule/check-photographer-availability', [ScheduleController::cla
 // Shared / Locked Routes
 Route::get('/share/SemuaKategori', [\App\Http\Controllers\SharedPricelistController::class, 'all'])->name('share.all');
 Route::get('/share/c/{slug}', [\App\Http\Controllers\SharedPricelistController::class, 'category'])->name('share.category');
+Route::get('/share/s/{slug}', [\App\Http\Controllers\SharedPricelistController::class, 'subCategory'])->name('share.subCategory');
 Route::get('/share/p/{slug}', [\App\Http\Controllers\SharedPricelistController::class, 'package'])->name('share.package');
 
 // Booking Routes (Guest & Auth)
 Route::get('/checkout', [BookingController::class, 'create'])->name('booking.create');
 Route::post('/checkout', [BookingController::class, 'store'])->name('booking.store');
+
 use App\Http\Controllers\Public\PdfController;
 
 Route::get('/booking/{code}', [BookingController::class, 'show'])->name('booking.show');

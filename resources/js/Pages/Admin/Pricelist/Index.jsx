@@ -76,6 +76,7 @@ export default function Index({ categories }) {
         const baseUrl = window.location.origin;
         if (type === 'all') return `${baseUrl}/share/SemuaKategori`;
         if (type === 'category') return `${baseUrl}/share/c/${slug}`;
+        if (type === 'sub-category') return `${baseUrl}/share/s/${slug}`;
         if (type === 'package') return `${baseUrl}/share/p/${slug}`;
         return baseUrl;
     };
@@ -171,6 +172,13 @@ export default function Index({ categories }) {
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <div className="flex items-center gap-2 border-r border-black/10 dark:border-white/10 pr-4 mr-2">
+                                                <button
+                                                    onClick={() => copyToClipboard(getShareLink('sub-category', subCategory.slug))}
+                                                    className="p-1.5 bg-brand-gold/10 text-brand-gold rounded-lg hover:bg-brand-gold hover:text-brand-black transition-all"
+                                                    title="Bagikan Sub-Kategori"
+                                                >
+                                                    <ShareIcon className="w-3.5 h-3.5" />
+                                                </button>
                                                 <button onClick={() => setSubCategoryModal({ show: true, subCategory, categoryId: category.id })} className="p-1.5 bg-black/5 dark:bg-white/5 hover:bg-black hover:text-white dark:hover:bg-brand-gold rounded-lg transition-all"><PencilSquareIcon className="w-3.5 h-3.5" /></button>
                                                 <button onClick={() => setDeleteModal({
                                                     show: true,
@@ -236,14 +244,7 @@ export default function Index({ categories }) {
 
                                                     <div className="flex items-center gap-1.5 justify-end pt-3 border-t border-black/5 dark:border-white/5">
 
-                                                        {/* Package Share Button */}
-                                                        <button
-                                                            onClick={() => copyToClipboard(getShareLink('package', pkg.slug))}
-                                                            className={`p-1.5 rounded-lg transition-all ${pkg.is_popular ? 'bg-white/10 dark:bg-black/10 hover:bg-white/20 dark:hover:bg-black/20 text-white dark:text-brand-black' : 'bg-black/5 dark:bg-white/5 hover:bg-black hover:text-white dark:hover:bg-brand-gold'}`}
-                                                            title="Bagikan Paket"
-                                                        >
-                                                            <ShareIcon className="w-3 h-3" />
-                                                        </button>
+
 
                                                         <button
                                                             onClick={() => setPackageModal({ show: true, pkg, subCategoryId: subCategory.id })}
