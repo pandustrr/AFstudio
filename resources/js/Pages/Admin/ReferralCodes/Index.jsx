@@ -27,16 +27,16 @@ export default function ReferralCodeIndex({ codes }) {
     );
 
     const handleDelete = (id) => {
-        if (confirm('Are you sure you want to delete this referral code?')) {
+        if (confirm('Are you sure you want to delete this voucher code?')) {
             router.delete(`/admin/referral-codes/${id}`, {
-                onSuccess: () => alert('Referral code deleted successfully!'),
+                onSuccess: () => alert('Voucher code deleted successfully!'),
             });
         }
     };
 
     return (
         <AdminLayout>
-            <Head title="Referral Codes" />
+            <Head title="Voucher Codes" />
 
             <div className="pt-16 pb-12 px-6">
                 <div className="max-w-6xl mx-auto">
@@ -44,10 +44,10 @@ export default function ReferralCodeIndex({ codes }) {
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
                         <div>
                             <h1 className="text-3xl md:text-4xl font-black text-brand-black dark:text-brand-white uppercase italic tracking-tighter">
-                                Referral Codes
+                                Voucher Codes
                             </h1>
                             <p className="text-sm text-brand-black/50 dark:text-brand-white/50 font-bold uppercase tracking-widest mt-2">
-                                Manage promotional and referral codes
+                                Manage promotional and voucher codes
                             </p>
                         </div>
                         <Link
@@ -77,7 +77,7 @@ export default function ReferralCodeIndex({ codes }) {
                     <div className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-3xl shadow-xl overflow-hidden">
                         {filteredCodes.length === 0 ? (
                             <div className="p-12 text-center">
-                                <p className="text-brand-black/40 dark:text-brand-white/40 font-bold uppercase">No referral codes found</p>
+                                <p className="text-brand-black/40 dark:text-brand-white/40 font-bold uppercase">No voucher codes found</p>
                             </div>
                         ) : (
                             <div className="overflow-x-auto">

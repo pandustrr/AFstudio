@@ -113,7 +113,7 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                         <>
                             {renderMenuItem({ label: 'About Page', href: `${prefix}/about`, icon: BuildingOfficeIcon })}
                             {renderMenuItem({ label: 'Pricelist', href: `${prefix}/pricelist`, icon: BanknotesIcon })}
-                            {renderMenuItem({ label: 'Referral Codes', href: `${prefix}/referral-codes`, icon: TicketIcon })}
+                            {renderMenuItem({ label: 'Voucher Codes', href: `${prefix}/referral-codes`, icon: TicketIcon })}
 
                             {/* Photographer Group */}
                             {renderGroupHeader('Photographer', UserIcon, openGroups.photographer, () => toggleGroup('photographer'))}

@@ -52,7 +52,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
         setValidatingCode(true);
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
-                             document.querySelector('input[name="_token"]')?.value;
+                document.querySelector('input[name="_token"]')?.value;
 
             const response = await fetch('/api/referral-codes/validate', {
                 method: 'POST',
@@ -282,10 +282,10 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                                 {errors.location && <p className="text-red-500 text-xs font-bold">{errors.location}</p>}
                             </div>
 
-                            {/* Notes */}
+                            {/* Voucher Code */}
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/70 dark:text-brand-white/70">
-                                    <TicketIcon className="w-4 h-4" /> Kode Referral
+                                    <TicketIcon className="w-4 h-4" /> Kode Voucher
                                 </label>
                                 <div className="relative">
                                     <input
@@ -293,7 +293,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                                         value={data.referral_code}
                                         onChange={handleReferralCodeChange}
                                         className="w-full bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white uppercase"
-                                        placeholder="Masukkan kode referral (opsional)"
+                                        placeholder="Masukkan kode voucher (opsional)"
                                     />
                                     {validatingCode && (
                                         <div className="absolute right-4 top-1/2 -translate-y-1/2">

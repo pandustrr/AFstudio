@@ -3,7 +3,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ChevronLeftIcon, TicketIcon, PercentBadgeIcon } from '@heroicons/react/24/outline';
 
-export default function ReferralCodeEdit({ code }) {
+export default function VoucherCodeEdit({ code }) {
     const { data, setData, put, processing, errors } = useForm({
         code: code.code,
         discount_type: code.discount_type,
@@ -14,6 +14,29 @@ export default function ReferralCodeEdit({ code }) {
         max_usage: code.max_usage || '',
     });
 
+    const formatCurrency = (value) => {
+        if (!value) return '';
+        // If it's a number (from DB), convert to string first
+        const strValue = typeof value === 'number' ? value.toString() : value;
+        const number = strValue.replace(/[^0-9]/g, '');
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        }).format(number).replace(/\s/g, ' ').replace('Rp', 'Rp.');
+    };
+
+    const handleDiscountValueChange = (e) => {
+        const val = e.target.value;
+        if (data.discount_type === 'fixed') {
+            const numericValue = val.replace(/[^0-9]/g, '');
+            setData('discount_value', numericValue);
+        } else {
+            setData('discount_value', val);
+        }
+    };
+
     const submit = (e) => {
         e.preventDefault();
         put(`/admin/referral-codes/${code.id}`);
@@ -21,7 +44,7 @@ export default function ReferralCodeEdit({ code }) {
 
     return (
         <AdminLayout>
-            <Head title={`Edit Referral Code - ${code.code}`} />
+            <Head title={`Edit Voucher Code - ${code.code}`} />
 
             <div className="pt-16 pb-12 px-6">
                 <div className="max-w-2xl mx-auto">
@@ -30,14 +53,14 @@ export default function ReferralCodeEdit({ code }) {
                         href="/admin/referral-codes"
                         className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 hover:text-brand-red transition-colors mb-8"
                     >
-                        <ChevronLeftIcon className="w-4 h-4" /> Back to Referral Codes
+                        <ChevronLeftIcon className="w-4 h-4" /> Back to Voucher Codes
                     </Link>
 
                     {/* Header */}
                     <div className="mb-8">
                         <h1 className="text-3xl md:text-4xl font-black text-brand-black dark:text-brand-white uppercase italic tracking-tighter flex items-center gap-3">
                             <TicketIcon className="w-10 h-10 text-brand-red" />
-                            Edit Referral Code
+                            Edit Voucher Code
                         </h1>
                         <p className="text-sm text-brand-black/50 dark:text-brand-white/50 font-bold uppercase tracking-widest mt-2">
                             Update <span className="font-mono text-brand-red">{code.code}</span>
@@ -68,7 +91,13 @@ export default function ReferralCodeEdit({ code }) {
                                 <select
                                     required
                                     value={data.discount_type}
-                                    onChange={e => setData('discount_type', e.target.value)}
+                                    onChange={e => {
+                                        setData(prev => ({
+                                            ...prev,
+                                            discount_type: e.target.value,
+                                            discount_value: ''
+                                        }));
+                                    }}
                                     className="w-full bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white"
                                 >
                                     <option value="percentage">Percentage (%)</option>
@@ -81,16 +110,18 @@ export default function ReferralCodeEdit({ code }) {
                                 <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/70 dark:text-brand-white/70">
                                     Discount Value <span className="text-red-500">*</span>
                                 </label>
-                                <input
-                                    type="number"
-                                    required
-                                    step={data.discount_type === 'percentage' ? '0.01' : '1'}
-                                    min="0.01"
-                                    value={data.discount_value}
-                                    onChange={e => setData('discount_value', e.target.value)}
-                                    placeholder={data.discount_type === 'percentage' ? 'e.g., 20' : 'e.g., 50000'}
-                                    className="w-full bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white"
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={data.discount_type === 'percentage' ? 'number' : 'text'}
+                                        required
+                                        step={data.discount_type === 'percentage' ? '0.01' : '1'}
+                                        min="0.01"
+                                        value={data.discount_type === 'fixed' ? formatCurrency(data.discount_value) : data.discount_value}
+                                        onChange={handleDiscountValueChange}
+                                        placeholder={data.discount_type === 'percentage' ? 'e.g., 20' : 'Rp. 50.000'}
+                                        className="w-full bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white"
+                                    />
+                                </div>
                                 {errors.discount_value && <p className="text-red-500 text-xs font-bold">{errors.discount_value}</p>}
                             </div>
                         </div>
