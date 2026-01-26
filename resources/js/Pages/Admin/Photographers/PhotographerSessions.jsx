@@ -223,45 +223,73 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                         {grid.map((item, index) => (
                             <div
                                 key={index}
-                                className={`p-5 rounded-2xl border transition-all ${item.status === 'open' ? 'bg-brand-gold/5 border-brand-gold/30' :
-                                    item.status === 'booked' ? 'bg-green-500/5 border-green-500/30' :
-                                        'bg-white dark:bg-white/3 border-black/5 dark:border-white/5 opacity-50'
+                                className={`p-5 rounded-2xl border transition-all relative overflow-hidden group ${item.status === 'open'
+                                    ? 'bg-brand-gold/10 border-brand-gold shadow-lg shadow-brand-gold/5'
+                                    : item.status === 'booked'
+                                        ? 'bg-green-500/10 border-green-500/30'
+                                        : 'bg-white dark:bg-white/3 border-black/5 dark:border-white/5 opacity-50'
                                     }`}
                             >
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <p className="text-[8px] font-black uppercase tracking-widest text-brand-black/40 mb-1">Sesi {index + 1}</p>
-                                        <h3 className="text-xl font-black text-brand-black dark:text-brand-white tracking-tighter">{item.time}</h3>
-                                    </div>
-                                    <div className={`px-2 py-0.5 rounded text-[7px] font-black uppercase tracking-widest ${item.status === 'open' ? 'bg-brand-gold/20 text-brand-gold' :
-                                        item.status === 'booked' ? 'bg-green-500/20 text-green-500' :
-                                            'bg-black/10 text-brand-black/40'
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className={`text-[10px] font-black uppercase tracking-widest ${item.status === 'open' ? 'text-brand-gold' :
+                                        item.status === 'booked' ? 'text-green-500' : 'text-brand-black/20 dark:text-brand-white/20'
                                         }`}>
-                                        {item.status}
-                                    </div>
+                                        Sesi {index + 1}
+                                    </span>
+                                    <ClockIcon className={`w-4 h-4 ${item.status === 'open' ? 'text-brand-gold' :
+                                        item.status === 'booked' ? 'text-green-500' : 'text-brand-black/20 dark:text-brand-white/20'
+                                        }`} />
                                 </div>
 
-                                {item.status === 'booked' && item.booking_info && (
-                                    <div className="mb-4 p-3 bg-green-500/10 rounded-xl border border-green-500/20">
-                                        <p className="text-[9px] font-black uppercase text-green-600 truncate">{item.booking_info.customer_name}</p>
-                                        <p className="text-[7px] font-bold uppercase text-brand-black/40 truncate">{item.booking_info.package_name}</p>
-                                    </div>
-                                )}
+                                <h3 className="text-xl font-black text-brand-black dark:text-brand-white tracking-tighter mb-1">
+                                    {item.time}
+                                </h3>
+
+                                <div className="flex items-center gap-1 mb-4">
+                                    {item.status === 'open' ? (
+                                        <>
+                                            <div className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
+                                            <span className="text-[8px] font-black uppercase text-brand-gold">Tersedia</span>
+                                        </>
+                                    ) : item.status === 'booked' ? (
+                                        <div className="flex flex-col gap-1.5 w-full overflow-hidden">
+                                            <div className="flex items-center gap-1">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                <span className="text-[8px] font-black uppercase text-green-500">Terisi</span>
+                                            </div>
+                                            {item.booking_info && (
+                                                <div className="mt-1 flex flex-col gap-0.5 border-t border-green-500/10 pt-1">
+                                                    <p className="text-[9px] font-black text-brand-black dark:text-brand-white uppercase truncate">
+                                                        {item.booking_info.customer_name}
+                                                    </p>
+                                                    <p className="text-[7px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase truncate">
+                                                        {item.booking_info.package_name}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="w-1.5 h-1.5 rounded-full bg-brand-black/20 dark:bg-brand-white/20" />
+                                            <span className="text-[8px] font-black uppercase text-brand-black/20 dark:text-brand-white/20">Kosong</span>
+                                        </>
+                                    )}
+                                </div>
 
                                 {item.status !== 'off' && (
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => openOffsetModal(item)}
-                                            className="flex-1 bg-black dark:bg-white text-white dark:text-brand-black p-2 rounded-lg flex items-center justify-center gap-2 hover:scale-105 transition-all"
+                                            className="flex-1 bg-black dark:bg-white text-white dark:text-brand-black p-2 rounded-lg flex items-center justify-center gap-2 hover:scale-105 transition-all shadow-sm"
                                         >
-                                            <AdjustmentsHorizontalIcon className="w-4 h-4" />
+                                            <AdjustmentsHorizontalIcon className="w-3.5 h-3.5" />
                                             <span className="text-[8px] font-black uppercase">Offset</span>
                                         </button>
                                         <button
                                             onClick={() => openRescheduleModal(item)}
-                                            className="flex-1 bg-brand-gold text-brand-black p-2 rounded-lg flex items-center justify-center gap-2 hover:scale-105 transition-all"
+                                            className="flex-1 bg-brand-gold text-brand-black p-2 rounded-lg flex items-center justify-center gap-2 hover:scale-105 transition-all shadow-sm"
                                         >
-                                            <ArrowsRightLeftIcon className="w-4 h-4" />
+                                            <ArrowsRightLeftIcon className="w-3.5 h-3.5" />
                                             <span className="text-[8px] font-black uppercase tracking-widest">Move</span>
                                         </button>
                                     </div>

@@ -184,10 +184,22 @@ export default function Sessions({ grid, selectedDate, filters, options }) {
                                         <span className="text-[8px] font-black uppercase text-brand-gold">Tersedia</span>
                                     </>
                                 ) : item.status === 'booked' ? (
-                                    <>
-                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                        <span className="text-[8px] font-black uppercase text-green-500">Terisi</span>
-                                    </>
+                                    <div className="flex flex-col gap-1.5 w-full overflow-hidden">
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                            <span className="text-[8px] font-black uppercase text-green-500">Terisi</span>
+                                        </div>
+                                        {item.booking_info && (
+                                            <div className="mt-1 flex flex-col gap-0.5 border-t border-green-500/10 pt-1">
+                                                <p className="text-[9px] font-black text-brand-black dark:text-brand-white uppercase truncate">
+                                                    {item.booking_info.customer_name}
+                                                </p>
+                                                <p className="text-[7px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase truncate">
+                                                    {item.booking_info.package_name}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
                                 ) : (
                                     <>
                                         <XCircleIcon className="w-3 h-3 text-brand-black/20 dark:text-brand-white/20" />

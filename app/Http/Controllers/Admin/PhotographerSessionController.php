@@ -28,6 +28,7 @@ class PhotographerSessionController extends Controller
 
         $sessions = PhotographerSession::where('date', $date)
             ->where('photographer_id', $photographerId)
+            ->with(['bookingItem.booking'])
             ->orderBy('start_time')
             ->get();
 
@@ -272,7 +273,7 @@ class PhotographerSessionController extends Controller
                 'status' => $session ? $session->status : 'off',
                 'session_id' => $session ? $session->id : null,
                 'booking_item_id' => $session ? $session->booking_item_id : null,
-                'booking_info' => $session && $session->bookingItem ? [
+                'booking_info' => $session && $session->bookingItem && $session->bookingItem->booking->status !== 'cancelled' ? [
                     'customer_name' => $session->bookingItem->booking->name ?? 'GUEST',
                     'package_name' => $session->bookingItem->package->name ?? 'N/A',
                 ] : null,
@@ -294,6 +295,9 @@ class PhotographerSessionController extends Controller
         // Get all booked sessions for this photographer with booking details
         $query = PhotographerSession::where('photographer_id', $photographerId)
             ->where('status', 'booked')
+            ->whereHas('bookingItem.booking', function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            })
             ->with(['bookingItem.booking', 'bookingItem.package']);
 
         // Apply UID filter if provided

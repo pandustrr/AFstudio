@@ -46,6 +46,11 @@ class BookingController extends Controller
             $query->whereHas('booking', function ($q) use ($status) {
                 $q->where('status', $status);
             });
+        } else {
+            // Default: hide cancelled bookings when viewing all
+            $query->whereHas('booking', function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            });
         }
 
         // Filter by Date Parts
@@ -132,7 +137,7 @@ class BookingController extends Controller
 
     public function show(Booking $booking)
     {
-        $booking->load(['items.package.subCategory', 'user', 'paymentProof']);
+        $booking->load(['items.package.subCategory', 'items.photographer', 'user', 'paymentProof']);
 
         return Inertia::render('Admin/Bookings/Show', [
             'booking' => $booking,
@@ -146,24 +151,61 @@ class BookingController extends Controller
             'status' => 'required|in:pending,confirmed,completed,cancelled',
         ]);
 
-        $booking->update([
-            'status' => $request->status,
-        ]);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($request, $booking) {
+            $oldStatus = $booking->status;
+            $newStatus = $request->status;
 
-        // Auto-create Photo Session if Confirmed
-        if ($request->status === 'confirmed') {
-            $uid = $booking->guest_uid ?? $booking->booking_code;
+            $booking->update([
+                'status' => $newStatus,
+            ]);
 
-            // Register to Photo Selector system
-            PhotoEditing::updateOrCreate(
-                ['uid' => $uid],
-                [
-                    'customer_name' => $booking->name,
-                    'status' => 'pending',
-                    // raw_folder_id is nullable now, Admin will fill it later
-                ]
-            );
-        }
+            // Release photographer slots if the new status is cancelled
+            if ($newStatus === 'cancelled') {
+                // Get ALL items associated with this booking
+                $itemIds = \Illuminate\Support\Facades\DB::table('booking_items')
+                    ->where('booking_id', $booking->id)
+                    ->pluck('id')
+                    ->toArray();
+
+                if (!empty($itemIds)) {
+                    // Use DB::table for maximum reliability and to bypass any Eloquent event issues
+                    \Illuminate\Support\Facades\DB::table('photographer_sessions')
+                        ->whereIn('booking_item_id', $itemIds)
+                        ->update([
+                            'booking_item_id' => null,
+                            'status' => 'open',
+                            'cart_uid' => null,
+                            'updated_at' => now()
+                        ]);
+                }
+
+                // Additional safety: Release any session with this guest UID
+                if ($booking->guest_uid) {
+                    \Illuminate\Support\Facades\DB::table('photographer_sessions')
+                        ->where('cart_uid', $booking->guest_uid)
+                        ->where('status', 'booked')
+                        ->update([
+                            'booking_item_id' => null,
+                            'status' => 'open',
+                            'cart_uid' => null,
+                            'updated_at' => now()
+                        ]);
+                }
+            }
+
+            // Auto-create Photo Session if Confirmed
+            if ($newStatus === 'confirmed' && $oldStatus !== 'confirmed') {
+                $uid = $booking->guest_uid ?? $booking->booking_code;
+
+                PhotoEditing::updateOrCreate(
+                    ['uid' => $uid],
+                    [
+                        'customer_name' => $booking->name,
+                        'status' => 'pending',
+                    ]
+                );
+            }
+        });
 
         return redirect()->back()->with('success', 'Booking status updated successfully.');
     }
@@ -184,7 +226,7 @@ class BookingController extends Controller
 
     public function downloadInvoice(Booking $booking)
     {
-        $booking->load(['items.package.subCategory', 'user', 'paymentProof']);
+        $booking->load(['items.package.subCategory', 'items.photographer', 'user', 'paymentProof']);
 
         $pdf = PDF::loadView('pdf.invoice', compact('booking'))
             ->setOptions([

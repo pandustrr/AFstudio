@@ -119,7 +119,7 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                             {renderGroupHeader('Photographer', UserIcon, openGroups.photographer, () => toggleGroup('photographer'))}
                             {openGroups.photographer && (
                                 <div className="space-y-1 mb-2">
-                                    {renderMenuItem({ label: 'Reservations', href: `${prefix}/bookings`, icon: CalendarDaysIcon }, true)}
+                                    {renderMenuItem({ label: 'List Booking', href: `${prefix}/bookings`, icon: CalendarDaysIcon }, true)}
                                     {renderMenuItem({ label: 'Manage FG', href: `${prefix}/photographers`, icon: UserIcon }, true)}
                                     {renderMenuItem({ label: 'Monitoring FG', href: `/admin/photographer-sessions`, icon: CalendarDaysIcon }, true)}
                                 </div>
@@ -141,7 +141,7 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                     {user.role === 'photographer' && (
                         <div className="space-y-1">
                             {renderMenuItem({ label: 'Jadwal Sesi', href: `${prefix}/sessions`, icon: CalendarDaysIcon })}
-                            {renderMenuItem({ label: 'Jadwal Reservasi', href: `${prefix}/reservations`, icon: CalendarDaysIcon })}
+                            {renderMenuItem({ label: 'List Booking', href: `${prefix}/reservations`, icon: CalendarDaysIcon })}
                         </div>
                     )}
 
