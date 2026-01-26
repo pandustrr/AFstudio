@@ -203,7 +203,7 @@ export default function VoucherCodeEdit({ code }) {
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="flex-1 py-3 bg-brand-red text-white font-black uppercase tracking-[0.2em] rounded-xl hover:bg-brand-gold hover:text-brand-black transition-all shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
+                                className="flex-1 py-3 bg-brand-gold text-brand-black font-black uppercase tracking-[0.2em] rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-brand-gold/20 disabled:opacity-70 disabled:cursor-not-allowed"
                             >
                                 {processing ? 'Saving...' : 'Save Changes'}
                             </button>
