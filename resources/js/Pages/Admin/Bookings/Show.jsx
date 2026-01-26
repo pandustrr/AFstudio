@@ -111,24 +111,26 @@ export default function BookingShow({ booking, photographers = [] }) {
                         </div>
 
                         {/* Status Actions (Compact) */}
-                        <div className="flex flex-wrap gap-2">
-                            {booking.status === 'confirmed' && (
-                                <button
-                                    onClick={() => updateStatus('completed')}
-                                    disabled={processing}
-                                    className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg"
-                                >
-                                    <CheckCircleIcon className="w-4 h-4" /> Mark Completed
-                                </button>
-                            )}
+                        <div className="flex flex-col items-end gap-2">
+                            <div className="flex flex-wrap gap-2">
+                                {booking.status === 'confirmed' && (
+                                    <button
+                                        onClick={() => updateStatus('completed')}
+                                        disabled={processing}
+                                        className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg"
+                                    >
+                                        <CheckCircleIcon className="w-4 h-4" /> Mark Completed
+                                    </button>
+                                )}
+                            </div>
 
                             {booking.status === 'cancelled' && (
                                 <button
                                     onClick={() => updateStatus('pending')}
                                     disabled={processing}
-                                    className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all"
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all mt-2"
                                 >
-                                    <ArrowPathIcon className="w-4 h-4" /> Reset
+                                    <ArrowPathIcon className="w-4 h-4" /> Kembali ke Status Pending
                                 </button>
                             )}
                         </div>
