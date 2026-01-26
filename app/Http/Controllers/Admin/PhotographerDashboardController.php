@@ -13,15 +13,24 @@ class PhotographerDashboardController extends Controller
     public function index()
     {
         $photographerId = \Illuminate\Support\Facades\Auth::id();
+        $today = now()->toDateString();
 
-        // Stats for this photographer
+        // Stats for this photographer - only for today
         $stats = [
-            'total_sessions' => \App\Models\PhotographerSession::where('photographer_id', $photographerId)->count(),
-            'booked_sessions' => \App\Models\PhotographerSession::where('photographer_id', $photographerId)->where('status', 'booked')->count(),
-            'open_sessions' => \App\Models\PhotographerSession::where('photographer_id', $photographerId)->where('status', 'open')->count(),
+            'total_sessions' => \App\Models\PhotographerSession::where('photographer_id', $photographerId)
+                ->where('date', $today)
+                ->count(),
+            'booked_sessions' => \App\Models\PhotographerSession::where('photographer_id', $photographerId)
+                ->where('date', $today)
+                ->where('status', 'booked')
+                ->count(),
+            'open_sessions' => \App\Models\PhotographerSession::where('photographer_id', $photographerId)
+                ->where('date', $today)
+                ->where('status', 'open')
+                ->count(),
             'upcoming_sessions' => \App\Models\PhotographerSession::where('photographer_id', $photographerId)
                 ->where('status', 'booked')
-                ->where('date', '>=', now()->toDateString())
+                ->where('date', '>=', $today)
                 ->count(),
         ];
 

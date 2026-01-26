@@ -2,7 +2,7 @@ import React from 'react';
 import AdminLayout from '../../Layouts/AdminLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 
-export default function Dashboard() {
+export default function Dashboard({ stats }) {
     const { auth } = usePage().props;
 
     const handleLogout = () => {
@@ -38,10 +38,10 @@ export default function Dashboard() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {/* Stats */}
                         {[
-                            { label: 'Sesi Foto', value: '1,234', color: 'brand-red' },
-                            { label: 'Booking Baru', value: '8', color: 'brand-gold' },
-                            { label: 'Reservasi', value: '45', color: 'brand-black' },
-                            { label: 'Ulasan', value: '12', color: 'brand-red' },
+                            { label: 'Sesi Foto', value: stats.total_sessions, color: 'brand-red' },
+                            { label: 'Booking Baru', value: stats.new_bookings, color: 'brand-gold' },
+                            { label: 'Reservasi', value: stats.reservations, color: 'brand-black' },
+                            { label: 'Ulasan', value: stats.reviews, color: 'brand-red' },
                         ].map((stat, i) => (
                             <div key={i} className="bg-white dark:bg-white/3 border border-black/5 dark:border-white/5 rounded-3xl p-8 shadow-xl">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-4">{stat.label}</p>

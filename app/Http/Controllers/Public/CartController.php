@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cart;
+use App\Models\Booking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -18,18 +19,37 @@ class CartController extends Controller
     {
         $uid = $request->header('X-Cart-UID') ?? $request->input('uid') ?? $request->query('uid') ?? $request->input('cart_uid') ?? $request->query('cart_uid');
 
+        // Get current cart items
         $query = Cart::with(['package.subCategory.category'])->latest();
 
         if (Auth::check()) {
             $query->where('user_id', Auth::id());
         } elseif ($uid) {
             $query->where('cart_uid', $uid);
-        } else {
-            return Inertia::render('Cart/Index', ['carts' => []]);
         }
 
+        $carts = $query->get();
+
+        // Get transaction history (completed bookings) - always fetch regardless of cart status
+        $transactionHistoryQuery = Booking::query();
+
+        if ($uid) {
+            $transactionHistoryQuery->where('guest_uid', $uid);
+        } elseif (Auth::check()) {
+            $transactionHistoryQuery->where('user_id', Auth::id());
+        } else {
+            $transactionHistoryQuery = Booking::whereRaw('1 = 0'); // Return empty if no identifier
+        }
+
+        $transactionHistory = $transactionHistoryQuery
+            ->with(['items.package.subCategory.category', 'paymentProof'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return Inertia::render('Cart/Index', [
-            'carts' => $query->get(),
+            'carts' => $carts,
+            'transactionHistory' => $transactionHistory,
+            'uid' => $uid,
         ]);
     }
 
@@ -210,12 +230,12 @@ class CartController extends Controller
             $assignedPhotographer = null;
             $sessionIds = [];
             $photographers = \App\Models\User::where('role', 'photographer')->get();
-            
+
             foreach ($photographers as $photographer) {
                 // Calculate sessions needed (30 minutes per session)
                 $durationInMinutes = abs($endTime->diffInMinutes($startTime));
                 $sessionsNeeded = ceil($durationInMinutes / 30);
-                
+
                 // Generate required time slots (H:i:s format)
                 $slots = [];
                 $time = $startTime->copy();
@@ -223,14 +243,14 @@ class CartController extends Controller
                     $slots[] = $time->format('H:i:s');
                     $time->addMinutes(30);
                 }
-                
+
                 // Check if photographer has all required sessions available
                 $availableSessions = $photographer->sessions()
                     ->where('date', $request->scheduled_date)
                     ->whereIn('start_time', $slots)
                     ->where('status', 'open')
                     ->get();
-                
+
                 if ($availableSessions->count() === count($slots)) {
                     $assignedPhotographer = $photographer->id;
                     $sessionIds = $availableSessions->pluck('id')->toArray();

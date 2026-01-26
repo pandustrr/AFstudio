@@ -37,7 +37,10 @@ Route::get('/share/p/{slug}', [\App\Http\Controllers\SharedPricelistController::
 // Booking Routes (Guest & Auth)
 Route::get('/checkout', [BookingController::class, 'create'])->name('booking.create');
 Route::post('/checkout', [BookingController::class, 'store'])->name('booking.store');
+use App\Http\Controllers\Public\PdfController;
+
 Route::get('/booking/{code}', [BookingController::class, 'show'])->name('booking.show');
+Route::get('/pdf/booking/{bookingCode}', [PdfController::class, 'bookingInvoice'])->name('booking.pdf');
 Route::post('/checkout/upload-proof', [BookingController::class, 'uploadProof'])->name('checkout.upload-proof');
 Route::get('/api/booking/{id}/proof-status', [BookingController::class, 'getProofStatus']);
 
@@ -91,9 +94,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/logout', [\App\Http\Controllers\AuthController::class, 'logout'])->name('logout');
 
     Route::middleware(['auth:web', 'role:admin'])->group(function () {
-        Route::get('/dashboard', function () {
-            return Inertia::render('Admin/Dashboard');
-        })->name('admin.dashboard');
+        Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('admin.dashboard');
 
         Route::resource('photo-editing', PhotoEditingController::class)->names('admin.photo-editing');
         Route::patch('/reviews/{review}/toggle', [\App\Http\Controllers\Admin\ReviewController::class, 'toggleVisibility'])->name('admin.reviews.toggle');

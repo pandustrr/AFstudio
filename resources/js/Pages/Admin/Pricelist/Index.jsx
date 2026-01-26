@@ -7,6 +7,7 @@ import ManageCategoriesModal from './Partials/ManageCategoriesModal';
 import SubCategoryModal from './Partials/SubCategoryModal';
 import PackageModal from './Partials/PackageModal';
 import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
+import EditNotif from '@/Components/EditNotif';
 
 export default function Index({ categories }) {
     const [activeCategoryId, setActiveCategoryId] = useState(categories[0]?.id || null);
@@ -16,6 +17,17 @@ export default function Index({ categories }) {
     const [subCategoryModal, setSubCategoryModal] = useState({ show: false, subCategory: null, categoryId: null });
     const [packageModal, setPackageModal] = useState({ show: false, pkg: null, subCategoryId: null });
     const [deleteModal, setDeleteModal] = useState({ show: false, type: '', id: null, title: '', message: '' });
+
+    // Notification State
+    const [showNotif, setShowNotif] = useState(false);
+    const [notifMessage, setNotifMessage] = useState('');
+    const [notifType, setNotifType] = useState('success');
+
+    const handleNotification = (message, type = 'success') => {
+        setNotifMessage(message);
+        setNotifType(type);
+        setShowNotif(true);
+    };
 
     const handleDelete = () => {
         const { type, id } = deleteModal;
@@ -50,15 +62,13 @@ export default function Index({ categories }) {
         return `${hours}h ${minutes}m`;
     };
 
-    const [copyNotification, setCopyNotification] = useState(null);
-
     const copyToClipboard = async (text) => {
         try {
             await navigator.clipboard.writeText(text);
-            setCopyNotification('Tautan berhasil disalin!');
-            setTimeout(() => setCopyNotification(null), 5000);
+            handleNotification('Tautan berhasil disalin!', 'success');
         } catch (err) {
             console.error('Failed to copy: ', err);
+            handleNotification('Gagal menyalin tautan!', 'error');
         }
     };
 
@@ -270,35 +280,33 @@ export default function Index({ categories }) {
                 ))}
             </div>
 
-            {/* Notification Toast */}
-            {
-                copyNotification && (
-                    <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                        <div className="bg-brand-black dark:bg-brand-gold text-white dark:text-brand-black px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest shadow-2xl flex items-center gap-3">
-                            <ShareIcon className="w-4 h-4" />
-                            {copyNotification}
-                        </div>
-                    </div>
-                )
-            }
-
             {/* Modals */}
+            <EditNotif
+                show={showNotif}
+                onClose={() => setShowNotif(false)}
+                message={notifMessage}
+                type={notifType}
+            />
+
             <ManageCategoriesModal
                 isOpen={manageCategoriesModal}
                 onClose={() => setManageCategoriesModal(false)}
                 categories={categories}
+                onSuccess={handleNotification}
             />
             <SubCategoryModal
                 isOpen={subCategoryModal.show}
                 onClose={() => setSubCategoryModal({ show: false, subCategory: null, categoryId: null })}
                 subCategory={subCategoryModal.subCategory}
                 categoryId={subCategoryModal.categoryId}
+                onSuccess={handleNotification}
             />
             <PackageModal
                 isOpen={packageModal.show}
                 onClose={() => setPackageModal({ show: false, pkg: null, subCategoryId: null })}
                 pkg={packageModal.pkg}
                 subCategoryId={packageModal.subCategoryId}
+                onSuccess={handleNotification}
             />
             <DeleteConfirmModal
                 isOpen={deleteModal.show}
