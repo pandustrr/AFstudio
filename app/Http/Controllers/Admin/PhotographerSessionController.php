@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PhotographerSession;
+use App\Models\PhotographerDateMark;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
@@ -102,12 +103,20 @@ class PhotographerSessionController extends Controller
             ->groupBy('date')
             ->pluck('count', 'date');
 
+        // Get Monthly Marks
+        $dateMarks = PhotographerDateMark::where('photographer_id', $photographerId)
+            ->whereYear('date', $currentViewYear)
+            ->whereMonth('date', $currentViewMonth)
+            ->get()
+            ->keyBy('date');
+
         return Inertia::render('Photographer/Sessions', [
             'grid' => $grid,
             'selectedDate' => $date,
-            'monthlyStats' => $monthlyStats, // Add this
+            'monthlyStats' => $monthlyStats,
+            'dateMarks' => $dateMarks,
             'filters' => [
-                'year' => (string) $year, // Cast to string for consistency
+                'year' => (string) $year,
                 'month' => (string) $month,
                 'day' => (string) $day,
             ],
@@ -178,12 +187,23 @@ class PhotographerSessionController extends Controller
                 ->pluck('count', 'date');
         }
 
+        // Get Monthly Marks
+        $dateMarks = [];
+        if ($photographerId) {
+            $dateMarks = PhotographerDateMark::where('photographer_id', $photographerId)
+                ->whereYear('date', $currentViewYear)
+                ->whereMonth('date', $currentViewMonth)
+                ->get()
+                ->keyBy('date');
+        }
+
         return Inertia::render('Admin/Photographers/PhotographerSessions', [
             'photographers' => $photographers,
             'grid' => $grid,
             'selectedDate' => $date,
             'selectedPhotographerId' => $photographerId,
             'monthlyStats' => $monthlyStats,
+            'dateMarks' => $dateMarks,
             'filters' => [
                 'year' => (string)$year,
                 'month' => (string)$month,
@@ -391,5 +411,31 @@ class PhotographerSessionController extends Controller
             'allSessions' => $allSessions->isEmpty() ? [] : $allSessions->toArray(),
             'selectedSessionId' => $uidFilter
         ]);
+    }
+    public function updateDateMark(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date',
+            'color' => 'nullable|string',
+            'label' => 'nullable|string',
+            'photographer_id' => 'nullable|exists:users,id',
+        ]);
+
+        $photographerId = Auth::user()->role === 'admin'
+            ? ($request->photographer_id ?? Auth::id())
+            : Auth::id();
+
+        PhotographerDateMark::updateOrCreate(
+            [
+                'photographer_id' => $photographerId,
+                'date' => $request->date,
+            ],
+            [
+                'color' => $request->color,
+                'label' => $request->label,
+            ]
+        );
+
+        return back()->with('success', 'Mark tanggal berhasil diperbarui');
     }
 }

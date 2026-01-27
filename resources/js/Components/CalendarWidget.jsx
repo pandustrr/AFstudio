@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
-const CalendarWidget = ({ selectedDate, onDateSelect, monthlyStats = {}, availableYears = [] }) => {
+const CalendarWidget = ({ selectedDate, onDateSelect, monthlyStats = {}, availableYears = [], dateMarks = {} }) => {
     // Current view state
     const [viewDate, setViewDate] = useState(new Date(selectedDate));
     const [showYearSelector, setShowYearSelector] = useState(false);
@@ -61,7 +61,8 @@ const CalendarWidget = ({ selectedDate, onDateSelect, monthlyStats = {}, availab
                 type: 'current',
                 date: dateObj,
                 dateStr: dateStr,
-                stats: monthlyStats[dateStr] || 0
+                stats: monthlyStats[dateStr] || 0,
+                mark: dateMarks[dateStr] || null
             });
         }
 
@@ -78,7 +79,7 @@ const CalendarWidget = ({ selectedDate, onDateSelect, monthlyStats = {}, availab
         }
 
         return daysArray;
-    }, [currentYear, currentMonth, monthlyStats]);
+    }, [currentYear, currentMonth, monthlyStats, dateMarks]);
 
     const isSelected = (date) => {
         if (!date) return false;
@@ -126,8 +127,8 @@ const CalendarWidget = ({ selectedDate, onDateSelect, monthlyStats = {}, availab
                                 key={year}
                                 onClick={() => handleYearChange(year)}
                                 className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${year === currentYear
-                                        ? 'bg-brand-gold text-white shadow-lg shadow-brand-gold/20 scale-110'
-                                        : 'text-brand-black/70 dark:text-white/70 hover:text-brand-gold hover:bg-black/5 dark:hover:bg-white/5'
+                                    ? 'bg-brand-gold text-white shadow-lg shadow-brand-gold/20 scale-110'
+                                    : 'text-brand-black/70 dark:text-white/70 hover:text-brand-gold hover:bg-black/5 dark:hover:bg-white/5'
                                     }`}
                             >
                                 {year}
@@ -165,46 +166,58 @@ const CalendarWidget = ({ selectedDate, onDateSelect, monthlyStats = {}, availab
                         <button
                             key={idx}
                             onClick={() => onDateSelect(item.date)}
-                            className="relative flex flex-col items-center justify-start group"
+                            className="relative flex items-center justify-center group"
                             style={{ width: '40px', height: '40px' }}
                         >
                             {selected ? (
                                 // Selected State
-                                <div className="absolute top-0 w-[42px] h-[48px] -mt-2 bg-brand-gold border border-brand-gold rounded-lg flex flex-col items-center shadow-xl shadow-brand-gold/20 z-20">
-                                    {/* Decoration top */}
-                                    <div className="w-full h-[3px] bg-white rounded-t-sm mb-2 opacity-50"></div>
+                                <div className="absolute top-0 w-[42px] h-[48px] -mt-2 bg-brand-gold border border-brand-gold rounded-lg flex flex-col items-center justify-center shadow-xl shadow-brand-gold/20 z-20">
                                     <span className="text-xl font-black text-white">{item.day}</span>
-
-                                    {/* Inner decoration lines */}
-                                    <div className="mt-auto mb-2 flex flex-col gap-[3px] w-full items-center px-1">
-                                        <div className="w-full h-[2px] bg-white"></div>
-                                        <div className="w-full h-[2px] bg-white opacity-50"></div>
-                                    </div>
+                                    {/* Small dot if marked and selected */}
+                                    {item.mark && item.mark.color && (
+                                        <div
+                                            className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-white z-30"
+                                        />
+                                    )}
                                 </div>
                             ) : (
-                                // Normal State
                                 <>
-                                    <span className={`text-sm font-black transition-colors ${isSun ? 'text-red-600' : 'text-brand-black dark:text-white'} group-hover:text-brand-gold`}>
+                                    {/* Mark Color Indicator (Subtle background) */}
+                                    {item.mark && item.mark.color && (
+                                        <div
+                                            className="absolute inset-[2px] rounded-xl opacity-20 z-0"
+                                            style={{ backgroundColor: item.mark.color }}
+                                        />
+                                    )}
+
+                                    {/* Mark Label Dot */}
+                                    {item.mark && item.mark.color && (
+                                        <div
+                                            className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full z-10 animate-pulse shadow-[0_0_5px_rgba(0,0,0,0.2)]"
+                                            style={{ backgroundColor: item.mark.color }}
+                                        />
+                                    )}
+
+                                    <span className={`text-sm font-black transition-colors relative z-10 ${isSun ? 'text-red-600' : 'text-brand-black dark:text-white'} group-hover:text-brand-gold`}>
                                         {item.day}
                                     </span>
 
                                     {/* Indicators */}
                                     {hasStats && (
-                                        <div className="absolute -bottom-2 flex flex-col gap-[2px] items-center">
+                                        <div className="absolute -bottom-1 flex flex-col gap-[1.5px] items-center">
                                             {item.stats > 2 ? (
                                                 <>
-                                                    <div className={`w-6 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'}`}></div>
-                                                    <div className={`w-6 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'} opacity-70`}></div>
-                                                    <div className={`w-6 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'} opacity-40`}></div>
-                                                    <div className={`w-6 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'} opacity-20`}></div>
+                                                    <div className={`w-5 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'}`}></div>
+                                                    <div className={`w-5 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'} opacity-70`}></div>
+                                                    <div className={`w-5 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'} opacity-40`}></div>
                                                 </>
                                             ) : item.stats > 1 ? (
                                                 <>
-                                                    <div className={`w-6 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'}`}></div>
-                                                    <div className={`w-6 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'} opacity-50`}></div>
+                                                    <div className={`w-5 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'}`}></div>
+                                                    <div className={`w-5 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'} opacity-50`}></div>
                                                 </>
                                             ) : (
-                                                <div className={`w-6 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'}`}></div>
+                                                <div className={`w-5 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'}`}></div>
                                             )}
                                         </div>
                                     )}
@@ -214,7 +227,7 @@ const CalendarWidget = ({ selectedDate, onDateSelect, monthlyStats = {}, availab
                     );
                 })}
             </div>
-        </div>
+        </div >
     );
 };
 

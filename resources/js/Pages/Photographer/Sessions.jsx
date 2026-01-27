@@ -8,7 +8,27 @@ import {
 } from '@heroicons/react/24/outline';
 import CalendarWidget from '../../Components/CalendarWidget';
 
-export default function Sessions({ grid, selectedDate, filters, options, monthlyStats }) {
+export default function Sessions({ grid, selectedDate, filters, options, monthlyStats, dateMarks }) {
+    const markColors = [
+        { name: 'Default', value: null, class: 'bg-black/5 dark:bg-white/10' },
+        { name: 'Red', value: '#ef4444', class: 'bg-red-500' },
+        { name: 'Blue', value: '#3b82f6', class: 'bg-blue-500' },
+        { name: 'Green', value: '#22c55e', class: 'bg-green-500' },
+        { name: 'Purple', value: '#a855f7', class: 'bg-purple-500' },
+        { name: 'Gold', value: '#FFD700', class: 'bg-brand-gold' },
+    ];
+
+    const currentMark = dateMarks[selectedDate] || null;
+
+    const handleMarkColor = (color) => {
+        router.post('/photographer/sessions/mark', {
+            date: selectedDate,
+            color: color
+        }, {
+            preserveScroll: true
+        });
+    };
+
     const handleToggle = (time_full, status) => {
         if (status === 'booked') return;
 
@@ -57,8 +77,37 @@ export default function Sessions({ grid, selectedDate, filters, options, monthly
                                 selectedDate={selectedDate}
                                 onDateSelect={handleDateSelect}
                                 monthlyStats={monthlyStats}
+                                dateMarks={dateMarks}
                                 availableYears={options.years}
                             />
+
+                            {/* Mark Color Section */}
+                            <div className="mt-6 bg-white dark:bg-white/5 p-5 rounded-3xl border border-black/5 dark:border-white/5 shadow-sm">
+                                <h3 className="text-[10px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-widest mb-4">
+                                    Mark Tanggal
+                                </h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {markColors.map((c) => (
+                                        <button
+                                            key={c.name}
+                                            onClick={() => handleMarkColor(c.value)}
+                                            className={`w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center
+                                                ${c.class}
+                                                ${currentMark?.color === c.value || (c.value === null && !currentMark?.color)
+                                                    ? 'border-brand-gold scale-110 shadow-lg'
+                                                    : 'border-transparent hover:scale-105'
+                                                }`}
+                                            title={c.name}
+                                        >
+                                            {c.value === null && <div className="w-1 h-1 bg-black/20 dark:bg-white/20 rounded-full" />}
+                                        </button>
+                                    ))}
+                                </div>
+                                <p className="mt-3 text-[8px] font-bold text-brand-black/30 dark:text-brand-white/30 uppercase italic">
+                                    * Klik warna untuk menandai tanggal terpilih di kalender
+                                </p>
+                            </div>
+
 
                             {/* Schedule Preview Section */}
                             <div className="mt-6 bg-white dark:bg-white/5 p-5 rounded-3xl border border-black/5 dark:border-white/5 shadow-sm">
