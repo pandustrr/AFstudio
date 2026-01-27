@@ -70,6 +70,8 @@ Route::prefix('editor')->group(function () {
         Route::get('/dashboard', [EditorDashboardController::class, 'index'])->name('editor.dashboard');
 
         Route::resource('photo-editing', PhotoEditingController::class)->names('editor.photo-editing');
+        Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('editor.profile.edit');
+        Route::post('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('editor.profile.update');
     });
 });
 
@@ -87,6 +89,8 @@ Route::prefix('photographer')->group(function () {
         Route::post('/sessions/mark', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'updateDateMark'])->name('photographer.sessions.mark');
 
         Route::get('/reservations', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'reservations'])->name('photographer.reservations');
+        Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('photographer.profile.edit');
+        Route::post('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('photographer.profile.update');
     });
 });
 
@@ -149,5 +153,8 @@ Route::prefix('admin')->group(function () {
         // Referral Codes
         Route::resource('referral-codes', \App\Http\Controllers\Admin\ReferralCodeController::class)
             ->names('admin.referral-codes');
+
+        Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('admin.profile.edit');
+        Route::post('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('admin.profile.update');
     });
 });

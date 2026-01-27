@@ -299,7 +299,7 @@ export default function BookingShow({ booking, photographers = [] }) {
                             {/* Paket & Jadwal Booking */}
                             <section className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-3xl p-8 shadow-xl">
                                 <h2 className="text-sm font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-6 flex items-center gap-2">
-                                    <CalendarIcon className="w-4 h-4" /> Paket & Jadwal Terjadi
+                                    <CalendarIcon className="w-4 h-4" /> Paket & Jadwal 
                                 </h2>
                                 <div className="space-y-6">
                                     {booking.items.map((item) => (
@@ -319,20 +319,43 @@ export default function BookingShow({ booking, photographers = [] }) {
                                                         </div>
                                                         <div className="flex items-center gap-2 text-xs font-bold text-brand-black/60 dark:text-brand-white/60">
                                                             <ClockIcon className="w-4 h-4" />
-                                                            {item.start_time.substring(0, 5)} - {item.end_time.substring(0, 5)}
+                                                            {item.start_time !== item.adjusted_start_time ? (
+                                                                <div className="flex flex-col">
+                                                                    <span className="line-through opacity-40 text-[10px] leading-tight">
+                                                                        {item.start_time.substring(0, 5)} - {item.end_time.substring(0, 5)}
+                                                                    </span>
+                                                                    <span className="text-brand-red font-black">
+                                                                        {item.adjusted_start_time.substring(0, 5)} - {item.adjusted_end_time.substring(0, 5)}
+                                                                    </span>
+                                                                </div>
+                                                            ) : (
+                                                                <span>{item.start_time.substring(0, 5)} - {item.end_time.substring(0, 5)}</span>
+                                                            )}
                                                         </div>
                                                         <div className="flex items-center gap-3">
                                                             <div className="flex items-center gap-2 text-xs font-bold text-brand-black/60 dark:text-brand-white/60">
                                                                 <UserIcon className="w-4 h-4 text-brand-red" />
-                                                                <span className={`px-2 py-0.5 rounded-lg ${item.photographer ? 'bg-brand-gold/10 text-brand-gold' : 'bg-gray-100 text-gray-400'} text-[10px] font-black uppercase tracking-tight`}>
-                                                                    {item.photographer?.name || 'Belum Ditentukan'}
-                                                                </span>
+                                                                <div className="flex flex-col">
+                                                                    <span className={`px-2 py-0.5 rounded-lg ${item.photographer ? 'bg-brand-gold/10 text-brand-gold' : 'bg-gray-100 text-gray-400'} text-[10px] font-black uppercase tracking-tight w-fit`}>
+                                                                        {item.photographer?.name || 'Belum Ditentukan'}
+                                                                    </span>
+                                                                    {item.photographer?.phone && (
+                                                                        <a
+                                                                            href={`https://wa.me/${item.photographer.phone}`}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="text-[8px] font-black text-green-500 hover:text-green-600 transition-colors uppercase tracking-widest mt-0.5 px-0.5"
+                                                                        >
+                                                                            WA: {item.photographer.phone}
+                                                                        </a>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-[10px] font-black uppercase text-brand-black/30 dark:text-brand-white/30 mb-1">Amount</p>
+                                                    <p className="text-[10px] font-black uppercase text-brand-black/30 dark:text-brand-white/30 mb-1">Harga</p>
                                                     <p className="font-black text-brand-black dark:text-brand-white text-lg italic tracking-tighter">
                                                         {formatPrice(item.price)}
                                                     </p>

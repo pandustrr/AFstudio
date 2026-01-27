@@ -92,7 +92,7 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                     {/* Left Column: Photographer Select, Calendar & Preview */}
                     <div className="lg:col-span-1">
-                        <div className="sticky top-24 space-y-6">
+                        <div className="lg:sticky lg:top-24 space-y-6">
                             <div>
                                 <h1 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter italic mb-1">Monitoring Sesi</h1>
                                 <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-bold uppercase tracking-widest mb-6">
@@ -165,7 +165,10 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                         <button
                                             onClick={() => {
                                                 const dateStr = new Date(selectedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-                                                const header = `AFstudio ${dateStr}`;
+                                                const currentPhotographer = photographers.find(p => p.id == selectedPhotographerId);
+                                                const photographerName = currentPhotographer ? currentPhotographer.name : '---';
+                                                const photographerPhone = currentPhotographer ? (currentPhotographer.phone ? `+${currentPhotographer.phone}` : '-') : '-';
+                                                const header = `AFstudio ${dateStr}\nPhotographer: ${photographerName}\nWA: ${photographerPhone}`;
                                                 const addMinutes = (time, mins) => {
                                                     const [h, m] = time.split(':').map(Number);
                                                     const date = new Date();
@@ -176,15 +179,23 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                                 const bookedSessions = grid
                                                     .filter(item => item.status === 'booked')
                                                     .map(item => {
-                                                        const start = item.time.replace(':', '.');
-                                                        const end = addMinutes(item.time, 30);
+                                                        const cumulative = item.cumulative_offset || 0;
+                                                        const individual = item.offset_minutes || 0;
+                                                        const start = addMinutes(item.time, cumulative);
+                                                        const end = addMinutes(item.time, 30 + cumulative);
                                                         const name = item.booking_info?.customer_name || 'Booked';
                                                         const pkg = item.booking_info?.package_name ? ` (${item.booking_info.package_name})` : '';
-                                                        return `${start}-${end} ; ${name}${pkg}`;
+                                                        const offsetText = individual !== 0 ? ` [ ${individual > 0 ? '+' : ''}${individual}m]` : '';
+                                                        return `${start}-${end} ; ${name}${pkg}${offsetText}`;
                                                     })
                                                     .join('\n');
 
-                                                const text = `${header}\n\n${bookedSessions}`;
+                                                const notes = grid
+                                                    .filter(item => item.offset_description)
+                                                    .map(item => `* ${item.time}: ${item.offset_description}`)
+                                                    .join('\n');
+
+                                                const text = `${header}\n\n${bookedSessions}${notes ? `\n\nCatatan:\n${notes}` : ''}`;
                                                 navigator.clipboard.writeText(text);
                                                 alert('Jadwal berhasil disalin!');
                                             }}
@@ -196,7 +207,12 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                     <div className="bg-brand-black/5 dark:bg-white/5 p-4 rounded-2xl border border-black/5 dark:border-white/5">
                                         <pre className="text-xs font-mono text-brand-black dark:text-brand-white whitespace-pre-wrap leading-relaxed">
                                             <span className="font-bold">AFstudio {new Date(selectedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
-                                            {'\n\n'}
+                                            {'\n'}
+                                            <div className="flex flex-col text-[10px] opacity-60">
+                                                <span>Photographer: {photographers.find(p => p.id == selectedPhotographerId)?.name || '---'}</span>
+                                                <span>WA: {photographers.find(p => p.id == selectedPhotographerId)?.phone ? `+${photographers.find(p => p.id == selectedPhotographerId)?.phone}` : '-'}</span>
+                                            </div>
+                                            {'\n'}
                                             {grid.filter(item => item.status === 'booked').length > 0 ? (
                                                 grid.filter(item => item.status === 'booked').map((item, i) => {
                                                     const addMinutes = (time, mins) => {
@@ -205,13 +221,22 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                                         date.setHours(h, m + mins);
                                                         return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }).replace(':', '.');
                                                     };
-                                                    const start = item.time.replace(':', '.');
-                                                    const end = addMinutes(item.time, 30);
+                                                    const cumulative = item.cumulative_offset || 0;
+                                                    const individual = item.offset_minutes || 0;
+                                                    const start = addMinutes(item.time, cumulative);
+                                                    const end = addMinutes(item.time, 30 + cumulative);
                                                     const name = item.booking_info?.customer_name || 'Booked';
                                                     const pkg = item.booking_info?.package_name ? ` (${item.booking_info.package_name})` : '';
                                                     return (
-                                                        <div key={i} className="mb-1">
-                                                            <span className="text-brand-gold">{start}-{end}</span> ; {name}<span className="opacity-50 text-[10px]">{pkg}</span>
+                                                        <div key={i} className="mb-1 flex flex-wrap items-center gap-1">
+                                                            <span className="text-brand-gold">{start}-{end}</span>
+                                                            <span className="dark:text-white/80">; {name}</span>
+                                                            <span className="opacity-50 text-[10px]">{pkg}</span>
+                                                            {individual !== 0 && (
+                                                                <span className="text-[7px] bg-brand-gold/20 text-brand-gold px-1 rounded font-black italic">
+                                                                    {individual > 0 ? '+' : ''}{individual}m
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     );
                                                 })
@@ -220,6 +245,26 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                             )}
                                         </pre>
                                     </div>
+
+                                    {/* Offset Reasons Summary */}
+                                    {grid.some(item => item.offset_description) && (
+                                        <div className="mt-4 pt-4 border-t border-black/5 dark:border-white/5">
+                                            <h4 className="text-[9px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                <InformationCircleIcon className="w-3 h-3" />
+                                                Catatan Penyesuaian
+                                            </h4>
+                                            <div className="space-y-1.5">
+                                                {grid.filter(item => item.offset_description).map((item, idx) => (
+                                                    <div key={idx} className="flex gap-2">
+                                                        <span className="text-[8px] font-black text-brand-gold min-w-[35px]">{item.time}</span>
+                                                        <p className="text-[9px] font-bold text-brand-black/60 dark:text-brand-white/60 italic leading-tight">
+                                                            {item.offset_description}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -260,7 +305,7 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                 </div>
 
                                 {/* Sessions Grid */}
-                                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                                     {grid.map((item, index) => (
                                         <div
                                             key={index}
@@ -284,9 +329,22 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                             </div>
 
                                             <div>
-                                                <h3 className="text-lg font-black text-brand-black dark:text-brand-white tracking-tighter mb-0.5">
-                                                    {item.time}
-                                                </h3>
+                                                <div className="flex items-baseline gap-1.5 mb-0.5">
+                                                    <h3 className="text-lg font-black text-brand-black dark:text-brand-white tracking-tighter">
+                                                        {(() => {
+                                                            if (!item.cumulative_offset) return item.time;
+                                                            const [h, m] = item.time.split(':').map(Number);
+                                                            const d = new Date();
+                                                            d.setHours(h, m + item.cumulative_offset);
+                                                            return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                                                        })()}
+                                                    </h3>
+                                                    {item.cumulative_offset !== 0 && (
+                                                        <span className="text-[10px] font-bold text-brand-black/20 dark:text-brand-white/20 line-through">
+                                                            {item.time}
+                                                        </span>
+                                                    )}
+                                                </div>
 
                                                 <div className="flex items-center gap-1">
                                                     {item.status === 'open' ? (
@@ -318,20 +376,26 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                                         </>
                                                     )}
                                                 </div>
+
+                                                {item.offset_description && (
+                                                    <div className="mt-2 p-1.5 bg-brand-gold/10 border border-brand-gold/20 rounded-lg">
+                                                        <p className="text-[7px] font-black text-brand-gold italic leading-tight uppercase">
+                                                            Note: {item.offset_description}
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
 
-                                            {/* Admin Actions */}
+                                            {/* Admin Actions - Compact Overlay */}
                                             {item.status !== 'off' && (
-                                                <div className="flex gap-1.5 mt-2">
-                                                    <button
-                                                        onClick={() => openOffsetModal(item)}
-                                                        className="w-full bg-black/80 dark:bg-white/10 text-white dark:text-white p-1.5 rounded-xl flex items-center justify-center gap-1 hover:bg-black dark:hover:bg-white/20 transition-all shadow-sm"
-                                                        title="Set Offset"
-                                                    >
-                                                        <AdjustmentsHorizontalIcon className="w-3.5 h-3.5" />
-                                                        <span className="text-[7.5px] font-black uppercase tracking-tight">Offset</span>
-                                                    </button>
-                                                </div>
+                                                <button
+                                                    onClick={() => openOffsetModal(item)}
+                                                    className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-black dark:bg-white/10 text-white transition-all shadow-lg flex items-center gap-1 z-30"
+                                                    title="Set Offset"
+                                                >
+                                                    <AdjustmentsHorizontalIcon className="w-3.5 h-3.5" />
+                                                    <span className="text-[7px] font-black uppercase">Offset</span>
+                                                </button>
                                             )}
                                         </div>
                                     ))}

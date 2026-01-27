@@ -261,10 +261,20 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
                                         {groupedItems[dateKey].map((item) => (
                                             <div key={item.id} className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
                                                 {/* Photographer Badge */}
-                                                <div className="absolute top-0 right-0 p-3">
+                                                <div className="absolute top-0 right-0 p-3 flex flex-col items-end gap-1">
                                                     <span className={`px-2 py-0.5 ${item.photographer ? 'bg-brand-gold/10 text-brand-gold' : 'bg-gray-100 text-gray-400'} rounded-full font-black text-[8px] uppercase tracking-tighter`}>
                                                         {item.photographer?.name || 'No FG'}
                                                     </span>
+                                                    {item.photographer?.phone && (
+                                                        <a
+                                                            href={`https://wa.me/${item.photographer.phone}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-[7px] font-black text-green-500 hover:text-green-600 transition-colors uppercase tracking-widest"
+                                                        >
+                                                            WA: {item.photographer.phone}
+                                                        </a>
+                                                    )}
                                                 </div>
 
                                                 <div className="mb-4">
@@ -280,9 +290,24 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
                                                         {item.package?.name || 'Untitled'}
                                                     </h3>
 
-                                                    <div className="flex items-center gap-2 text-[10px] font-black text-brand-gold italic uppercase tracking-tighter bg-brand-black rounded-lg px-3 py-1.5 w-fit">
-                                                        <ClockIcon className="w-3.5 h-3.5" />
-                                                        {item.start_time?.substring(0, 5) || '--:--'} - {item.end_time?.substring(0, 5) || '--:--'}
+                                                    <div className="flex items-center gap-2 text-[10px] font-black italic uppercase tracking-tighter bg-brand-black rounded-lg px-3 py-1.5 w-fit">
+                                                        <ClockIcon className="w-3.5 h-3.5 text-brand-gold" />
+                                                        <div className="flex flex-col leading-none">
+                                                            {item.start_time !== item.adjusted_start_time ? (
+                                                                <>
+                                                                    <span className="line-through opacity-30 text-[7px] mb-0.5">
+                                                                        {item.start_time?.substring(0, 5)} - {item.end_time?.substring(0, 5)}
+                                                                    </span>
+                                                                    <span className="text-brand-gold">
+                                                                        {item.adjusted_start_time?.substring(0, 5)} - {item.adjusted_end_time?.substring(0, 5)}
+                                                                    </span>
+                                                                </>
+                                                            ) : (
+                                                                <span className="text-brand-gold">
+                                                                    {item.start_time?.substring(0, 5)} - {item.end_time?.substring(0, 5)}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
 

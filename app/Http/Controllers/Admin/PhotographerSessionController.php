@@ -322,20 +322,25 @@ class PhotographerSessionController extends Controller
         $existingByTime = $existingSessions->keyBy('start_time');
 
         $start = Carbon::createFromTimeString('05:00');
-        $end = Carbon::createFromTimeString('20:00'); // Last session start time
+        $end = Carbon::createFromTimeString('20:00');
+
+        $cumulativeOffset = 0;
 
         while ($start <= $end) {
             $timeString = $start->format('H:i:s');
             $session = $existingByTime->get($timeString);
 
-            // NEW Logic:
-            // If session exists: use its status ('booked', 'open', 'off').
-            // If session NULL: default to 'open' (Available by default).
-
-            $status = 'open'; // Default: TERSEDIA (available)
-
             if ($session) {
-                $status = $session->status; // Use actual status: 'booked', 'open', or 'off'
+                $status = $session->status;
+                // Offset only persists and accumulates through 'booked' sessions
+                if ($status === 'booked') {
+                    $cumulativeOffset += ($session->offset_minutes ?? 0);
+                } else {
+                    $cumulativeOffset = 0; // Reset on 'off' or manual 'open'
+                }
+            } else {
+                $status = 'open';
+                $cumulativeOffset = 0; // Reset on open gaps
             }
 
             $grid[] = [
@@ -349,6 +354,7 @@ class PhotographerSessionController extends Controller
                     'package_name' => $session->bookingItem->package->name ?? 'N/A',
                 ] : null,
                 'offset_minutes' => $session ? $session->offset_minutes : 0,
+                'cumulative_offset' => $cumulativeOffset,
                 'offset_description' => $session ? $session->offset_description : '',
             ];
 

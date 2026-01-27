@@ -24,12 +24,14 @@ class PhotographerController extends Controller
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:users,username',
             'password' => 'required|string|min:6',
+            'phone' => 'nullable|string|max:20',
         ]);
 
         $photographer = User::create([
             'name' => $validated['name'],
             'username' => $validated['username'],
             'password' => Hash::make($validated['password']),
+            'phone' => $validated['phone'],
             'role' => 'photographer',
         ]);
 
@@ -45,11 +47,13 @@ class PhotographerController extends Controller
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:users,username,' . $photographer->id,
             'password' => 'nullable|string|min:6',
+            'phone' => 'nullable|string|max:20',
         ]);
 
         $data = [
             'name' => $validated['name'],
             'username' => $validated['username'],
+            'phone' => $validated['phone'],
         ];
 
         if ($request->filled('password')) {

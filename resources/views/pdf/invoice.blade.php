@@ -213,7 +213,25 @@
                 </td>
                 <td style="font-size: 10pt;">
                     <strong>{{ \Carbon\Carbon::parse($item->scheduled_date)->format('d/m/Y') }}</strong><br>
-                    <span style="font-size: 9pt;">{{ substr($item->start_time, 0, 5) }} - {{ substr($item->end_time, 0, 5) }} WIB</span>
+                    <span style="font-size: 9pt;">
+                        @if($item->start_time !== $item->adjusted_start_time)
+                        <span style="text-decoration: line-through; color: #999; font-size: 8pt;">{{ substr($item->start_time, 0, 5) }} - {{ substr($item->end_time, 0, 5) }}</span><br>
+                        <span style="font-weight: bold; color: #000;">{{ substr($item->adjusted_start_time, 0, 5) }} - {{ substr($item->adjusted_end_time, 0, 5) }} WIB</span>
+                        @else
+                        {{ substr($item->start_time, 0, 5) }} - {{ substr($item->end_time, 0, 5) }} WIB
+                        @endif
+
+                        @if($item->photographer)
+                        <div style="margin-top: 4px; border-top: 0.5px dashed #eee; padding-top: 2px;">
+                            <span style="font-size: 8pt; font-weight: bold; color: #444;">Photographer:</span><br>
+                            <span style="font-size: 8pt;">{{ $item->photographer->name }} (+{{ $item->photographer->phone }})</span>
+                        </div>
+                        @else
+                        <div style="margin-top: 4px; border-top: 0.5px dashed #eee; padding-top: 2px;">
+                            <span style="font-size: 8pt; font-style: italic; color: #999;">Photographer: Belum Ditentukan</span>
+                        </div>
+                        @endif
+                    </span>
                 </td>
                 <td class="qty-col" style="font-weight: bold;">{{ $item->quantity }}</td>
                 <td class="price-col">{{ number_format($item->price, 0, ',', '.') }}</td>
@@ -279,11 +297,11 @@
                 <td style="padding: 2px 0; font-weight: bold; width: 35%;">Status:</td>
                 <td style="padding: 2px 0; text-transform: uppercase; font-weight: bold; font-size: 8pt;">
                     @if($booking->paymentProof->first()->status === 'verified')
-                        ✓ VERIF
+                    ✓ VERIF
                     @elseif($booking->paymentProof->first()->status === 'rejected')
-                        ✗ DITOLAK
+                    ✗ DITOLAK
                     @else
-                        MENUNGGU
+                    MENUNGGU
                     @endif
                 </td>
             </tr>
@@ -297,27 +315,27 @@
         <div style="border-top: 1px solid #000; padding-top: 3px; text-align: center;">
             <p style="margin: 2px 0 3px 0; font-weight: bold; font-size: 8pt;">PREVIEW:</p>
             @php
-                $filePath = $booking->paymentProof->first()->file_path;
-                $storagePath = storage_path('app/public/' . $filePath);
-                $publicPath = public_path('storage/' . $filePath);
+            $filePath = $booking->paymentProof->first()->file_path;
+            $storagePath = storage_path('app/public/' . $filePath);
+            $publicPath = public_path('storage/' . $filePath);
 
-                $imageFile = null;
-                if (file_exists($storagePath)) {
-                    $imageFile = $storagePath;
-                } elseif (file_exists($publicPath)) {
-                    $imageFile = $publicPath;
-                }
+            $imageFile = null;
+            if (file_exists($storagePath)) {
+            $imageFile = $storagePath;
+            } elseif (file_exists($publicPath)) {
+            $imageFile = $publicPath;
+            }
             @endphp
             @if($imageFile)
             @php
-                $imageData = file_get_contents($imageFile);
-                $base64 = base64_encode($imageData);
-                $mimeType = $booking->paymentProof->first()->file_type;
-                $dataUrl = 'data:' . $mimeType . ';base64,' . $base64;
+            $imageData = file_get_contents($imageFile);
+            $base64 = base64_encode($imageData);
+            $mimeType = $booking->paymentProof->first()->file_type;
+            $dataUrl = 'data:' . $mimeType . ';base64,' . $base64;
             @endphp
             <img src="{{ $dataUrl }}"
-                 alt="Bukti"
-                 style="max-width: 100%; max-height: 140px; border: 0.5px solid #333; margin-top: 2px; padding: 2px; background-color: #fff;">
+                alt="Bukti"
+                style="max-width: 100%; max-height: 140px; border: 0.5px solid #333; margin-top: 2px; padding: 2px; background-color: #fff;">
             @else
             <div style="padding: 4px; background-color: #fffacd; border: 0.5px solid #999; margin-top: 2px; font-size: 7pt;">
                 ℹ️ Gambar tidak dapat ditampilkan
