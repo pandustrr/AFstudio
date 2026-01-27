@@ -96,6 +96,9 @@ class PricelistController extends Controller
             'max_editing_quota' => 'required|integer|min:0',
         ]);
 
+        // Calculate duration based on max_sessions (1 session = 30 minutes)
+        $validated['duration'] = $validated['max_sessions'] * 30;
+
         PricelistPackage::create($validated);
 
         return back()->with('success', 'Paket berhasil ditambahkan.');
@@ -117,6 +120,9 @@ class PricelistController extends Controller
         ]);
 
         Log::info('Validated Data:', $validated);
+
+        // Calculate duration based on max_sessions (1 session = 30 minutes)
+        $validated['duration'] = $validated['max_sessions'] * 30;
 
         $package->update($validated);
 
