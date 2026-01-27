@@ -87,13 +87,29 @@ class PhotographerSessionController extends Controller
         // Operasional 05:00 - 20:30 (31 sesi)
         $grid = $this->generateSessionGrid($date, $sessions);
 
+        // Get Monthly Stats for Calendar Indicators
+        $currentViewYear = $year ?: Carbon::today()->year;
+        $currentViewMonth = $month ?: Carbon::today()->month;
+
+        $monthlyStats = PhotographerSession::where('photographer_id', $photographerId)
+            ->whereYear('date', $currentViewYear)
+            ->whereMonth('date', $currentViewMonth)
+            ->where('status', 'booked')
+            ->whereHas('bookingItem.booking', function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            })
+            ->selectRaw('date, count(*) as count')
+            ->groupBy('date')
+            ->pluck('count', 'date');
+
         return Inertia::render('Photographer/Sessions', [
             'grid' => $grid,
             'selectedDate' => $date,
+            'monthlyStats' => $monthlyStats, // Add this
             'filters' => [
-                'year' => $year,
-                'month' => $month,
-                'day' => $day,
+                'year' => (string) $year, // Cast to string for consistency
+                'month' => (string) $month,
+                'day' => (string) $day,
             ],
             'options' => [
                 'years' => $availableYears,
@@ -229,16 +245,22 @@ class PhotographerSessionController extends Controller
             ->first();
 
         if ($session) {
-            if ($session->status === 'open') {
-                $session->delete();
+            // potentially 'open' or 'booked'
+            if ($session->status === 'booked') {
+                // Cannot toggle booked
+                return back();
             }
-            // If booked, cannot toggle here
+
+            // Currently Open (or off record) -> Toggle to Off (Delete)
+            $session->delete();
         } else {
+            // No record -> Default is Off.
+            // Action: Open it.
             PhotographerSession::create([
                 'photographer_id' => $photographerId,
                 'date' => $date,
                 'start_time' => $startTime,
-                'status' => 'open',
+                'status' => 'open', // Mark as open/available
             ]);
         }
 
@@ -267,10 +289,24 @@ class PhotographerSessionController extends Controller
             $timeString = $start->format('H:i:s');
             $session = $existingByTime->get($timeString);
 
+            // Default Logic:
+            // If session exists: use its status ('booked', 'open').
+            // If session NULL: default to 'off' (Inactive).
+
+            $status = 'off'; // Default inactive
+
+            if ($session) {
+                if ($session->status === 'booked') {
+                    $status = 'booked';
+                } else {
+                    $status = 'open';
+                }
+            }
+
             $grid[] = [
                 'time' => $start->format('H:i'),
                 'time_full' => $timeString,
-                'status' => $session ? $session->status : 'off',
+                'status' => $status,
                 'session_id' => $session ? $session->id : null,
                 'booking_item_id' => $session ? $session->booking_item_id : null,
                 'booking_info' => $session && $session->bookingItem && $session->bookingItem->booking->status !== 'cancelled' ? [
