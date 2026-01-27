@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, useForm } from '@inertiajs/react';
-import { UserIcon, KeyIcon, PhoneIcon, CheckCircleIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { UserIcon, KeyIcon, PhoneIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import ConfirmModal from '@/Components/ConfirmModal';
+import EditNotif from '@/Components/EditNotif';
 
 export default function Edit({ user }) {
     const { data, setData, post, processing, errors, recentlySuccessful, reset } = useForm({
@@ -18,14 +20,25 @@ export default function Edit({ user }) {
         confirm: false,
     });
 
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const [showNotif, setShowNotif] = useState(false);
+
     const togglePassword = (field) => {
         setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
     };
 
-    const submit = (e) => {
+    const handleSubmitClick = (e) => {
         e.preventDefault();
+        setIsConfirmModalOpen(true);
+    };
+
+    const confirmSubmit = () => {
+        setIsConfirmModalOpen(false);
         post(window.location.pathname, {
-            onSuccess: () => reset('current_password', 'password', 'password_confirmation'),
+            onSuccess: () => {
+                reset('current_password', 'password', 'password_confirmation');
+                setShowNotif(true);
+            },
         });
     };
 
@@ -34,12 +47,18 @@ export default function Edit({ user }) {
             <Head title="Edit Profil" />
 
             <div className="pt-24 pb-20 px-6 max-w-2xl mx-auto">
+                <EditNotif
+                    show={showNotif}
+                    onClose={() => setShowNotif(false)}
+                    message="Profil Anda telah berhasil diperbarui!"
+                />
+
                 <div className="mb-10">
                     <h1 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-1 leading-none">Pengaturan Profil</h1>
                     <p className="text-brand-black/40 dark:text-brand-white/40 text-[9px] font-black uppercase tracking-widest leading-none">Perbarui informasi akun dan keamanan Anda.</p>
                 </div>
 
-                <form onSubmit={submit} className="space-y-6 bg-white dark:bg-white/5 p-8 rounded-3xl border border-black/5 dark:border-white/5 shadow-xl relative overflow-hidden">
+                <form onSubmit={handleSubmitClick} className="space-y-6 bg-white dark:bg-white/5 p-8 rounded-3xl border border-black/5 dark:border-white/5 shadow-xl relative overflow-hidden">
                     {/* Username */}
                     <div>
                         <label className="block text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-2 px-1">Username (Login)</label>
@@ -168,15 +187,18 @@ export default function Edit({ user }) {
                         >
                             {processing ? 'Menyimpan...' : 'Simpan Perubahan'}
                         </button>
-
-                        {recentlySuccessful && (
-                            <div className="mt-4 flex items-center justify-center gap-2 text-green-500 bg-green-500/10 py-3 rounded-xl animate-bounce">
-                                <CheckCircleIcon className="w-4 h-4" />
-                                <span className="text-[9px] font-black uppercase tracking-widest">Berhasil Tersimpan!</span>
-                            </div>
-                        )}
                     </div>
                 </form>
+
+                <ConfirmModal
+                    isOpen={isConfirmModalOpen}
+                    onClose={() => setIsConfirmModalOpen(false)}
+                    onConfirm={confirmSubmit}
+                    title="Konfirmasi Perubahan"
+                    message="Apakah Anda yakin ingin memperbarui informasi profil Anda? Pastikan data yang dimasukkan sudah benar."
+                    variant="warning"
+                    processing={processing}
+                />
             </div>
         </AdminLayout>
     );

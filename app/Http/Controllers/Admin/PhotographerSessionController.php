@@ -33,20 +33,17 @@ class PhotographerSessionController extends Controller
             ->orderBy('start_time')
             ->get();
 
-        // Get Available Options
-        // Get years from data, but always include past and next year
+        // Get Available Options (Realtime: Last Year, This Year, Next Year + any years with data)
+        $currentYear = Carbon::today()->year;
+        $defaultYears = range($currentYear - 1, $currentYear + 1);
+
         $dataYears = PhotographerSession::where('photographer_id', $photographerId)
             ->selectRaw('YEAR(date) as year')
             ->distinct()
-            ->orderBy('year', 'desc')
             ->pluck('year')
             ->toArray();
 
-        $currentYear = Carbon::today()->year;
-        $availableYears = array_unique(array_merge(
-            $dataYears,
-            [$currentYear, $currentYear - 1, $currentYear + 1]
-        ));
+        $availableYears = array_unique(array_merge($defaultYears, $dataYears));
         rsort($availableYears);
         $availableYears = array_values($availableYears);
 
@@ -97,7 +94,7 @@ class PhotographerSessionController extends Controller
             ->whereMonth('date', $currentViewMonth)
             ->where('status', 'booked')
             ->whereHas('bookingItem.booking', function ($q) {
-                $q->where('status', '!=', 'cancelled');
+                $q->where('status', 'confirmed');
             })
             ->selectRaw('date, count(*) as count')
             ->groupBy('date')
@@ -160,9 +157,18 @@ class PhotographerSessionController extends Controller
 
         $grid = $photographerId ? $this->generateSessionGrid($date, $sessions) : [];
 
-        // Get Available Options
+        // Get Available Options (Realtime: Last Year, This Year, Next Year + any years with data)
         $currentYear = Carbon::today()->year;
-        $availableYears = range($currentYear - 1, $currentYear + 2);
+        $defaultYears = range($currentYear - 1, $currentYear + 1);
+
+        $dataYears = PhotographerSession::selectRaw('YEAR(date) as year')
+            ->distinct()
+            ->pluck('year')
+            ->toArray();
+
+        $availableYears = array_unique(array_merge($defaultYears, $dataYears));
+        rsort($availableYears);
+        $availableYears = array_values($availableYears);
 
         $availableMonths = range(1, 12);
 
@@ -180,7 +186,7 @@ class PhotographerSessionController extends Controller
                 ->whereMonth('date', $currentViewMonth)
                 ->where('status', 'booked')
                 ->whereHas('bookingItem.booking', function ($q) {
-                    $q->where('status', '!=', 'cancelled');
+                    $q->where('status', 'confirmed');
                 })
                 ->selectRaw('date, count(*) as count')
                 ->groupBy('date')
@@ -346,10 +352,11 @@ class PhotographerSessionController extends Controller
             $grid[] = [
                 'time' => $start->format('H:i'),
                 'time_full' => $timeString,
-                'status' => $status,
+                'status' => ($status === 'booked' && ($session->bookingItem->booking->status ?? '') !== 'confirmed') ? 'open' : $status,
                 'session_id' => $session ? $session->id : null,
                 'booking_item_id' => $session ? $session->booking_item_id : null,
-                'booking_info' => $session && $session->bookingItem && $session->bookingItem->booking->status !== 'cancelled' ? [
+                'booking_status' => $session && $session->bookingItem ? $session->bookingItem->booking->status : null,
+                'booking_info' => $session && $session->bookingItem && $session->bookingItem->booking->status === 'confirmed' ? [
                     'customer_name' => $session->bookingItem->booking->name ?? 'GUEST',
                     'package_name' => $session->bookingItem->package->name ?? 'N/A',
                 ] : null,
@@ -373,7 +380,7 @@ class PhotographerSessionController extends Controller
         $query = PhotographerSession::where('photographer_id', $photographerId)
             ->where('status', 'booked')
             ->whereHas('bookingItem.booking', function ($q) {
-                $q->where('status', '!=', 'cancelled');
+                $q->where('status', 'confirmed');
             })
             ->with(['bookingItem.booking', 'bookingItem.package']);
 

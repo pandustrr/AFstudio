@@ -296,10 +296,12 @@ export default function Sessions({ grid, selectedDate, filters, options, monthly
 
                                     <div className="flex items-center gap-1">
                                         {item.status === 'open' ? (
-                                            <>
-                                                <div className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
-                                                <span className="text-[8px] font-black uppercase text-brand-gold">Tersedia</span>
-                                            </>
+                                            <div className="flex flex-col gap-1.5 w-full overflow-hidden">
+                                                <div className="flex items-center gap-1">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
+                                                    <span className="text-[8px] font-black uppercase text-brand-gold">Tersedia</span>
+                                                </div>
+                                            </div>
                                         ) : item.status === 'booked' ? (
                                             <div className="flex flex-col gap-1.5 w-full overflow-hidden">
                                                 <div className="flex items-center gap-1">
@@ -324,14 +326,6 @@ export default function Sessions({ grid, selectedDate, filters, options, monthly
                                             </>
                                         )}
                                     </div>
-
-                                    {item.status !== 'off' && item.offset_description && (
-                                        <div className="mt-2 p-1.5 bg-brand-gold/10 border border-brand-gold/20 rounded-lg">
-                                            <p className="text-[7px] font-black text-brand-gold italic leading-tight uppercase">
-                                                Note: {item.offset_description}
-                                            </p>
-                                        </div>
-                                    )}
 
                                     {/* Hover effect indicator for toggle-able slots */}
                                     {item.status !== 'booked' && (

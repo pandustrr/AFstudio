@@ -328,61 +328,53 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                                     }`} />
                                             </div>
 
-                                            <div>
-                                                <div className="flex items-baseline gap-1.5 mb-0.5">
-                                                    <h3 className="text-lg font-black text-brand-black dark:text-brand-white tracking-tighter">
-                                                        {(() => {
-                                                            if (!item.cumulative_offset) return item.time;
-                                                            const [h, m] = item.time.split(':').map(Number);
-                                                            const d = new Date();
-                                                            d.setHours(h, m + item.cumulative_offset);
-                                                            return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-                                                        })()}
-                                                    </h3>
-                                                    {item.cumulative_offset !== 0 && (
-                                                        <span className="text-[10px] font-bold text-brand-black/20 dark:text-brand-white/20 line-through">
-                                                            {item.time}
-                                                        </span>
-                                                    )}
-                                                </div>
+                                            <div className="flex items-baseline gap-1.5 mb-0.5">
+                                                <h3 className="text-lg font-black text-brand-black dark:text-brand-white tracking-tighter">
+                                                    {(() => {
+                                                        if (!item.cumulative_offset) return item.time;
+                                                        const [h, m] = item.time.split(':').map(Number);
+                                                        const d = new Date();
+                                                        d.setHours(h, m + item.cumulative_offset);
+                                                        return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                                                    })()}
+                                                </h3>
+                                                {item.cumulative_offset !== 0 && (
+                                                    <span className="text-[10px] font-bold text-brand-black/20 dark:text-brand-white/20 line-through">
+                                                        {item.time}
+                                                    </span>
+                                                )}
+                                            </div>
 
-                                                <div className="flex items-center gap-1">
-                                                    {item.status === 'open' ? (
-                                                        <>
+                                            <div className="flex items-center gap-1">
+                                                {item.status === 'open' ? (
+                                                    <div className="flex flex-col gap-1.5 w-full overflow-hidden">
+                                                        <div className="flex items-center gap-1">
                                                             <div className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
                                                             <span className="text-[8px] font-black uppercase text-brand-gold">Tersedia</span>
-                                                        </>
-                                                    ) : item.status === 'booked' ? (
-                                                        <div className="flex flex-col gap-0.5 w-full overflow-hidden">
-                                                            <div className="flex items-center gap-1 mb-1">
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                                                <span className="text-[8px] font-black uppercase text-green-500">Terisi</span>
-                                                            </div>
-                                                            {item.booking_info && (
-                                                                <div className="flex flex-col gap-0.5 border-t border-green-500/10 pt-1">
-                                                                    <p className="text-[9px] font-black text-brand-black dark:text-brand-white uppercase truncate">
-                                                                        {item.booking_info.customer_name}
-                                                                    </p>
-                                                                    <p className="text-[7px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase truncate">
-                                                                        {item.booking_info.package_name}
-                                                                    </p>
-                                                                </div>
-                                                            )}
                                                         </div>
-                                                    ) : (
-                                                        <>
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-brand-black/20 dark:bg-brand-white/20" />
-                                                            <span className="text-[8px] font-black uppercase text-brand-black/20 dark:text-brand-white/20">Kosong (Off)</span>
-                                                        </>
-                                                    )}
-                                                </div>
-
-                                                {item.offset_description && (
-                                                    <div className="mt-2 p-1.5 bg-brand-gold/10 border border-brand-gold/20 rounded-lg">
-                                                        <p className="text-[7px] font-black text-brand-gold italic leading-tight uppercase">
-                                                            Note: {item.offset_description}
-                                                        </p>
                                                     </div>
+                                                ) : item.status === 'booked' ? (
+                                                    <div className="flex flex-col gap-1.5 w-full overflow-hidden">
+                                                        <div className="flex items-center gap-1">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                            <span className="text-[8px] font-black uppercase text-green-500">Terisi</span>
+                                                        </div>
+                                                        {item.booking_info && (
+                                                            <div className="mt-1 flex flex-col gap-0.5 border-t border-green-500/10 pt-1">
+                                                                <p className="text-[9px] font-black text-brand-black dark:text-brand-white uppercase truncate">
+                                                                    {item.booking_info.customer_name}
+                                                                </p>
+                                                                <p className="text-[7px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase truncate">
+                                                                    {item.booking_info.package_name}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-brand-black/20 dark:bg-brand-white/20" />
+                                                        <span className="text-[8px] font-black uppercase text-brand-black/20 dark:text-brand-white/20">Kosong (Off)</span>
+                                                    </>
                                                 )}
                                             </div>
 
@@ -446,9 +438,24 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                 placeholder="Alasan offset..."
                             />
                         </div>
-                        <div className="flex gap-3 pt-2">
-                            <button onClick={() => setIsOffsetModalOpen(false)} className="flex-1 bg-black/5 py-4 rounded-xl font-black uppercase tracking-widest text-[10px]">Batal</button>
-                            <button onClick={submitOffset} className="flex-1 bg-black text-white py-4 rounded-xl font-black uppercase tracking-widest text-[10px]">Simpan Offset</button>
+                        <div className="flex flex-col gap-3 pt-2">
+                            <button onClick={submitOffset} className="w-full bg-black text-white py-4 rounded-xl font-black uppercase tracking-widest text-[10px]">Simpan Offset</button>
+                            {(selectedSession?.offset_minutes !== 0 || selectedSession?.offset_description) && (
+                                <button
+                                    onClick={() => {
+                                        router.post('/admin/photographer-sessions/offset', {
+                                            session_id: selectedSession.session_id,
+                                            offset_minutes: 0,
+                                            offset_description: ''
+                                        }, {
+                                            onSuccess: () => setIsOffsetModalOpen(false)
+                                        });
+                                    }}
+                                    className="w-full bg-brand-red/10 hover:bg-brand-red/20 text-brand-red py-4 rounded-xl font-black uppercase tracking-widest text-[10px] transition-colors"
+                                >
+                                    Hapus Offset & Reset
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
