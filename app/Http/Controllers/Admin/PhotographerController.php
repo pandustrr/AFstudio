@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\PhotographerSessionService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Hash;
@@ -25,14 +26,17 @@ class PhotographerController extends Controller
             'password' => 'required|string|min:6',
         ]);
 
-        User::create([
+        $photographer = User::create([
             'name' => $validated['name'],
             'username' => $validated['username'],
             'password' => Hash::make($validated['password']),
             'role' => 'photographer',
         ]);
 
-        return back()->with('success', 'Photographer created successfully');
+        // Auto-generate default sessions (60 days ahead, all 'open')
+        $sessionsCreated = PhotographerSessionService::generateDefaultSessions($photographer->id, 60);
+
+        return back()->with('success', "Photographer created successfully with {$sessionsCreated} sessions generated.");
     }
 
     public function update(Request $request, User $photographer)

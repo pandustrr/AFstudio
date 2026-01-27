@@ -160,11 +160,30 @@ class PhotographerSessionController extends Controller
         $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
         $availableDays = range(1, $daysInMonth);
 
+        // Get Monthly Stats for Calendar Indicators if photographer is selected
+        $monthlyStats = [];
+        if ($photographerId) {
+            $currentViewYear = $year ?: Carbon::today()->year;
+            $currentViewMonth = $month ?: Carbon::today()->month;
+
+            $monthlyStats = PhotographerSession::where('photographer_id', $photographerId)
+                ->whereYear('date', $currentViewYear)
+                ->whereMonth('date', $currentViewMonth)
+                ->where('status', 'booked')
+                ->whereHas('bookingItem.booking', function ($q) {
+                    $q->where('status', '!=', 'cancelled');
+                })
+                ->selectRaw('date, count(*) as count')
+                ->groupBy('date')
+                ->pluck('count', 'date');
+        }
+
         return Inertia::render('Admin/Photographers/PhotographerSessions', [
             'photographers' => $photographers,
             'grid' => $grid,
             'selectedDate' => $date,
             'selectedPhotographerId' => $photographerId,
+            'monthlyStats' => $monthlyStats,
             'filters' => [
                 'year' => (string)$year,
                 'month' => (string)$month,
@@ -245,27 +264,27 @@ class PhotographerSessionController extends Controller
             ->first();
 
         if ($session) {
-            // potentially 'open' or 'booked'
+            // Session exists
             if ($session->status === 'booked') {
-                // Cannot toggle booked
+                // Cannot toggle booked sessions
                 return back();
             }
 
-            // Currently Open (or off record) -> Toggle to Off (Delete)
-            $session->delete();
+            // Toggle between 'open' and 'off'
+            $newStatus = $session->status === 'open' ? 'off' : 'open';
+            $session->update(['status' => $newStatus]);
         } else {
-            // No record -> Default is Off.
-            // Action: Open it.
+            // No record exists -> Create as 'off' (photographer is closing this slot)
+            // Since default is 'open', clicking means they want to close it
             PhotographerSession::create([
                 'photographer_id' => $photographerId,
                 'date' => $date,
                 'start_time' => $startTime,
-                'status' => 'open', // Mark as open/available
+                'status' => 'off',
             ]);
         }
 
         // Redirect with filter params if provided
-        $redirectUrl = '/photographer/sessions';
         if ($request->has('year') || $request->has('month') || $request->has('day')) {
             $params = [];
             if ($request->has('year')) $params['year'] = $request->input('year');
@@ -289,18 +308,14 @@ class PhotographerSessionController extends Controller
             $timeString = $start->format('H:i:s');
             $session = $existingByTime->get($timeString);
 
-            // Default Logic:
-            // If session exists: use its status ('booked', 'open').
-            // If session NULL: default to 'off' (Inactive).
+            // NEW Logic:
+            // If session exists: use its status ('booked', 'open', 'off').
+            // If session NULL: default to 'open' (Available by default).
 
-            $status = 'off'; // Default inactive
+            $status = 'open'; // Default: TERSEDIA (available)
 
             if ($session) {
-                if ($session->status === 'booked') {
-                    $status = 'booked';
-                } else {
-                    $status = 'open';
-                }
+                $status = $session->status; // Use actual status: 'booked', 'open', or 'off'
             }
 
             $grid[] = [

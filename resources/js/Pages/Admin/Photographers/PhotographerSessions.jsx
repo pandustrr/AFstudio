@@ -7,74 +7,41 @@ import {
     ChevronDownIcon,
     ClockIcon,
     AdjustmentsHorizontalIcon,
-    ArrowsRightLeftIcon,
     InformationCircleIcon,
-    CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 import Modal from '@/Components/Modal';
+import CalendarWidget from '@/Components/CalendarWidget';
 
-export default function PhotographerSessions({ photographers, grid, selectedDate, selectedPhotographerId, filters, options }) {
+export default function PhotographerSessions({ photographers, grid, selectedDate, selectedPhotographerId, filters, options, monthlyStats }) {
     const [selectedSession, setSelectedSession] = useState(null);
     const [isOffsetModalOpen, setIsOffsetModalOpen] = useState(false);
-    const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
 
     const [offsetData, setOffsetData] = useState({ minutes: 0, description: '' });
-    const [rescheduleData, setRescheduleData] = useState({ newTime: '' });
-
-    const monthNames = [
-        "", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-    ];
 
     const handlePhotographerChange = (id) => {
-        fetchData({ photographer_id: id });
-    };
-
-    const handleFilter = (type, value) => {
-        const newFilters = {
-            ...filters,
-            [type]: value,
-            photographer_id: selectedPhotographerId
-        };
-
-        if (type === 'year') {
-            newFilters.month = '';
-            newFilters.day = '';
-        } else if (type === 'month') {
-            newFilters.day = '';
-        }
-
-        router.get('/admin/photographer-sessions', newFilters, {
-            preserveState: true,
-            preserveScroll: true
-        });
-    };
-
-    const setToday = () => {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = today.getMonth() + 1;
-        const day = today.getDate();
-
         router.get('/admin/photographer-sessions', {
-            photographer_id: selectedPhotographerId,
-            year: year.toString(),
-            month: month.toString(),
-            day: day.toString(),
+            photographer_id: id,
+            year: filters.year,
+            month: filters.month,
+            day: filters.day
         }, {
             preserveState: true,
             preserveScroll: true
         });
     };
 
-    const fetchData = (params) => {
+    const handleDateSelect = (date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+
         router.get('/admin/photographer-sessions', {
             photographer_id: selectedPhotographerId,
-            year: filters.year,
-            month: filters.month,
-            day: filters.day,
-            ...params
-        }, { preserveScroll: true });
+            year, month, day
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
     };
 
     const openOffsetModal = (session) => {
@@ -96,208 +63,248 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
         });
     };
 
-    const openRescheduleModal = (session) => {
-        setSelectedSession(session);
-        setRescheduleData({ newTime: session.time_full });
-        setIsRescheduleModalOpen(true);
-    };
-
-    const submitReschedule = () => {
-        router.post('/admin/photographer-sessions/reschedule', {
-            session_id: selectedSession.session_id,
-            new_start_time: rescheduleData.newTime
-        }, {
-            onSuccess: () => setIsRescheduleModalOpen(false)
-        });
-    };
-
     return (
         <AdminLayout>
-            <Head title="Kelola Jadwal FG" />
+            <Head title="Monitoring Sesi FG" />
 
             <div className="pt-8 lg:pt-16 pb-20 px-4 sm:px-6 min-h-screen max-w-7xl mx-auto">
-                {/* Filters */}
-                <div className="bg-white dark:bg-white/3 p-6 rounded-2xl border border-black/5 dark:border-white/5 shadow-xl mb-8">
-                    {/* Title Section - Now on Top */}
-                    <div className="mb-6 pb-6 border-b border-black/5 dark:border-white/5">
-                        <h1 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter italic mb-1">Kontrol Sesi Fotografer</h1>
-                        <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-bold uppercase tracking-widest">Atur ketersediaan dan penyesuaian waktu fotografer</p>
-                    </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                    {/* Left Column: Photographer Select, Calendar & Preview */}
+                    <div className="lg:col-span-1">
+                        <div className="sticky top-24 space-y-6">
+                            <div>
+                                <h1 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter italic mb-1">Monitoring Sesi</h1>
+                                <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-bold uppercase tracking-widest mb-6">
+                                    Pilih fotografer dan tanggal untuk pantau jadwal
+                                </p>
+                            </div>
 
-                    {/* Filters Section - Below Title */}
-                    <div className="flex flex-wrap items-center gap-6">
-                        <div className="space-y-1.5 flex-none">
-                            <label className="text-[9px] uppercase font-black tracking-widest text-brand-black/30 dark:text-brand-white/30 ml-1">Pilih Fotografer</label>
-                            <select
-                                value={selectedPhotographerId || ''}
-                                onChange={(e) => handlePhotographerChange(e.target.value)}
-                                className="w-full lg:w-48 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-widest focus:ring-brand-gold focus:border-brand-gold transition-all cursor-pointer"
-                            >
-                                <option value="" className="bg-white dark:bg-brand-black">Pilih FG...</option>
-                                {photographers.map(fg => <option key={fg.id} value={fg.id} className="bg-white dark:bg-brand-black">{fg.name}</option>)}
-                            </select>
-                        </div>
-
-                        <div className="w-px h-10 bg-black/5 dark:bg-white/5 hidden lg:block self-end mb-1"></div>
-
-                        <div className="space-y-1.5 flex-1 lg:flex-none">
-                            <label className="text-[9px] uppercase font-black tracking-widest text-brand-black/30 dark:text-brand-white/30 ml-1">Pilih Tanggal</label>
-                            <div className="flex flex-wrap items-center gap-3">
-                                {/* Compact Date Filters */}
-                                <div className="flex items-center gap-0.5 p-1 bg-white dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 w-fit shadow-sm">
-                                    <div className="relative group">
-                                        <select
-                                            value={filters.year || ''}
-                                            onChange={(e) => handleFilter('year', e.target.value)}
-                                            className="appearance-none bg-transparent border-0 rounded-lg pl-2 pr-7 py-1.5 text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                                        >
-                                            <option value="" className="bg-white dark:bg-brand-black">Year</option>
-                                            {options.years.map((year) => (
-                                                <option key={year} value={year} className="bg-white dark:bg-brand-black">{year}</option>
-                                            ))}
-                                        </select>
-                                        <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
-                                    </div>
-
-                                    <div className="w-px h-3 bg-black/10 dark:bg-white/10"></div>
-
-                                    <div className="relative group">
-                                        <select
-                                            value={filters.month || ''}
-                                            onChange={(e) => handleFilter('month', e.target.value)}
-                                            disabled={!filters.year}
-                                            className="appearance-none bg-transparent border-0 rounded-lg pl-2 pr-7 py-1.5 text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors disabled:opacity-30"
-                                        >
-                                            <option value="" className="bg-white dark:bg-brand-black">Month</option>
-                                            {options.months.map((month) => (
-                                                <option key={month} value={month} className="bg-white dark:bg-brand-black">{monthNames[month]}</option>
-                                            ))}
-                                        </select>
-                                        <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
-                                    </div>
-
-                                    <div className="w-px h-3 bg-black/10 dark:bg-white/10"></div>
-
-                                    <div className="relative group">
-                                        <select
-                                            value={filters.day || ''}
-                                            onChange={(e) => handleFilter('day', e.target.value)}
-                                            disabled={!filters.month}
-                                            className="appearance-none bg-transparent border-0 rounded-lg pl-2 pr-7 py-1.5 text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors disabled:opacity-30"
-                                        >
-                                            <option value="" className="bg-white dark:bg-brand-black">Day</option>
-                                            {options.days.map((day) => (
-                                                <option key={day} value={day} className="bg-white dark:bg-brand-black">{day}</option>
-                                            ))}
-                                        </select>
-                                        <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
-                                    </div>
-                                </div>
-
-                                <button
-                                    onClick={setToday}
-                                    className="px-3 py-1.5 bg-brand-gold text-brand-black rounded-lg text-[9px] font-black uppercase tracking-widest shadow-md hover:bg-brand-gold/90 transition-all shrink-0 h-[38px] flex items-center"
-                                >
-                                    Hari Ini
-                                </button>
-
-                                <div className="flex items-center gap-2 px-4 bg-black/5 dark:bg-white/5 py-1.5 rounded-xl border border-black/5 dark:border-white/5 shadow-sm h-[38px]">
-                                    <CalendarIcon className="w-3.5 h-3.5 text-brand-gold" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white">
-                                        {new Date(selectedDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                                    </span>
+                            {/* Photographer Selection */}
+                            <div className="bg-white dark:bg-white/5 p-5 rounded-3xl border border-black/5 dark:border-white/5 shadow-sm">
+                                <label className="text-[9px] uppercase font-black tracking-widest text-brand-black/30 dark:text-brand-white/30 ml-1 block mb-2">Pilih Fotografer</label>
+                                <div className="relative group">
+                                    <select
+                                        value={selectedPhotographerId || ''}
+                                        onChange={(e) => handlePhotographerChange(e.target.value)}
+                                        className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest focus:ring-brand-gold focus:border-brand-gold transition-all cursor-pointer appearance-none"
+                                    >
+                                        <option value="" className="bg-white dark:bg-brand-black font-sans capitalize">-- Pilih Fotografer --</option>
+                                        {photographers.map(fg => (
+                                            <option key={fg.id} value={fg.id} className="bg-white dark:bg-brand-black font-sans capitalize">{fg.name}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDownIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
                                 </div>
                             </div>
+
+                            <CalendarWidget
+                                selectedDate={selectedDate}
+                                onDateSelect={handleDateSelect}
+                                monthlyStats={monthlyStats}
+                                availableYears={options.years}
+                            />
+
+                            {/* Schedule Preview Section - Consistent with Photographer view */}
+                            {selectedPhotographerId && (
+                                <div className="mt-6 bg-white dark:bg-white/5 p-5 rounded-3xl border border-black/5 dark:border-white/5 shadow-sm">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-sm font-black text-brand-black dark:text-brand-white uppercase tracking-widest">
+                                            Preview Jadwal
+                                        </h3>
+                                        <button
+                                            onClick={() => {
+                                                const dateStr = new Date(selectedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                                                const header = `AFstudio ${dateStr}`;
+                                                const addMinutes = (time, mins) => {
+                                                    const [h, m] = time.split(':').map(Number);
+                                                    const date = new Date();
+                                                    date.setHours(h, m + mins);
+                                                    return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }).replace(':', '.');
+                                                };
+
+                                                const bookedSessions = grid
+                                                    .filter(item => item.status === 'booked')
+                                                    .map(item => {
+                                                        const start = item.time.replace(':', '.');
+                                                        const end = addMinutes(item.time, 30);
+                                                        const name = item.booking_info?.customer_name || 'Booked';
+                                                        const pkg = item.booking_info?.package_name ? ` (${item.booking_info.package_name})` : '';
+                                                        return `${start}-${end} ; ${name}${pkg}`;
+                                                    })
+                                                    .join('\n');
+
+                                                const text = `${header}\n\n${bookedSessions}`;
+                                                navigator.clipboard.writeText(text);
+                                                alert('Jadwal berhasil disalin!');
+                                            }}
+                                            className="text-[10px] font-bold uppercase bg-brand-gold text-brand-black px-3 py-1.5 rounded-lg shadow-sm hover:scale-105 transition-transform"
+                                        >
+                                            Salin Text
+                                        </button>
+                                    </div>
+                                    <div className="bg-brand-black/5 dark:bg-white/5 p-4 rounded-2xl border border-black/5 dark:border-white/5">
+                                        <pre className="text-xs font-mono text-brand-black dark:text-brand-white whitespace-pre-wrap leading-relaxed">
+                                            <span className="font-bold">AFstudio {new Date(selectedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
+                                            {'\n\n'}
+                                            {grid.filter(item => item.status === 'booked').length > 0 ? (
+                                                grid.filter(item => item.status === 'booked').map((item, i) => {
+                                                    const addMinutes = (time, mins) => {
+                                                        const [h, m] = time.split(':').map(Number);
+                                                        const date = new Date();
+                                                        date.setHours(h, m + mins);
+                                                        return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }).replace(':', '.');
+                                                    };
+                                                    const start = item.time.replace(':', '.');
+                                                    const end = addMinutes(item.time, 30);
+                                                    const name = item.booking_info?.customer_name || 'Booked';
+                                                    const pkg = item.booking_info?.package_name ? ` (${item.booking_info.package_name})` : '';
+                                                    return (
+                                                        <div key={i} className="mb-1">
+                                                            <span className="text-brand-gold">{start}-{end}</span> ; {name}<span className="opacity-50 text-[10px]">{pkg}</span>
+                                                        </div>
+                                                    );
+                                                })
+                                            ) : (
+                                                <span className="text-brand-black/30 dark:text-brand-white/30 italic">- Belum ada sesi ter-booking -</span>
+                                            )}
+                                        </pre>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
-                </div>
 
-                {/* Session Grid */}
-                {!selectedPhotographerId ? (
-                    <div className="py-20 text-center bg-white dark:bg-white/3 rounded-3xl border border-dashed border-black/10 dark:border-white/10">
-                        <UserIcon className="w-12 h-12 mx-auto text-brand-black/10 mb-4" />
-                        <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-bold uppercase tracking-widest">Silakan pilih fotografer terlebih dahulu</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {grid.map((item, index) => (
-                            <div
-                                key={index}
-                                className={`p-5 rounded-2xl border transition-all relative overflow-hidden group ${item.status === 'open'
-                                    ? 'bg-brand-gold/10 border-brand-gold shadow-lg shadow-brand-gold/5'
-                                    : item.status === 'booked'
-                                        ? 'bg-green-500/10 border-green-500/30'
-                                        : 'bg-white dark:bg-white/3 border-black/5 dark:border-white/5 opacity-50'
-                                    }`}
-                            >
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className={`text-[10px] font-black uppercase tracking-widest ${item.status === 'open' ? 'text-brand-gold' :
-                                        item.status === 'booked' ? 'text-green-500' : 'text-brand-black/20 dark:text-brand-white/20'
-                                        }`}>
-                                        Sesi {index + 1}
-                                    </span>
-                                    <ClockIcon className={`w-4 h-4 ${item.status === 'open' ? 'text-brand-gold' :
-                                        item.status === 'booked' ? 'text-green-500' : 'text-brand-black/20 dark:text-brand-white/20'
-                                        }`} />
+                    {/* Right Column: Sessions Grid */}
+                    <div className="lg:col-span-2">
+                        {!selectedPhotographerId ? (
+                            <div className="py-20 text-center bg-white dark:bg-white/3 rounded-3xl border border-dashed border-black/10 dark:border-white/10 flex flex-col items-center justify-center min-h-[400px]">
+                                <div className="w-16 h-16 rounded-full bg-brand-black/5 dark:bg-white/5 flex items-center justify-center mb-4">
+                                    <UserIcon className="w-8 h-8 text-brand-black/20 dark:text-brand-white/20" />
+                                </div>
+                                <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-bold uppercase tracking-widest">Silakan pilih fotografer terlebih dahulu</p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Date Header */}
+                                <div className="flex items-center justify-between gap-3 mb-6 bg-white dark:bg-white/5 p-4 rounded-2xl border border-black/5 dark:border-white/10 shadow-sm relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-brand-gold/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                                    <div className="flex items-center gap-4 relative z-10 w-full">
+                                        <div className="p-2.5 rounded-xl bg-brand-gold/10 border border-brand-gold/20 text-brand-gold shrink-0">
+                                            <ClockIcon className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-bold tracking-widest text-brand-black/30 dark:text-brand-white/30 uppercase mb-0.5">Jadwal Sesi</span>
+                                                <span className="block text-base sm:text-lg font-black uppercase tracking-tight text-brand-black dark:text-brand-white leading-tight">
+                                                    {new Date(selectedDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center sm:flex-col sm:items-end">
+                                                <span className="text-[9px] sm:text-[10px] font-bold tracking-widest text-brand-black/40 dark:text-brand-white/40 uppercase bg-black/5 dark:bg-white/10 px-3 py-1.5 rounded-lg border border-black/5 dark:border-white/5 whitespace-nowrap">
+                                                    {grid.filter(i => i.status === 'booked').length} Terisi / {grid.length} Total
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <h3 className="text-xl font-black text-brand-black dark:text-brand-white tracking-tighter mb-1">
-                                    {item.time}
-                                </h3>
-
-                                <div className="flex items-center gap-1 mb-4">
-                                    {item.status === 'open' ? (
-                                        <>
-                                            <div className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
-                                            <span className="text-[8px] font-black uppercase text-brand-gold">Tersedia</span>
-                                        </>
-                                    ) : item.status === 'booked' ? (
-                                        <div className="flex flex-col gap-1.5 w-full overflow-hidden">
-                                            <div className="flex items-center gap-1">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                                <span className="text-[8px] font-black uppercase text-green-500">Terisi</span>
+                                {/* Sessions Grid */}
+                                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
+                                    {grid.map((item, index) => (
+                                        <div
+                                            key={index}
+                                            className={`p-3 rounded-2xl border transition-all text-left relative overflow-hidden group flex flex-col justify-between aspect-5/4
+                                                ${item.status === 'open'
+                                                    ? 'bg-brand-gold/10 border-brand-gold shadow-lg shadow-brand-gold/5'
+                                                    : item.status === 'booked'
+                                                        ? 'bg-green-500/10 border-green-500/30'
+                                                        : 'bg-white dark:bg-white/3 border-black/5 dark:border-white/5 opacity-50'
+                                                }`}
+                                        >
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className={`text-[10px] font-black uppercase tracking-widest ${item.status === 'open' ? 'text-brand-gold' :
+                                                    item.status === 'booked' ? 'text-green-500' : 'text-brand-black/20 dark:text-brand-white/20'
+                                                    }`}>
+                                                    Sesi {index + 1}
+                                                </span>
+                                                <ClockIcon className={`w-3.5 h-3.5 ${item.status === 'open' ? 'text-brand-gold' :
+                                                    item.status === 'booked' ? 'text-green-500' : 'text-brand-black/20 dark:text-brand-white/20'
+                                                    }`} />
                                             </div>
-                                            {item.booking_info && (
-                                                <div className="mt-1 flex flex-col gap-0.5 border-t border-green-500/10 pt-1">
-                                                    <p className="text-[9px] font-black text-brand-black dark:text-brand-white uppercase truncate">
-                                                        {item.booking_info.customer_name}
-                                                    </p>
-                                                    <p className="text-[7px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase truncate">
-                                                        {item.booking_info.package_name}
-                                                    </p>
+
+                                            <div>
+                                                <h3 className="text-lg font-black text-brand-black dark:text-brand-white tracking-tighter mb-0.5">
+                                                    {item.time}
+                                                </h3>
+
+                                                <div className="flex items-center gap-1">
+                                                    {item.status === 'open' ? (
+                                                        <>
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
+                                                            <span className="text-[8px] font-black uppercase text-brand-gold">Tersedia</span>
+                                                        </>
+                                                    ) : item.status === 'booked' ? (
+                                                        <div className="flex flex-col gap-0.5 w-full overflow-hidden">
+                                                            <div className="flex items-center gap-1 mb-1">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                                <span className="text-[8px] font-black uppercase text-green-500">Terisi</span>
+                                                            </div>
+                                                            {item.booking_info && (
+                                                                <div className="flex flex-col gap-0.5 border-t border-green-500/10 pt-1">
+                                                                    <p className="text-[9px] font-black text-brand-black dark:text-brand-white uppercase truncate">
+                                                                        {item.booking_info.customer_name}
+                                                                    </p>
+                                                                    <p className="text-[7px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase truncate">
+                                                                        {item.booking_info.package_name}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-brand-black/20 dark:bg-brand-white/20" />
+                                                            <span className="text-[8px] font-black uppercase text-brand-black/20 dark:text-brand-white/20">Kosong (Off)</span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Admin Actions */}
+                                            {item.status !== 'off' && (
+                                                <div className="flex gap-1.5 mt-2">
+                                                    <button
+                                                        onClick={() => openOffsetModal(item)}
+                                                        className="w-full bg-black/80 dark:bg-white/10 text-white dark:text-white p-1.5 rounded-xl flex items-center justify-center gap-1 hover:bg-black dark:hover:bg-white/20 transition-all shadow-sm"
+                                                        title="Set Offset"
+                                                    >
+                                                        <AdjustmentsHorizontalIcon className="w-3.5 h-3.5" />
+                                                        <span className="text-[7.5px] font-black uppercase tracking-tight">Offset</span>
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
-                                    ) : (
-                                        <>
-                                            <div className="w-1.5 h-1.5 rounded-full bg-brand-black/20 dark:bg-brand-white/20" />
-                                            <span className="text-[8px] font-black uppercase text-brand-black/20 dark:text-brand-white/20">Kosong</span>
-                                        </>
-                                    )}
+                                    ))}
                                 </div>
 
-                                {item.status !== 'off' && (
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => openOffsetModal(item)}
-                                            className="flex-1 bg-black dark:bg-white text-white dark:text-brand-black p-2 rounded-lg flex items-center justify-center gap-2 hover:scale-105 transition-all shadow-sm"
-                                        >
-                                            <AdjustmentsHorizontalIcon className="w-3.5 h-3.5" />
-                                            <span className="text-[8px] font-black uppercase">Offset</span>
-                                        </button>
-                                        <button
-                                            onClick={() => openRescheduleModal(item)}
-                                            className="flex-1 bg-brand-gold text-brand-black p-2 rounded-lg flex items-center justify-center gap-2 hover:scale-105 transition-all shadow-sm"
-                                        >
-                                            <ArrowsRightLeftIcon className="w-3.5 h-3.5" />
-                                            <span className="text-[8px] font-black uppercase tracking-widest">Move</span>
-                                        </button>
+                                {/* Footer Legend */}
+                                <div className="mt-8 flex flex-wrap gap-6 p-5 bg-black/2 dark:bg-white/2 rounded-2xl border border-dashed border-black/10 dark:border-white/10">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-4 h-4 rounded-md bg-brand-gold/20 border border-brand-gold" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Sesi Tersedia</span>
                                     </div>
-                                )}
-                            </div>
-                        ))}
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-4 h-4 rounded-md bg-green-500/20 border border-green-500" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Sesi Ter-booking</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-4 h-4 rounded-md bg-white dark:bg-white/3 border border-black/5 dark:border-white/5" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Sesi Kosong (Off)</span>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
 
             {/* Offset Modal */}
@@ -311,7 +318,7 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                 type="number"
                                 value={offsetData.minutes}
                                 onChange={(e) => setOffsetData({ ...offsetData, minutes: e.target.value })}
-                                className="w-full bg-black/5 rounded-xl px-4 py-3"
+                                className="w-full bg-black/5 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-gold border-0 ring-1 ring-black/5"
                             />
                             <p className="text-[8px] font-medium text-brand-black/40 mt-1 italic">* Contoh: 10 untuk telat 10 menit, -10 untuk lebih cepat 10 menit.</p>
                         </div>
@@ -320,35 +327,14 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                             <textarea
                                 value={offsetData.description}
                                 onChange={(e) => setOffsetData({ ...offsetData, description: e.target.value })}
-                                className="w-full bg-black/5 rounded-xl px-4 py-3 h-20"
+                                className="w-full bg-black/5 rounded-xl px-4 py-3 h-24 text-sm font-bold focus:ring-brand-gold border-0 ring-1 ring-black/5"
                                 placeholder="Alasan offset..."
                             />
                         </div>
-                        <button onClick={submitOffset} className="w-full bg-black text-white py-4 rounded-xl font-black uppercase tracking-widest">Simpan Offset</button>
-                    </div>
-                </div>
-            </Modal>
-
-            {/* Reschedule Modal */}
-            <Modal show={isRescheduleModalOpen} onClose={() => setIsRescheduleModalOpen(false)} maxWidth="md" closeable={false}>
-                <div className="p-8">
-                    <h2 className="text-xl font-black uppercase tracking-tighter italic mb-4">Pindah Sesi</h2>
-                    <div className="space-y-4">
-                        <div>
-                            <label className="text-[10px] uppercase font-black tracking-widest text-brand-black/40 block mb-2">Pilih Sesi Baru</label>
-                            <input
-                                type="time"
-                                step="1800"
-                                value={rescheduleData.newTime}
-                                onChange={(e) => setRescheduleData({ ...rescheduleData, newTime: e.target.value })}
-                                className="w-full bg-black/5 rounded-xl px-4 py-3"
-                            />
+                        <div className="flex gap-3 pt-2">
+                            <button onClick={() => setIsOffsetModalOpen(false)} className="flex-1 bg-black/5 py-4 rounded-xl font-black uppercase tracking-widest text-[10px]">Batal</button>
+                            <button onClick={submitOffset} className="flex-1 bg-black text-white py-4 rounded-xl font-black uppercase tracking-widest text-[10px]">Simpan Offset</button>
                         </div>
-                        <div className="bg-brand-gold/10 p-4 rounded-xl flex items-start gap-3">
-                            <InformationCircleIcon className="w-5 h-5 text-brand-gold shrink-0" />
-                            <p className="text-[9px] font-bold text-brand-gold uppercase leading-relaxed">Pastikan slot tujuan tersedia (Status: Off) atau pindahkan antar slot ketersediaan FG.</p>
-                        </div>
-                        <button onClick={submitReschedule} className="w-full bg-brand-gold text-brand-black py-4 rounded-xl font-black uppercase tracking-widest">Update Jadwal</button>
                     </div>
                 </div>
             </Modal>

@@ -139,15 +139,18 @@ export default function Sessions({ grid, selectedDate, filters, options, monthly
                                 <div className="p-2.5 rounded-xl bg-brand-gold/10 border border-brand-gold/20 text-brand-gold shrink-0">
                                     <ClockIcon className="w-5 h-5" />
                                 </div>
-                                <div className="flex flex-1 items-center justify-between">
-                                    <div>
-                                        <span className="block text-lg font-black uppercase tracking-tight text-brand-black dark:text-brand-white">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold tracking-widest text-brand-black/30 dark:text-brand-white/30 uppercase mb-0.5">Jadwal Sesi</span>
+                                        <span className="block text-base sm:text-lg font-black uppercase tracking-tight text-brand-black dark:text-brand-white leading-tight">
                                             {new Date(selectedDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                                         </span>
                                     </div>
-                                    <span className="text-[10px] font-bold tracking-widest text-brand-black/40 dark:text-brand-white/40 uppercase bg-black/5 dark:bg-white/10 px-3 py-1.5 rounded-lg border border-black/5 dark:border-white/5">
-                                        {monthlyStats[new Date(selectedDate).toLocaleDateString('en-CA')] || 0} Sesi
-                                    </span>
+                                    <div className="flex items-center sm:flex-col sm:items-end">
+                                        <span className="text-[9px] sm:text-[10px] font-bold tracking-widest text-brand-black/40 dark:text-brand-white/40 uppercase bg-black/5 dark:bg-white/10 px-3 py-1.5 rounded-lg border border-black/5 dark:border-white/5 whitespace-nowrap">
+                                            {grid.filter(i => i.status === 'booked').length} Terisi / {grid.length} Total
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -222,21 +225,21 @@ export default function Sessions({ grid, selectedDate, filters, options, monthly
                                 </button>
                             ))}
                         </div>
-                    </div>
 
-                    {/* Footer Info */}
-                    <div className="mt-12 flex flex-wrap gap-8 p-6 bg-black/2 dark:bg-white/2 rounded-2xl border border-dashed border-black/10 dark:border-white/10">
-                        <div className="flex items-center gap-3">
-                            <div className="w-4 h-4 rounded-md bg-brand-gold/20 border border-brand-gold" />
-                            <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Sesi Diambil</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <div className="w-4 h-4 rounded-md bg-green-500/20 border border-green-500" />
-                            <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Sesi Ter-booking</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <div className="w-4 h-4 rounded-md bg-white dark:bg-white/3 border border-black/5 dark:border-white/5" />
-                            <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Sesi Kosong (Off)</span>
+                        {/* Footer Info */}
+                        <div className="mt-8 flex flex-wrap gap-8 p-6 bg-black/2 dark:bg-white/2 rounded-2xl border border-dashed border-black/10 dark:border-white/10">
+                            <div className="flex items-center gap-3">
+                                <div className="w-4 h-4 rounded-md bg-brand-gold/20 border border-brand-gold" />
+                                <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Sesi Tersedia</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-4 h-4 rounded-md bg-green-500/20 border border-green-500" />
+                                <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Sesi Ter-booking</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-4 h-4 rounded-md bg-white dark:bg-white/3 border border-black/5 dark:border-white/5" />
+                                <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Sesi Kosong (Off)</span>
+                            </div>
                         </div>
                     </div>
                 </div>
