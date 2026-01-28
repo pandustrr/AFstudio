@@ -14,7 +14,7 @@ class PhotographerController extends Controller
     public function index()
     {
         return Inertia::render('Admin/Photographers/Index', [
-            'photographers' => User::where('role', 'photographer')->get()
+            'photographers' => User::where('role', 'photographer')->select('id', 'name', 'username', 'phone', 'plain_password')->get()
         ]);
     }
 
@@ -31,6 +31,7 @@ class PhotographerController extends Controller
             'name' => $validated['name'],
             'username' => $validated['username'],
             'password' => Hash::make($validated['password']),
+            'plain_password' => $validated['password'],
             'phone' => $validated['phone'],
             'role' => 'photographer',
         ]);
@@ -58,6 +59,7 @@ class PhotographerController extends Controller
 
         if ($request->filled('password')) {
             $data['password'] = Hash::make($validated['password']);
+            $data['plain_password'] = $validated['password'];
         }
 
         $photographer->update($data);
