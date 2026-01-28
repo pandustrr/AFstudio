@@ -13,19 +13,35 @@ class DashboardController extends Controller
     public function index()
     {
         $today = now()->toDateString();
+        $tomorrow = now()->addDay()->toDateString();
 
-        // Stats for today only
+        // Stats for Dashboard
         $stats = [
-            'total_sessions' => PhotographerSession::where('date', $today)->count(),
-            'new_bookings' => Booking::whereDate('created_at', $today)->count(),
-            'reservations' => PhotographerSession::where('date', $today)
+            'pending_payments' => \App\Models\PaymentProof::where('status', 'pending')->count(),
+            'today_sessions' => PhotographerSession::where('date', $today)
                 ->where('status', 'booked')
                 ->count(),
-            'reviews' => Review::whereDate('created_at', $today)->count(),
+            'tomorrow_sessions' => PhotographerSession::where('date', $tomorrow)
+                ->where('status', 'booked')
+                ->count(),
+            'pending_bookings' => Booking::where('status', 'pending')->count(),
         ];
+
+        // Recent Bookings
+        $recentBookings = Booking::with(['items.photographer'])
+            ->latest()
+            ->take(5)
+            ->get();
+
+        // Recent Reviews
+        $recentReviews = Review::latest()
+            ->take(5)
+            ->get();
 
         return Inertia::render('Admin/Dashboard', [
             'stats' => $stats,
+            'recentBookings' => $recentBookings,
+            'recentReviews' => $recentReviews,
         ]);
     }
 }

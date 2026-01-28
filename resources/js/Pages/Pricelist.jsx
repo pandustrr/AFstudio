@@ -15,6 +15,7 @@ export default function Pricelist({ categories, rooms, locked }) {
     // Modal State
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
     const [selectedPackageForCart, setSelectedPackageForCart] = useState(null);
+    const [bookingMode, setBookingMode] = useState('cart'); // 'cart' or 'direct'
 
     // Handle initial state for locked package
     useEffect(() => {
@@ -25,8 +26,9 @@ export default function Pricelist({ categories, rooms, locked }) {
         }
     }, [locked, categories]);
 
-    const openScheduleModal = (pkg) => {
+    const openScheduleModal = (pkg, mode = 'cart') => {
         setSelectedPackageForCart(pkg);
+        setBookingMode(mode);
         setIsScheduleModalOpen(true);
     };
 
@@ -75,6 +77,7 @@ export default function Pricelist({ categories, rooms, locked }) {
                 packageData={selectedPackageForCart}
                 rooms={rooms}
                 canBook={!!locked}
+                mode={bookingMode}
             />
 
             {/* Header Section */}
@@ -267,15 +270,42 @@ export default function Pricelist({ categories, rooms, locked }) {
                                             </div>
 
                                             <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => openScheduleModal(pkg)}
-                                                    className={`block w-full py-3.5 md:py-4 rounded-2xl md:rounded-xl text-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all ${pkg.is_popular
-                                                        ? 'bg-brand-red text-white hover:bg-brand-gold hover:text-brand-black shadow-lg shadow-brand-red/20'
-                                                        : 'bg-black/5 dark:bg-white/10 text-brand-black dark:text-brand-white hover:bg-brand-black hover:text-white dark:hover:bg-brand-gold dark:hover:text-brand-black shadow-sm'
-                                                        }`}
-                                                >
-                                                    {locked ? 'Tambah ke Keranjang' : 'Lihat Detail'}
-                                                </button>
+                                                {locked && (
+                                                    <>
+                                                        {/* Icon Keranjang */}
+                                                        <button
+                                                            onClick={() => openScheduleModal(pkg, 'cart')}
+                                                            className={`flex items-center justify-center w-14 md:w-16 py-3.5 md:py-4 rounded-2xl md:rounded-xl transition-all ${pkg.is_popular
+                                                                ? 'bg-brand-gold/20 text-brand-gold hover:bg-brand-gold hover:text-brand-black border-2 border-brand-gold/30'
+                                                                : 'bg-black/5 dark:bg-white/10 text-brand-black dark:text-brand-white hover:bg-brand-gold hover:text-brand-black border-2 border-black/5 dark:border-white/5'
+                                                                }`}
+                                                        >
+                                                            <ShoppingCartIcon className="w-5 h-5" />
+                                                        </button>
+
+                                                        {/* Tombol Langsung Beli */}
+                                                        <button
+                                                            onClick={() => openScheduleModal(pkg, 'direct')}
+                                                            className={`flex-1 py-3.5 md:py-4 rounded-2xl md:rounded-xl text-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all ${pkg.is_popular
+                                                                ? 'bg-brand-red text-white hover:bg-brand-gold hover:text-brand-black shadow-lg shadow-brand-red/20'
+                                                                : 'bg-black/5 dark:bg-white/10 text-brand-black dark:text-brand-white hover:bg-brand-black hover:text-white dark:hover:bg-brand-gold dark:hover:text-brand-black shadow-sm'
+                                                                }`}
+                                                        >
+                                                            Langsung Beli
+                                                        </button>
+                                                    </>
+                                                )}
+                                                {!locked && (
+                                                    <button
+                                                        onClick={() => openScheduleModal(pkg)}
+                                                        className={`block w-full py-3.5 md:py-4 rounded-2xl md:rounded-xl text-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all ${pkg.is_popular
+                                                            ? 'bg-brand-red text-white hover:bg-brand-gold hover:text-brand-black shadow-lg shadow-brand-red/20'
+                                                            : 'bg-black/5 dark:bg-white/10 text-brand-black dark:text-brand-white hover:bg-brand-black hover:text-white dark:hover:bg-brand-gold dark:hover:text-brand-black shadow-sm'
+                                                            }`}
+                                                    >
+                                                        Lihat Detail
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     ))}

@@ -6,13 +6,35 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
     const { data, setData, post, put, processing, errors, reset } = useForm({
         name: '',
         price_display: '',
-        price_numeric: '',
+        price_numeric: '50.000',
         features: [],
         sub_category_id: '',
         is_popular: false,
         max_sessions: 1,
         max_editing_quota: 0,
     });
+
+    const formatCurrency = (value) => {
+        if (!value) return '';
+
+        // Cek jika ini adalah string desimal dari database (misal: "50000.00")
+        // Database menyimpan decimal(12,2), jadi kita buang bagian di belakang titik jika ada.
+        let strValue = value.toString();
+        if (strValue.includes('.') && !strValue.includes(',')) {
+            const parts = strValue.split('.');
+            // Jika ada 2 bagian dan bagian belakang panjangnya 2 (format database .00)
+            if (parts.length === 2 && parts[1].length <= 2) {
+                strValue = parts[0];
+            }
+        }
+
+        // Hapus semua karakter kecuali angka
+        const numericValue = strValue.replace(/[^0-9]/g, '');
+        if (!numericValue) return '';
+
+        // Format dengan titik sebagai pemisah ribuan (id-ID)
+        return new Intl.NumberFormat('id-ID').format(numericValue);
+    };
 
     const [newFeature, setNewFeature] = useState('');
 
@@ -21,7 +43,7 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
             setData({
                 name: pkg.name || '',
                 price_display: pkg.price_display || '',
-                price_numeric: pkg.price_numeric || '',
+                price_numeric: pkg.price_numeric ? formatCurrency(pkg.price_numeric) : '',
                 features: pkg.features || [],
                 sub_category_id: pkg.sub_category_id || '',
                 is_popular: pkg.is_popular || false,
@@ -30,7 +52,12 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
             });
         } else {
             reset();
-            setData('sub_category_id', subCategoryId || '');
+            setData({
+                ...data,
+                sub_category_id: subCategoryId || '',
+                price_display: '',
+                price_numeric: '50.000',
+            });
         }
     }, [pkg, subCategoryId]);
 
@@ -51,11 +78,15 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
         e.preventDefault();
 
         // Convert to proper types before submission
+        const cleanPrice = typeof data.price_numeric === 'string'
+            ? data.price_numeric.replace(/[^0-9]/g, '')
+            : data.price_numeric;
+
         const submitData = {
             ...data,
             max_sessions: parseInt(data.max_sessions) || 1,
             max_editing_quota: parseInt(data.max_editing_quota) || 0,
-            price_numeric: data.price_numeric ? parseFloat(data.price_numeric) : null,
+            price_numeric: cleanPrice ? parseFloat(cleanPrice) : null,
             is_popular: Boolean(data.is_popular),
         };
 
@@ -127,11 +158,12 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
                         <div>
                             <label className="block text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-2">Harga (Angka)</label>
                             <input
-                                type="number"
+                                type="text"
                                 value={data.price_numeric}
-                                onChange={(e) => setData('price_numeric', e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) => setData('price_numeric', formatCurrency(e.target.value))}
                                 className="w-full bg-black/5 dark:bg-white/5 border-0 rounded-xl px-4 py-3 text-sm font-bold text-brand-black dark:text-brand-white focus:ring-2 focus:ring-brand-gold transition-all"
-                                placeholder="Contoh: 500000"
+                                placeholder="Contoh: 50.000"
                             />
                         </div>
                         <div>

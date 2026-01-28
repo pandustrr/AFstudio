@@ -21,6 +21,7 @@ class AdminSeeder extends Seeder
                 'name' => 'Admin AFstudio',
                 'password' => Hash::make('admin123'),
                 'role' => 'admin',
+                'phone' => '6281230487469',
             ]
         );
 
@@ -30,6 +31,7 @@ class AdminSeeder extends Seeder
                 'name' => 'Editor AFstudio',
                 'password' => Hash::make('editor123'),
                 'role' => 'editor',
+                'phone' => '6281234567890',
             ]
         );
 
@@ -39,6 +41,7 @@ class AdminSeeder extends Seeder
                 'name' => 'Photographer AFstudio',
                 'password' => Hash::make('photo123'),
                 'role' => 'photographer',
+                'phone' => '6281111111111',
             ]
         );
     }
