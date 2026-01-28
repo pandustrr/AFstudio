@@ -73,37 +73,43 @@ export default function Navbar() {
 
     return (
         <nav
-            className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled
-                ? 'bg-white/80 dark:bg-brand-black/80 backdrop-blur-xl py-1.5 md:py-2 border-b border-black/5 dark:border-white/5 shadow-sm'
-                : 'bg-transparent py-3 md:py-4'
+            className={`fixed top-0 w-full z-100 transition-all duration-500 ${scrolled
+                ? 'bg-white/70 dark:bg-brand-black/70 backdrop-blur-2xl py-1 md:py-2 border-b border-black/5 dark:border-white/5 shadow-sm'
+                : 'bg-transparent py-2.5 md:py-4'
                 }`}
         >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-10 md:h-14">
+            <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between h-9 md:h-14">
                     {/* Logo */}
-                    <Link href="/" className="group flex items-center space-x-2">
-                        <div className="w-6 h-6 md:w-7 md:h-7 bg-brand-red rounded-full flex items-center justify-center group-hover:bg-brand-gold transition-colors duration-500">
-                            <span className="text-brand-white font-black text-[9px] md:text-[10px]">AF</span>
+                    <Link href="/" className="group flex items-center space-x-2.5">
+                        <div className="w-5.5 h-5.5 md:w-7 md:h-7 bg-brand-red rounded-full flex items-center justify-center group-hover:bg-brand-gold transition-all duration-500 shadow-lg shadow-brand-red/20">
+                            <span className="text-brand-white font-black text-[8px] md:text-[10px]">AF</span>
                         </div>
-                        <span className="text-base md:text-lg font-bold text-brand-black dark:text-brand-white tracking-widest uppercase">
+                        <span className={`text-sm md:text-lg font-black tracking-[0.2em] uppercase transition-colors duration-300 ${!scrolled && (url === '/about' || url === '/review')
+                            ? 'text-white'
+                            : 'text-brand-black dark:text-brand-white'
+                            }`}>
                             AF<span className="text-brand-gold group-hover:text-brand-red transition-colors">STUDIO</span>
                         </span>
                     </Link>
 
                     {/* Desktop Navigation */}
-                    <div className="hidden md:flex items-center space-x-8">
+                    <div className="hidden md:flex items-center space-x-9">
                         {navLinks.map((link) => {
                             const isActive = url === link.href;
+                            const isDarkHero = url === '/about' || url === '/review';
                             return (
                                 <Link
                                     key={link.name}
                                     href={link.href}
-                                    className={`relative text-[10px] uppercase tracking-[0.2em] font-bold transition-all duration-300 hover:text-brand-gold ${isActive ? 'text-brand-gold' : 'text-brand-black/70 dark:text-brand-white/70'
+                                    className={`relative text-[9px] uppercase tracking-[0.25em] font-black transition-all duration-300 hover:text-brand-gold ${isActive
+                                        ? 'text-brand-gold'
+                                        : (!scrolled && isDarkHero ? 'text-white' : 'text-brand-black/70 dark:text-brand-white/70')
                                         }`}
                                 >
                                     {link.name}
                                     {isActive && (
-                                        <span className="absolute -bottom-1.5 left-0 w-full h-0.5 bg-brand-red animate-pulse"></span>
+                                        <span className="absolute -bottom-1.5 left-0 w-full h-0.5 bg-brand-red rounded-full"></span>
                                     )}
                                 </Link>
                             );
@@ -112,59 +118,111 @@ export default function Navbar() {
                         {/* Cart Icon */}
                         <button
                             onClick={() => setIsCartModalOpen(true)}
-                            className="relative text-brand-black/70 dark:text-brand-white/70 hover:text-brand-gold transition-colors duration-300 ml-4 scale-90"
+                            className={`relative transition-all duration-300 ml-5 hover:scale-110 ${!scrolled && (url === '/about' || url === '/review') ? 'text-white' : 'text-brand-black/70 dark:text-brand-white/70'
+                                } hover:text-brand-gold`}
                         >
-                            <ShoppingCartIcon className="w-6 h-6" />
+                            <ShoppingCartIcon className="w-5.5 h-5.5" />
                         </button>
 
                         {/* Theme Toggle Button */}
-                        <ThemeToggle theme={theme} toggleTheme={toggleTheme} className="ml-2 scale-90" />
+                        <ThemeToggle
+                            theme={theme}
+                            toggleTheme={toggleTheme}
+                            className={`ml-3 scale-90 ${!scrolled && (url === '/about' || url === '/review') ? 'border-white/20 text-white bg-white/10 hover:bg-white/20' : ''}`}
+                        />
                     </div>
 
                     {/* Mobile Toggle & Theme Button */}
-                    <div className="md:hidden flex items-center space-x-4">
-                        <ThemeToggle theme={theme} toggleTheme={toggleTheme} className="scale-90" />
+                    <div className="md:hidden flex items-center space-x-3">
+                        <ThemeToggle
+                            theme={theme}
+                            toggleTheme={toggleTheme}
+                            className={`scale-85 ${!scrolled && (url === '/about' || url === '/review') ? 'border-white/20 text-white bg-white/10 hover:bg-white/20' : ''}`}
+                        />
                         <button
                             onClick={() => setIsOpen(!isOpen)}
-                            className="text-brand-black dark:text-brand-white p-2 focus:outline-none"
+                            className={`p-1.5 focus:outline-none transition-colors ${!scrolled && (url === '/about' || url === '/review') ? 'text-white' : 'text-brand-black dark:text-brand-white'
+                                }`}
                         >
-                            <div className="w-5 h-4 flex flex-col justify-between items-end">
-                                <span className={`h-0.5 bg-current transition-all duration-300 ${isOpen ? 'w-5 -rotate-45 translate-y-1.5' : 'w-5'}`}></span>
-                                <span className={`h-0.5 bg-brand-gold transition-all duration-300 ${isOpen ? 'opacity-0' : 'w-3'}`}></span>
-                                <span className={`h-0.5 bg-current transition-all duration-300 ${isOpen ? 'w-5 rotate-45 -translate-y-2' : 'w-4'}`}></span>
+                            <div className="w-5 h-3.5 flex flex-col justify-between items-end">
+                                <span className={`h-0.5 bg-current transition-all duration-500 rounded-full ${isOpen ? 'w-5 -rotate-45 translate-y-1.5' : 'w-5'}`}></span>
+                                <span className={`h-0.5 bg-brand-gold transition-all duration-500 rounded-full ${isOpen ? 'opacity-0' : 'w-3.5'}`}></span>
+                                <span className={`h-0.5 bg-current transition-all duration-500 rounded-full ${isOpen ? 'w-5 rotate-45 -translate-y-1.5' : 'w-4'}`}></span>
                             </div>
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* Mobile Menu Overlay */}
-            <div className={`fixed inset-0 bg-white dark:bg-brand-black z-40 transition-transform duration-500 md:hidden ${isOpen ? 'translate-y-0 visible' : '-translate-y-full invisible'}`}>
-                <div className="flex flex-col items-center justify-center h-full space-y-8">
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.name}
-                            href={link.href}
-                            onClick={() => setIsOpen(false)}
-                            className="text-2xl font-black uppercase tracking-widest text-brand-black dark:text-brand-white hover:text-brand-gold transition-colors"
-                        >
-                            {link.name}
-                        </Link>
-                    ))}
-                    {/* Removed redundant text that might cause overlap issues on scroll */}
-                    {/* Mobile Cart Link */}
-                    <button
-                        onClick={() => {
-                            setIsOpen(false);
-                            setIsCartModalOpen(true);
-                        }}
-                        className="text-2xl font-black uppercase tracking-widest text-brand-black dark:text-brand-white hover:text-brand-gold transition-colors flex items-center gap-2"
+            {/* Mobile Menu Sidebar */}
+            <Transition show={isOpen} as={Fragment}>
+                <Dialog as="div" className="relative z-100 md:hidden" onClose={() => setIsOpen(false)}>
+                    <Transition.Child
+                        as={Fragment}
+                        enter="ease-out duration-500"
+                        enterFrom="opacity-0"
+                        enterTo="opacity-100"
+                        leave="ease-in duration-400"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
                     >
-                        <ShoppingCartIcon className="w-6 h-6" />
-                        CART
-                    </button>
-                </div>
-            </div>
+                        <div className="fixed inset-0 bg-brand-black/40 backdrop-blur-sm" />
+                    </Transition.Child>
+
+                    <div className="fixed inset-0 flex justify-end">
+                        <Transition.Child
+                            as={Fragment}
+                            enter="transform transition ease-out duration-500"
+                            enterFrom="translate-x-full"
+                            enterTo="translate-x-0"
+                            leave="transform transition ease-in duration-400"
+                            leaveFrom="translate-x-0"
+                            leaveTo="translate-x-full"
+                        >
+                            <Dialog.Panel className="w-[70%] max-w-[260px] h-full bg-white dark:bg-brand-black p-6 shadow-2xl border-l border-black/5 dark:border-white/10 overflow-y-auto relative">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-gold/10 blur-3xl -mr-16 -mt-16"></div>
+                                <div className="relative z-10 flex flex-col items-center space-y-6">
+                                    <div className="grid grid-cols-1 gap-1 items-center justify-items-center mb-2">
+                                        <div className="w-10 h-10 bg-brand-red rounded-full flex items-center justify-center mb-1 shadow-xl shadow-brand-red/30">
+                                            <span className="text-white font-black text-xs">AF</span>
+                                        </div>
+                                        <span className="text-xs font-black uppercase tracking-[0.4em] text-brand-gold">Menu Navigasi</span>
+                                    </div>
+
+                                    {navLinks.map((link, i) => (
+                                        <Link
+                                            key={link.name}
+                                            href={link.href}
+                                            onClick={() => setIsOpen(false)}
+                                            className={`text-base font-black uppercase tracking-[0.25em] transition-all duration-300 hover:text-brand-gold ${url === link.href ? 'text-brand-red scale-105' : 'text-brand-black/70 dark:text-brand-white/70'
+                                                }`}
+                                            style={{ transitionDelay: `${i * 50}ms` }}
+                                        >
+                                            {link.name}
+                                        </Link>
+                                    ))}
+
+                                    <div className="w-full h-px bg-black/5 dark:bg-white/5 my-2"></div>
+
+                                    <button
+                                        onClick={() => {
+                                            setIsOpen(false);
+                                            setIsCartModalOpen(true);
+                                        }}
+                                        className="p-4 bg-brand-black dark:bg-brand-white text-white dark:text-brand-black rounded-2xl active:scale-90 transition-all shadow-xl hover:bg-brand-gold hover:text-brand-black"
+                                    >
+                                        <ShoppingCartIcon className="w-6 h-6" />
+                                    </button>
+
+                                    <button onClick={() => setIsOpen(false)} className="mt-4 p-3 bg-black/5 dark:bg-white/5 rounded-full hover:bg-brand-red hover:text-white transition-all">
+                                        <XMarkIcon className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </Dialog.Panel>
+                        </Transition.Child>
+                    </div>
+                </Dialog>
+            </Transition>
             {/* UID Input Modal */}
             <Transition appear show={isCartModalOpen} as={Fragment}>
                 <Dialog as="div" className="relative z-60" onClose={() => setIsCartModalOpen(false)}>
@@ -265,6 +323,6 @@ export default function Navbar() {
                     </div>
                 </Dialog>
             </Transition>
-        </nav>
+        </nav >
     );
 }
