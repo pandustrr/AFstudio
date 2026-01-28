@@ -9,10 +9,36 @@ import {
     CheckCircleIcon,
     XCircleIcon,
 } from '@heroicons/react/24/outline';
+import EditNotif from '@/Components/EditNotif';
+import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
 
 export default function ReferralCodeIndex({ codes }) {
     const { flash } = usePage().props;
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Notification State
+    const [showNotif, setShowNotif] = useState(false);
+    const [notifMessage, setNotifMessage] = useState('');
+    const [notifType, setNotifType] = useState('success');
+
+    React.useEffect(() => {
+        if (flash.success) {
+            handleNotification(flash.success, 'success');
+        }
+        if (flash.error) {
+            handleNotification(flash.error, 'error');
+        }
+    }, [flash]);
+
+    // Delete Modal State
+    const [deleteModal, setDeleteModal] = useState({ show: false, id: null, code: '' });
+    const [deleting, setDeleting] = useState(false);
+
+    const handleNotification = (message, type = 'success') => {
+        setNotifMessage(message);
+        setNotifType(type);
+        setShowNotif(true);
+    };
 
     const formatPrice = (num) => {
         return new Intl.NumberFormat('id-ID', {
@@ -22,21 +48,42 @@ export default function ReferralCodeIndex({ codes }) {
         }).format(num);
     };
 
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        }).format(date);
+    };
+
     const filteredCodes = codes.data.filter(code =>
         code.code.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleDelete = (id) => {
-        if (confirm('Are you sure you want to delete this referral code?')) {
-            router.delete(`/admin/referral-codes/${id}`, {
-                onSuccess: () => alert('Referral code deleted successfully!'),
-            });
-        }
+    const handleDelete = (id, code) => {
+        setDeleteModal({ show: true, id, code });
+    };
+
+    const confirmDelete = () => {
+        setDeleting(true);
+        router.delete(`/admin/referral-codes/${deleteModal.id}`, {
+            onSuccess: () => {
+                setDeleting(false);
+                setDeleteModal({ show: false, id: null, code: '' });
+                handleNotification('Voucher code berhasil dihapus!', 'success');
+            },
+            onError: () => {
+                setDeleting(false);
+                handleNotification('Gagal menghapus voucher code!', 'error');
+            }
+        });
     };
 
     return (
         <AdminLayout>
-            <Head title="Referral Codes" />
+            <Head title="Voucher Codes" />
 
             <div className="pt-16 pb-12 px-6">
                 <div className="max-w-6xl mx-auto">
@@ -44,15 +91,15 @@ export default function ReferralCodeIndex({ codes }) {
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
                         <div>
                             <h1 className="text-3xl md:text-4xl font-black text-brand-black dark:text-brand-white uppercase italic tracking-tighter">
-                                Referral Codes
+                                Voucher Codes
                             </h1>
                             <p className="text-sm text-brand-black/50 dark:text-brand-white/50 font-bold uppercase tracking-widest mt-2">
-                                Manage promotional and referral codes
+                                Manage promotional and voucher codes
                             </p>
                         </div>
                         <Link
                             href="/admin/referral-codes/create"
-                            className="flex items-center gap-2 px-6 py-3 bg-brand-red text-white font-black rounded-xl uppercase text-xs tracking-widest hover:bg-brand-gold hover:text-brand-black transition-all shadow-lg"
+                            className="flex items-center gap-2 px-6 py-3 bg-brand-gold text-brand-black font-black rounded-xl uppercase text-xs tracking-widest hover:scale-105 transition-all shadow-lg shadow-brand-gold/20"
                         >
                             <PlusIcon className="w-5 h-5" />
                             Create Code
@@ -77,7 +124,7 @@ export default function ReferralCodeIndex({ codes }) {
                     <div className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-3xl shadow-xl overflow-hidden">
                         {filteredCodes.length === 0 ? (
                             <div className="p-12 text-center">
-                                <p className="text-brand-black/40 dark:text-brand-white/40 font-bold uppercase">No referral codes found</p>
+                                <p className="text-brand-black/40 dark:text-brand-white/40 font-bold uppercase">No voucher codes found</p>
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
@@ -105,7 +152,7 @@ export default function ReferralCodeIndex({ codes }) {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="text-xs font-bold text-brand-black/60 dark:text-brand-white/60">
-                                                        {code.valid_from} to {code.valid_until}
+                                                        {formatDate(code.valid_from)} - {formatDate(code.valid_until)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
@@ -130,14 +177,14 @@ export default function ReferralCodeIndex({ codes }) {
                                                     <div className="flex items-center justify-center gap-2">
                                                         <Link
                                                             href={`/admin/referral-codes/${code.id}/edit`}
-                                                            className="inline-flex items-center gap-1 px-3 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                                                            className="p-1.5 bg-black/5 dark:bg-white/5 hover:bg-black hover:text-white dark:hover:bg-brand-gold rounded-lg transition-all"
                                                             title="Edit"
                                                         >
                                                             <PencilSquareIcon className="w-4 h-4" />
                                                         </Link>
                                                         <button
-                                                            onClick={() => handleDelete(code.id)}
-                                                            className="inline-flex items-center gap-1 px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                                                            onClick={() => handleDelete(code.id, code.code)}
+                                                            className="p-1.5 bg-black/5 dark:bg-white/5 hover:bg-brand-red hover:text-white rounded-lg transition-all"
                                                             title="Delete"
                                                         >
                                                             <TrashIcon className="w-4 h-4" />
@@ -153,6 +200,22 @@ export default function ReferralCodeIndex({ codes }) {
                     </div>
                 </div>
             </div>
+
+            <EditNotif
+                show={showNotif}
+                onClose={() => setShowNotif(false)}
+                message={notifMessage}
+                type={notifType}
+            />
+
+            <DeleteConfirmModal
+                isOpen={deleteModal.show}
+                onClose={() => setDeleteModal({ show: false, id: null, code: '' })}
+                onConfirm={confirmDelete}
+                title="Hapus Voucher Code"
+                message={`Yakin ingin menghapus voucher code "${deleteModal.code}"?`}
+                processing={deleting}
+            />
         </AdminLayout>
     );
 }

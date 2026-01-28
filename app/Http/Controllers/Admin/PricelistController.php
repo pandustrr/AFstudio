@@ -9,6 +9,7 @@ use App\Models\PricelistPackage;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class PricelistController extends Controller
 {
@@ -92,7 +93,11 @@ class PricelistController extends Controller
             'features' => 'nullable|array',
             'is_popular' => 'boolean',
             'max_sessions' => 'required|integer|min:1',
+            'max_editing_quota' => 'required|integer|min:0',
         ]);
+
+        // Calculate duration based on max_sessions (1 session = 30 minutes)
+        $validated['duration'] = $validated['max_sessions'] * 30;
 
         PricelistPackage::create($validated);
 
@@ -101,6 +106,9 @@ class PricelistController extends Controller
 
     public function updatePackage(Request $request, PricelistPackage $package)
     {
+        // Debug: lihat data yang diterima
+        Log::info('Update Package Request:', $request->all());
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'price_display' => 'required|string',
@@ -108,9 +116,17 @@ class PricelistController extends Controller
             'features' => 'nullable|array',
             'is_popular' => 'boolean',
             'max_sessions' => 'required|integer|min:1',
+            'max_editing_quota' => 'required|integer|min:0',
         ]);
 
+        Log::info('Validated Data:', $validated);
+
+        // Calculate duration based on max_sessions (1 session = 30 minutes)
+        $validated['duration'] = $validated['max_sessions'] * 30;
+
         $package->update($validated);
+
+        Log::info('Package after update:', $package->toArray());
 
         return back()->with('success', 'Paket berhasil diperbarui.');
     }

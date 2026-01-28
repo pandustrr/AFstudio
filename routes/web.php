@@ -32,12 +32,19 @@ Route::get('/schedule/check-photographer-availability', [ScheduleController::cla
 // Shared / Locked Routes
 Route::get('/share/SemuaKategori', [\App\Http\Controllers\SharedPricelistController::class, 'all'])->name('share.all');
 Route::get('/share/c/{slug}', [\App\Http\Controllers\SharedPricelistController::class, 'category'])->name('share.category');
+Route::get('/share/s/{slug}', [\App\Http\Controllers\SharedPricelistController::class, 'subCategory'])->name('share.subCategory');
 Route::get('/share/p/{slug}', [\App\Http\Controllers\SharedPricelistController::class, 'package'])->name('share.package');
 
 // Booking Routes (Guest & Auth)
 Route::get('/checkout', [BookingController::class, 'create'])->name('booking.create');
 Route::post('/checkout', [BookingController::class, 'store'])->name('booking.store');
+
+use App\Http\Controllers\Public\PdfController;
+
 Route::get('/booking/{code}', [BookingController::class, 'show'])->name('booking.show');
+Route::get('/pdf/booking/{bookingCode}', [PdfController::class, 'bookingInvoice'])->name('booking.pdf');
+Route::post('/checkout/upload-proof', [BookingController::class, 'uploadProof'])->name('checkout.upload-proof');
+Route::get('/api/booking/{id}/proof-status', [BookingController::class, 'getProofStatus']);
 
 // Referral Code API routes
 Route::post('/api/referral-codes/validate', [\App\Http\Controllers\Admin\ReferralCodeController::class, 'validate']);
@@ -63,6 +70,8 @@ Route::prefix('editor')->group(function () {
         Route::get('/dashboard', [EditorDashboardController::class, 'index'])->name('editor.dashboard');
 
         Route::resource('photo-editing', PhotoEditingController::class)->names('editor.photo-editing');
+        Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('editor.profile.edit');
+        Route::post('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('editor.profile.update');
     });
 });
 
@@ -77,8 +86,11 @@ Route::prefix('photographer')->group(function () {
 
         Route::get('/sessions', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'index'])->name('photographer.sessions.index');
         Route::post('/sessions/toggle', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'toggle'])->name('photographer.sessions.toggle');
+        Route::post('/sessions/mark', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'updateDateMark'])->name('photographer.sessions.mark');
 
         Route::get('/reservations', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'reservations'])->name('photographer.reservations');
+        Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('photographer.profile.edit');
+        Route::post('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('photographer.profile.update');
     });
 });
 
@@ -89,9 +101,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/logout', [\App\Http\Controllers\AuthController::class, 'logout'])->name('logout');
 
     Route::middleware(['auth:web', 'role:admin'])->group(function () {
-        Route::get('/dashboard', function () {
-            return Inertia::render('Admin/Dashboard');
-        })->name('admin.dashboard');
+        Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('admin.dashboard');
 
         Route::resource('photo-editing', PhotoEditingController::class)->names('admin.photo-editing');
         Route::patch('/reviews/{review}/toggle', [\App\Http\Controllers\Admin\ReviewController::class, 'toggleVisibility'])->name('admin.reviews.toggle');
@@ -137,10 +147,14 @@ Route::prefix('admin')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'adminIndex'])->name('admin.photographer-sessions.index');
             Route::post('/offset', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'updateOffset'])->name('admin.photographer-sessions.offset');
             Route::post('/reschedule', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'reschedule'])->name('admin.photographer-sessions.reschedule');
+            Route::post('/mark', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'updateDateMark'])->name('admin.photographer-sessions.mark');
         });
 
         // Referral Codes
         Route::resource('referral-codes', \App\Http\Controllers\Admin\ReferralCodeController::class)
             ->names('admin.referral-codes');
+
+        Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('admin.profile.edit');
+        Route::post('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('admin.profile.update');
     });
 });

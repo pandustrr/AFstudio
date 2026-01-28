@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
-import { TrashIcon, MinusIcon, PlusIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
+import { TrashIcon, MinusIcon, PlusIcon, ShoppingBagIcon, XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 
-export default function CartIndex({ carts }) {
+export default function CartIndex({ carts, transactionHistory, uid }) {
     const [selectedItems, setSelectedItems] = useState([]);
 
     // Toggle check for a single item
@@ -70,14 +70,15 @@ export default function CartIndex({ carts }) {
                 </h1>
 
                 {carts.length === 0 ? (
-                    <div className="text-center py-20 border-2 border-dashed border-black/5 dark:border-white/5 rounded-3xl">
-                        <p className="text-brand-black/40 dark:text-brand-white/40 font-bold uppercase tracking-widest mb-4">Your cart is empty.</p>
-                        <Link href="/price-list" className="inline-block px-6 py-2 bg-brand-red text-white font-bold rounded-lg uppercase text-xs tracking-widest hover:bg-brand-gold hover:text-brand-black transition-colors">
+                    <div className="text-center py-12 md:py-20 border-2 border-dashed border-black/5 dark:border-white/5 rounded-2xl md:rounded-3xl px-4">
+                        <p className="text-brand-black/40 dark:text-brand-white/40 font-bold uppercase tracking-widest mb-4 text-xs md:text-sm">Your cart is empty.</p>
+                        <Link href="/price-list" className="inline-block px-4 md:px-6 py-2 md:py-2.5 bg-brand-red text-white font-bold rounded-lg uppercase text-[10px] md:text-xs tracking-widest hover:bg-brand-gold hover:text-brand-black transition-colors">
                             Browse Packages
                         </Link>
                     </div>
                 ) : (
                     <>
+                        {/* Current Cart Items */}
                         {/* Header Row (Desktop) */}
                         <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-white dark:bg-white/5 rounded-t-2xl border-b border-black/5 dark:border-white/5 text-[10px] font-black uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60">
                             <div className="col-span-6 flex items-center gap-4">
@@ -179,32 +180,27 @@ export default function CartIndex({ carts }) {
                         </div>
 
                         {/* Sticky Footer */}
-                        <div className="fixed bottom-0 left-0 w-full bg-white dark:bg-brand-black border-t border-black/5 dark:border-white/5 shadow-[0_-5px_20px_-5px_rgba(0,0,0,0.1)] p-4 md:p-6 z-40">
-                            <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-                                <div className="flex items-center gap-4 w-full md:w-auto">
+                        <div className="fixed bottom-0 left-0 w-full bg-white dark:bg-brand-black border-t border-black/5 dark:border-white/5 shadow-[0_-5px_20px_-5px_rgba(0,0,0,0.1)] p-2 md:p-4 lg:p-6 z-40">
+                            <div className="max-w-4xl mx-auto flex flex-col gap-2 md:gap-4">
+                                {/* Mobile: Compact view */}
+                                <div className="flex md:hidden items-center justify-between gap-2">
                                     <input
                                         type="checkbox"
                                         className="rounded border-gray-300 text-brand-red focus:ring-brand-red"
                                         checked={selectedItems.length === carts.length && carts.length > 0}
                                         onChange={toggleAll}
                                     />
-                                    <span className="text-xs uppercase font-bold text-brand-black/60 dark:text-brand-white/60">
-                                        Select All ({carts.length})
-                                    </span>
-                                </div>
-
-                                <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
-                                    <div className="text-right">
-                                        <p className="text-[10px] uppercase font-bold text-brand-black/60 dark:text-brand-white/60 mb-1">
-                                            Total ({selectedItems.length} items)
+                                    <div className="text-right flex-1">
+                                        <p className="text-[9px] uppercase font-bold text-brand-black/60 dark:text-brand-white/60">
+                                            Total ({selectedItems.length})
                                         </p>
-                                        <p className="text-xl md:text-2xl font-black text-brand-red italic">
+                                        <p className="text-base font-black text-brand-red italic">
                                             {formatPrice(total)}
                                         </p>
                                     </div>
                                     <button
                                         disabled={selectedItems.length === 0}
-                                        className="px-8 py-3 bg-brand-red text-white text-xs md:text-sm font-black uppercase tracking-widest rounded-xl hover:bg-brand-gold hover:text-brand-black transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="px-3 md:px-6 py-2 md:py-3 bg-brand-red text-white text-[10px] md:text-xs font-black uppercase tracking-widest rounded-lg md:rounded-xl hover:bg-brand-gold hover:text-brand-black transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                                         onClick={() => {
                                             const uid = localStorage.getItem('afstudio_cart_uid');
                                             router.visit(uid ? `/checkout?uid=${uid}` : '/checkout');
@@ -212,6 +208,42 @@ export default function CartIndex({ carts }) {
                                     >
                                         Checkout
                                     </button>
+                                </div>
+
+                                {/* Desktop: Full view */}
+                                <div className="hidden md:flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-4">
+                                        <input
+                                            type="checkbox"
+                                            className="rounded border-gray-300 text-brand-red focus:ring-brand-red"
+                                            checked={selectedItems.length === carts.length && carts.length > 0}
+                                            onChange={toggleAll}
+                                        />
+                                        <span className="text-xs uppercase font-bold text-brand-black/60 dark:text-brand-white/60">
+                                            Select All ({carts.length})
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-6">
+                                        <div className="text-right">
+                                            <p className="text-[10px] uppercase font-bold text-brand-black/60 dark:text-brand-white/60 mb-1">
+                                                Total ({selectedItems.length} items)
+                                            </p>
+                                            <p className="text-xl md:text-2xl font-black text-brand-red italic">
+                                                {formatPrice(total)}
+                                            </p>
+                                        </div>
+                                        <button
+                                            disabled={selectedItems.length === 0}
+                                            className="px-8 py-3 bg-brand-red text-white text-xs md:text-sm font-black uppercase tracking-widest rounded-xl hover:bg-brand-gold hover:text-brand-black transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                            onClick={() => {
+                                                const uid = localStorage.getItem('afstudio_cart_uid');
+                                                router.visit(uid ? `/checkout?uid=${uid}` : '/checkout');
+                                            }}
+                                        >
+                                            Checkout
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PhotographerSession;
+use App\Models\PhotographerDateMark;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
@@ -28,23 +29,21 @@ class PhotographerSessionController extends Controller
 
         $sessions = PhotographerSession::where('date', $date)
             ->where('photographer_id', $photographerId)
+            ->with(['bookingItem.booking'])
             ->orderBy('start_time')
             ->get();
 
-        // Get Available Options
-        // Get years from data, but always include past and next year
+        // Get Available Options (Realtime: Last Year, This Year, Next Year + any years with data)
+        $currentYear = Carbon::today()->year;
+        $defaultYears = range($currentYear - 1, $currentYear + 1);
+
         $dataYears = PhotographerSession::where('photographer_id', $photographerId)
             ->selectRaw('YEAR(date) as year')
             ->distinct()
-            ->orderBy('year', 'desc')
             ->pluck('year')
             ->toArray();
 
-        $currentYear = Carbon::today()->year;
-        $availableYears = array_unique(array_merge(
-            $dataYears,
-            [$currentYear, $currentYear - 1, $currentYear + 1]
-        ));
+        $availableYears = array_unique(array_merge($defaultYears, $dataYears));
         rsort($availableYears);
         $availableYears = array_values($availableYears);
 
@@ -86,13 +85,37 @@ class PhotographerSessionController extends Controller
         // Operasional 05:00 - 20:30 (31 sesi)
         $grid = $this->generateSessionGrid($date, $sessions);
 
+        // Get Monthly Stats for Calendar Indicators
+        $currentViewYear = $year ?: Carbon::today()->year;
+        $currentViewMonth = $month ?: Carbon::today()->month;
+
+        $monthlyStats = PhotographerSession::where('photographer_id', $photographerId)
+            ->whereYear('date', $currentViewYear)
+            ->whereMonth('date', $currentViewMonth)
+            ->where('status', 'booked')
+            ->whereHas('bookingItem.booking', function ($q) {
+                $q->where('status', 'confirmed');
+            })
+            ->selectRaw('date, count(*) as count')
+            ->groupBy('date')
+            ->pluck('count', 'date');
+
+        // Get Monthly Marks
+        $dateMarks = PhotographerDateMark::where('photographer_id', $photographerId)
+            ->whereYear('date', $currentViewYear)
+            ->whereMonth('date', $currentViewMonth)
+            ->get()
+            ->keyBy('date');
+
         return Inertia::render('Photographer/Sessions', [
             'grid' => $grid,
             'selectedDate' => $date,
+            'monthlyStats' => $monthlyStats,
+            'dateMarks' => $dateMarks,
             'filters' => [
-                'year' => $year,
-                'month' => $month,
-                'day' => $day,
+                'year' => (string) $year,
+                'month' => (string) $month,
+                'day' => (string) $day,
             ],
             'options' => [
                 'years' => $availableYears,
@@ -134,20 +157,59 @@ class PhotographerSessionController extends Controller
 
         $grid = $photographerId ? $this->generateSessionGrid($date, $sessions) : [];
 
-        // Get Available Options
+        // Get Available Options (Realtime: Last Year, This Year, Next Year + any years with data)
         $currentYear = Carbon::today()->year;
-        $availableYears = range($currentYear - 1, $currentYear + 2);
+        $defaultYears = range($currentYear - 1, $currentYear + 1);
+
+        $dataYears = PhotographerSession::selectRaw('YEAR(date) as year')
+            ->distinct()
+            ->pluck('year')
+            ->toArray();
+
+        $availableYears = array_unique(array_merge($defaultYears, $dataYears));
+        rsort($availableYears);
+        $availableYears = array_values($availableYears);
 
         $availableMonths = range(1, 12);
 
         $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
         $availableDays = range(1, $daysInMonth);
 
+        // Get Monthly Stats for Calendar Indicators if photographer is selected
+        $monthlyStats = [];
+        if ($photographerId) {
+            $currentViewYear = $year ?: Carbon::today()->year;
+            $currentViewMonth = $month ?: Carbon::today()->month;
+
+            $monthlyStats = PhotographerSession::where('photographer_id', $photographerId)
+                ->whereYear('date', $currentViewYear)
+                ->whereMonth('date', $currentViewMonth)
+                ->where('status', 'booked')
+                ->whereHas('bookingItem.booking', function ($q) {
+                    $q->where('status', 'confirmed');
+                })
+                ->selectRaw('date, count(*) as count')
+                ->groupBy('date')
+                ->pluck('count', 'date');
+        }
+
+        // Get Monthly Marks
+        $dateMarks = [];
+        if ($photographerId) {
+            $dateMarks = PhotographerDateMark::where('photographer_id', $photographerId)
+                ->whereYear('date', $currentViewYear)
+                ->whereMonth('date', $currentViewMonth)
+                ->get()
+                ->keyBy('date');
+        }
+
         return Inertia::render('Admin/Photographers/PhotographerSessions', [
             'photographers' => $photographers,
             'grid' => $grid,
             'selectedDate' => $date,
             'selectedPhotographerId' => $photographerId,
+            'monthlyStats' => $monthlyStats,
+            'dateMarks' => $dateMarks,
             'filters' => [
                 'year' => (string)$year,
                 'month' => (string)$month,
@@ -228,21 +290,27 @@ class PhotographerSessionController extends Controller
             ->first();
 
         if ($session) {
-            if ($session->status === 'open') {
-                $session->delete();
+            // Session exists
+            if ($session->status === 'booked') {
+                // Cannot toggle booked sessions
+                return back();
             }
-            // If booked, cannot toggle here
+
+            // Toggle between 'open' and 'off'
+            $newStatus = $session->status === 'open' ? 'off' : 'open';
+            $session->update(['status' => $newStatus]);
         } else {
+            // No record exists -> Create as 'off' (photographer is closing this slot)
+            // Since default is 'open', clicking means they want to close it
             PhotographerSession::create([
                 'photographer_id' => $photographerId,
                 'date' => $date,
                 'start_time' => $startTime,
-                'status' => 'open',
+                'status' => 'off',
             ]);
         }
 
         // Redirect with filter params if provided
-        $redirectUrl = '/photographer/sessions';
         if ($request->has('year') || $request->has('month') || $request->has('day')) {
             $params = [];
             if ($request->has('year')) $params['year'] = $request->input('year');
@@ -260,23 +328,40 @@ class PhotographerSessionController extends Controller
         $existingByTime = $existingSessions->keyBy('start_time');
 
         $start = Carbon::createFromTimeString('05:00');
-        $end = Carbon::createFromTimeString('20:00'); // Last session start time
+        $end = Carbon::createFromTimeString('20:00');
+
+        $cumulativeOffset = 0;
 
         while ($start <= $end) {
             $timeString = $start->format('H:i:s');
             $session = $existingByTime->get($timeString);
 
+            if ($session) {
+                $status = $session->status;
+                // Offset only persists and accumulates through 'booked' sessions
+                if ($status === 'booked') {
+                    $cumulativeOffset += ($session->offset_minutes ?? 0);
+                } else {
+                    $cumulativeOffset = 0; // Reset on 'off' or manual 'open'
+                }
+            } else {
+                $status = 'open';
+                $cumulativeOffset = 0; // Reset on open gaps
+            }
+
             $grid[] = [
                 'time' => $start->format('H:i'),
                 'time_full' => $timeString,
-                'status' => $session ? $session->status : 'off',
+                'status' => ($status === 'booked' && ($session->bookingItem->booking->status ?? '') !== 'confirmed') ? 'open' : $status,
                 'session_id' => $session ? $session->id : null,
                 'booking_item_id' => $session ? $session->booking_item_id : null,
-                'booking_info' => $session && $session->bookingItem ? [
+                'booking_status' => $session && $session->bookingItem ? $session->bookingItem->booking->status : null,
+                'booking_info' => $session && $session->bookingItem && $session->bookingItem->booking->status === 'confirmed' ? [
                     'customer_name' => $session->bookingItem->booking->name ?? 'GUEST',
                     'package_name' => $session->bookingItem->package->name ?? 'N/A',
                 ] : null,
                 'offset_minutes' => $session ? $session->offset_minutes : 0,
+                'cumulative_offset' => $cumulativeOffset,
                 'offset_description' => $session ? $session->offset_description : '',
             ];
 
@@ -294,6 +379,9 @@ class PhotographerSessionController extends Controller
         // Get all booked sessions for this photographer with booking details
         $query = PhotographerSession::where('photographer_id', $photographerId)
             ->where('status', 'booked')
+            ->whereHas('bookingItem.booking', function ($q) {
+                $q->where('status', 'confirmed');
+            })
             ->with(['bookingItem.booking', 'bookingItem.package']);
 
         // Apply UID filter if provided
@@ -336,5 +424,31 @@ class PhotographerSessionController extends Controller
             'allSessions' => $allSessions->isEmpty() ? [] : $allSessions->toArray(),
             'selectedSessionId' => $uidFilter
         ]);
+    }
+    public function updateDateMark(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date',
+            'color' => 'nullable|string',
+            'label' => 'nullable|string',
+            'photographer_id' => 'nullable|exists:users,id',
+        ]);
+
+        $photographerId = Auth::user()->role === 'admin'
+            ? ($request->photographer_id ?? Auth::id())
+            : Auth::id();
+
+        PhotographerDateMark::updateOrCreate(
+            [
+                'photographer_id' => $photographerId,
+                'date' => $request->date,
+            ],
+            [
+                'color' => $request->color,
+                'label' => $request->label,
+            ]
+        );
+
+        return back()->with('success', 'Mark tanggal berhasil diperbarui');
     }
 }

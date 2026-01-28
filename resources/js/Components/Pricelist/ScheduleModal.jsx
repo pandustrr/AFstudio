@@ -5,7 +5,7 @@ import axios from 'axios';
 import { router, usePage } from '@inertiajs/react';
 import SuccessModal from './Modals/SuccessModal';
 
-export default function ScheduleModal({ isOpen, onClose, packageData, rooms: initialRooms = [] }) {
+export default function ScheduleModal({ isOpen, onClose, packageData, rooms: initialRooms = [], mode = 'cart' }) {
     const { flash } = usePage().props;
     const [date, setDate] = useState('');
     const [roomId, setRoomId] = useState(null);
@@ -37,7 +37,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         const totalMinutes = maxSessions * 30;
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
-        
+
         if (hours === 0) return `${minutes}m`;
         if (minutes === 0) return `${hours}h`;
         return `${hours}h ${minutes}m`;
@@ -139,7 +139,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             // Calculate sessions from time range
             const [startHour, startMin] = startT.split(':').map(Number);
             const [endHour, endMin] = endT.split(':').map(Number);
-            
+
             const startMinutes = startHour * 60 + startMin;
             const endMinutes = endHour * 60 + endMin;
             const durationMinutes = endMinutes - startMinutes;
@@ -166,7 +166,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                     package_id: packageData.id
                 }
             });
-            
+
             if (response.data.available) {
                 setPhotographerId(response.data.photographer_id);
                 setAvailabilityStatus('available');
@@ -212,12 +212,36 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
 
         setError(null);
 
-        let uid = localStorage.getItem('afstudio_cart_uid');
-        if (!uid || !uid.includes('-')) {
-            uid = generateAndStoreUID();
-        }
+        if (mode === 'direct') {
+            // Direct booking: redirect to booking form with session data
+            const [h, m] = startTime.split(':').map(Number);
+            const totalMin = h * 60 + m + maxSessions * 30;
+            const endH = Math.floor(totalMin / 60);
+            const endM = totalMin % 60;
+            const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
 
-        processCart(uid);
+            router.visit('/checkout', {
+                method: 'get',
+                data: {
+                    package_id: packageData.id,
+                    date: date,
+                    start_time: startTime,
+                    end_time: endTime,
+                    sessions: selectedSessions > 0 ? selectedSessions : maxSessions,
+                    photographer_id: photographerId
+                },
+                onSuccess: () => {
+                    onClose();
+                }
+            });
+        } else {
+            // Cart mode: add to cart as usual
+            let uid = localStorage.getItem('afstudio_cart_uid');
+            if (!uid || !uid.includes('-')) {
+                uid = generateAndStoreUID();
+            }
+            processCart(uid);
+        }
     };
 
     const processCart = (uid) => {
@@ -335,7 +359,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                     <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
                                                         <ClockIcon className="w-4 h-4" /> Waktu Session
                                                     </label>
-                                                    
+
                                                     <div className="grid grid-cols-2 gap-3">
                                                         <div>
                                                             <label className="text-[10px] font-bold uppercase tracking-widest text-brand-black/50 dark:text-brand-white/50 block mb-2">Jam Mulai</label>
@@ -356,7 +380,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                             <input
                                                                 type="time"
                                                                 value={
-                                                                    !startTime ? '' : 
+                                                                    !startTime ? '' :
                                                                     (() => {
                                                                         const [h, m] = startTime.split(':').map(Number);
                                                                         const totalMin = h * 60 + m + maxSessions * 30;
@@ -412,7 +436,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                 disabled={!date || loading}
                                                 className="w-full py-5 bg-brand-black dark:bg-brand-white text-white dark:text-brand-black font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl disabled:opacity-50 mt-4"
                                             >
-                                                Tambah ke Keranjang
+                                                {mode === 'direct' ? 'Lanjut ke Booking' : 'Tambah ke Keranjang'}
                                             </button>
                                         </div>
                                     </div>

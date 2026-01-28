@@ -14,13 +14,10 @@ import {
     PencilSquareIcon,
     TicketIcon
 } from '@heroicons/react/24/outline';
-import ThemeToggle from './ThemeToggle';
-import { useTheme } from '../Contexts/ThemeContext';
 import { useState, useEffect } from 'react';
 
 export default function AdminSidebar({ isOpen, toggleSidebar }) {
     const { url } = usePage();
-    const { theme, toggleTheme } = useTheme();
     const [openGroups, setOpenGroups] = useState({
         photographer: true,
         editor: true
@@ -113,13 +110,14 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                         <>
                             {renderMenuItem({ label: 'About Page', href: `${prefix}/about`, icon: BuildingOfficeIcon })}
                             {renderMenuItem({ label: 'Pricelist', href: `${prefix}/pricelist`, icon: BanknotesIcon })}
-                            {renderMenuItem({ label: 'Referral Codes', href: `${prefix}/referral-codes`, icon: TicketIcon })}
+                            {renderMenuItem({ label: 'Voucher Codes', href: `${prefix}/referral-codes`, icon: TicketIcon })}
+                            {renderMenuItem({ label: 'Reviews', href: `${prefix}/reviews`, icon: StarIcon })}
 
                             {/* Photographer Group */}
                             {renderGroupHeader('Photographer', UserIcon, openGroups.photographer, () => toggleGroup('photographer'))}
                             {openGroups.photographer && (
                                 <div className="space-y-1 mb-2">
-                                    {renderMenuItem({ label: 'Reservations', href: `${prefix}/bookings`, icon: CalendarDaysIcon }, true)}
+                                    {renderMenuItem({ label: 'List Booking', href: `${prefix}/bookings`, icon: CalendarDaysIcon }, true)}
                                     {renderMenuItem({ label: 'Manage FG', href: `${prefix}/photographers`, icon: UserIcon }, true)}
                                     {renderMenuItem({ label: 'Monitoring FG', href: `/admin/photographer-sessions`, icon: CalendarDaysIcon }, true)}
                                 </div>
@@ -133,7 +131,6 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                                 </div>
                             )}
 
-                            {renderMenuItem({ label: 'Reviews', href: `${prefix}/reviews`, icon: StarIcon })}
                         </>
                     )}
 
@@ -141,7 +138,7 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                     {user.role === 'photographer' && (
                         <div className="space-y-1">
                             {renderMenuItem({ label: 'Jadwal Sesi', href: `${prefix}/sessions`, icon: CalendarDaysIcon })}
-                            {renderMenuItem({ label: 'Jadwal Reservasi', href: `${prefix}/reservations`, icon: CalendarDaysIcon })}
+                            {renderMenuItem({ label: 'List Booking', href: `${prefix}/reservations`, icon: CalendarDaysIcon })}
                         </div>
                     )}
 
@@ -152,22 +149,21 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                     )}
                 </div>
 
-                <div className="mt-auto space-y-2 pt-4">
-                    <div className="px-4 py-3 flex items-center justify-between bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 shadow-sm">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Theme</span>
-                        <ThemeToggle theme={theme} toggleTheme={toggleTheme} className="scale-75 origin-right" />
+                <div className="mt-auto pt-4">
+                    {renderMenuItem({ label: 'Profile', href: `${prefix}/profile`, icon: UserIcon })}
+                    <div className="mt-2 pt-4 border-t border-black/5 dark:border-white/5">
+                        <Link
+                            href={url.startsWith('/photographer') ? "/photographer/logout" : (url.startsWith('/editor') ? "/editor/logout" : "/admin/logout")}
+                            method="post"
+                            as="button"
+                            onSuccess={() => window.location.href = url.startsWith('/photographer') ? '/photographer/login' : (url.startsWith('/editor') ? '/editor/login' : '/admin/login')}
+                            onError={() => window.location.reload()}
+                            className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-black uppercase text-[9px] tracking-widest text-brand-red hover:bg-brand-red/5 transition-all text-left"
+                        >
+                            <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                            <span>Keluar</span>
+                        </Link>
                     </div>
-                    <Link
-                        href={url.startsWith('/photographer') ? "/photographer/logout" : (url.startsWith('/editor') ? "/editor/logout" : "/admin/logout")}
-                        method="post"
-                        as="button"
-                        onSuccess={() => window.location.href = url.startsWith('/photographer') ? '/photographer/login' : (url.startsWith('/editor') ? '/editor/login' : '/admin/login')}
-                        onError={() => window.location.reload()}
-                        className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-black uppercase text-[9px] tracking-widest text-brand-red hover:bg-brand-red/5 transition-all text-left"
-                    >
-                        <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                        <span>Keluar</span>
-                    </Link>
                 </div>
             </aside>
         </>

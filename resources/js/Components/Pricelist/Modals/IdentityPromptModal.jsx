@@ -12,7 +12,13 @@ export default function IdentityPromptModal({ isOpen, onClose, onConfirm }) {
 
     return (
         <Transition appear show={isOpen} as={Fragment}>
-            <Dialog as="div" className="relative z-[9999]" onClose={onClose}>
+            <Dialog
+                as="div"
+                className="
+                    relative z-[9999]
+                "
+                onClose={onClose}
+            >
                 <Transition.Child
                     as={Fragment}
                     enter="ease-out duration-300"

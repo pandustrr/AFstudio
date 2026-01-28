@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\BookingItem;
 use App\Models\Cart;
+use App\Models\PaymentProof;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class BookingController extends Controller
@@ -106,7 +108,7 @@ class BookingController extends Controller
 
             if ($calculatedDP < 100000) {
                 // If total is small (e.g. 50k), DP is full price.
-                // Logic: Min(100k, Total) if 25% < 100k? 
+                // Logic: Min(100k, Total) if 25% < 100k?
                 // Requirement: Min 100k. But if Total < 100k?
                 // Let's assume Total matches. If Total < 100k, DP = Total.
                 $calculatedDP = 100000;
@@ -280,5 +282,73 @@ class BookingController extends Controller
             'booking' => $booking,
             'rooms' => \App\Models\Room::all(),
         ]);
+    }
+
+    public function uploadProof(Request $request)
+    {
+        $request->validate([
+            'booking_id' => 'required|integer|exists:bookings,id',
+            'proof_file' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120', // max 5MB
+        ]);
+
+        try {
+            $booking = Booking::findOrFail($request->booking_id);
+
+            // Check if booking belongs to authenticated user or guest
+            if ($booking->user_id && $booking->user_id !== Auth::id()) {
+                abort(403, 'Unauthorized access to this booking');
+            }
+
+            // Delete previous proof if exists
+            $existingProof = PaymentProof::where('booking_id', $booking->id)->first();
+            if ($existingProof && Storage::disk('public')->exists($existingProof->file_path)) {
+                Storage::disk('public')->delete($existingProof->file_path);
+            }
+            if ($existingProof) {
+                $existingProof->delete();
+            }
+
+            // Store the uploaded file
+            $file = $request->file('proof_file');
+            $filename = 'proof-' . $booking->booking_code . '-' . time() . '.' . $file->getClientOriginalExtension();
+            $filePath = $file->storeAs('payment-proofs', $filename, 'public');
+
+            // Create payment proof record
+            $paymentProof = PaymentProof::create([
+                'booking_id' => $booking->id,
+                'file_path' => $filePath,
+                'file_name' => $file->getClientOriginalName(),
+                'file_type' => $file->getClientMimeType(),
+                'file_size' => $file->getSize(),
+                'status' => 'pending',
+            ]);
+
+            return back()->with('success', 'Payment proof uploaded successfully. Admin will verify it shortly.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Upload Proof Error: ' . $e->getMessage());
+            return back()->with('error', 'Error uploading payment proof: ' . $e->getMessage());
+        }
+    }
+
+    public function getProofStatus($bookingId)
+    {
+        try {
+            $booking = Booking::findOrFail($bookingId);
+
+            // Check if booking belongs to authenticated user or guest
+            if ($booking->user_id && $booking->user_id !== Auth::id()) {
+                abort(403, 'Unauthorized access to this booking');
+            }
+
+            $paymentProof = PaymentProof::where('booking_id', $bookingId)->first();
+
+            return response()->json([
+                'exists' => !!$paymentProof,
+                'status' => $paymentProof?->status ?? null,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Get Proof Status Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Error fetching proof status'], 500);
+        }
     }
 }

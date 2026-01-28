@@ -27,6 +27,8 @@ export default function SelectorPhoto() {
     const [isSelectionMode, setIsSelectionMode] = useState(true);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successType, setSuccessType] = useState('request');
+    const [editQuotaRemaining, setEditQuotaRemaining] = useState(0);
+    const [maxEditQuota, setMaxEditQuota] = useState(0);
 
     // Swipe State
     const [touchStart, setTouchStart] = useState(null);
@@ -67,6 +69,9 @@ export default function SelectorPhoto() {
             }
 
             setSessionData(data.data);
+            // Set max edit quota from package (default 0 if not available)
+            setMaxEditQuota(data.data.max_editing_quota || 0);
+            setEditQuotaRemaining(data.data.max_editing_quota || 0);
             setStep(2);
         } catch (err) {
             setError(err.message);
@@ -150,6 +155,10 @@ export default function SelectorPhoto() {
                     ...prev,
                     ...data.session
                 }));
+                // Update remaining quota
+                if (data.session.edit_quota_remaining !== undefined) {
+                    setEditQuotaRemaining(data.session.edit_quota_remaining);
+                }
             }
 
             setSuccessType('request');
@@ -417,7 +426,7 @@ export default function SelectorPhoto() {
 
                                         <div className="bg-brand-gold/10 border-2 border-brand-gold/40 rounded-full px-6 py-1.5 mt-2 animate-pulse-subtle">
                                             <p className="text-brand-gold text-[10px] font-black uppercase tracking-widest">
-                                                Kuota Editing: {sessionData?.requested_count || 0} / 20 Foto
+                                                Kuota Editing: {editQuotaRemaining} / {maxEditQuota} Foto
                                             </p>
                                         </div>
                                     </div>
@@ -660,7 +669,14 @@ export default function SelectorPhoto() {
                                                                 </button>
                                                             </div>
                                                             <div className="flex items-center justify-center space-x-2">
-                                                                <span className="text-[9px] font-black uppercase tracking-widest text-brand-gold truncate max-w-[150px]">{reviewPhoto.name}</span>
+                                                                <span
+                                                                    className="
+                                                                        text-[9px] font-black uppercase tracking-widest
+                                                                        text-brand-gold truncate max-w-[150px]
+                                                                    "
+                                                                >
+                                                                    {reviewPhoto.name}
+                                                                </span>
                                                                 <span className="text-[8px] font-bold text-brand-black/20 dark:text-brand-white/20">{(reviewPhoto.size / 1024 / 1024).toFixed(2)} MB</span>
                                                             </div>
                                                         </div>

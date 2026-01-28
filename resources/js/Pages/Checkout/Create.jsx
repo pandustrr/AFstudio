@@ -51,9 +51,9 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
 
         setValidatingCode(true);
         try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
-                             document.querySelector('input[name="_token"]')?.value;
-            
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
+                document.querySelector('input[name="_token"]')?.value;
+
             const response = await fetch('/api/referral-codes/validate', {
                 method: 'POST',
                 headers: {
@@ -94,7 +94,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
 
     const calculateDiscount = () => {
         if (!appliedDiscount) return 0;
-        
+
         if (appliedDiscount.discount_type === 'percentage') {
             return (total * appliedDiscount.discount_value) / 100;
         } else {
@@ -108,7 +108,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
     const submit = (e) => {
         e.preventDefault();
         console.log('Submitting form with data:', data);
-        
+
         post('/checkout', {
             preserveScroll: true,
             headers: {
@@ -282,10 +282,10 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                                 {errors.location && <p className="text-red-500 text-xs font-bold">{errors.location}</p>}
                             </div>
 
-                            {/* Notes */}
+                            {/* Voucher Code */}
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/70 dark:text-brand-white/70">
-                                    <TicketIcon className="w-4 h-4" /> Kode Referral
+                                    <TicketIcon className="w-4 h-4" /> Kode Voucher
                                 </label>
                                 <div className="relative">
                                     <input
@@ -293,7 +293,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                                         value={data.referral_code}
                                         onChange={handleReferralCodeChange}
                                         className="w-full bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white uppercase"
-                                        placeholder="Masukkan kode referral (opsional)"
+                                        placeholder="Masukkan kode voucher (opsional)"
                                     />
                                     {validatingCode && (
                                         <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -339,7 +339,12 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                                 Order Summary
                             </h2>
 
-                            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                            <div
+                                className="
+                                    space-y-4 max-h-[400px]
+                                    overflow-y-auto pr-2 custom-scrollbar
+                                "
+                            >
                                 {carts.map((cart) => (
                                     <div key={cart.id} className="pb-4 border-b border-black/5 dark:border-white/5 last:border-0">
                                         <div className="flex gap-4 mb-2">

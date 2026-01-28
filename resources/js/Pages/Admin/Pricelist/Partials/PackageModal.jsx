@@ -1,17 +1,40 @@
 import React, { useEffect, useState } from 'react';
-import { useForm } from '@inertiajs/react';
+import { useForm, router } from '@inertiajs/react';
 import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 
-export default function PackageModal({ isOpen, onClose, pkg, subCategoryId }) {
+export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSuccess }) {
     const { data, setData, post, put, processing, errors, reset } = useForm({
         name: '',
         price_display: '',
-        price_numeric: '',
+        price_numeric: '50.000',
         features: [],
         sub_category_id: '',
         is_popular: false,
         max_sessions: 1,
+        max_editing_quota: 0,
     });
+
+    const formatCurrency = (value) => {
+        if (!value) return '';
+
+        // Cek jika ini adalah string desimal dari database (misal: "50000.00")
+        // Database menyimpan decimal(12,2), jadi kita buang bagian di belakang titik jika ada.
+        let strValue = value.toString();
+        if (strValue.includes('.') && !strValue.includes(',')) {
+            const parts = strValue.split('.');
+            // Jika ada 2 bagian dan bagian belakang panjangnya 2 (format database .00)
+            if (parts.length === 2 && parts[1].length <= 2) {
+                strValue = parts[0];
+            }
+        }
+
+        // Hapus semua karakter kecuali angka
+        const numericValue = strValue.replace(/[^0-9]/g, '');
+        if (!numericValue) return '';
+
+        // Format dengan titik sebagai pemisah ribuan (id-ID)
+        return new Intl.NumberFormat('id-ID').format(numericValue);
+    };
 
     const [newFeature, setNewFeature] = useState('');
 
@@ -20,15 +43,21 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId }) {
             setData({
                 name: pkg.name || '',
                 price_display: pkg.price_display || '',
-                price_numeric: pkg.price_numeric || '',
+                price_numeric: pkg.price_numeric ? formatCurrency(pkg.price_numeric) : '',
                 features: pkg.features || [],
                 sub_category_id: pkg.sub_category_id || '',
                 is_popular: pkg.is_popular || false,
                 max_sessions: pkg.max_sessions || 1,
+                max_editing_quota: pkg.max_editing_quota || 0,
             });
         } else {
             reset();
-            setData('sub_category_id', subCategoryId || '');
+            setData({
+                ...data,
+                sub_category_id: subCategoryId || '',
+                price_display: '',
+                price_numeric: '50.000',
+            });
         }
     }, [pkg, subCategoryId]);
 
@@ -47,13 +76,49 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId }) {
 
     const submit = (e) => {
         e.preventDefault();
+
+        // Convert to proper types before submission
+        const cleanPrice = typeof data.price_numeric === 'string'
+            ? data.price_numeric.replace(/[^0-9]/g, '')
+            : data.price_numeric;
+
+        const submitData = {
+            ...data,
+            max_sessions: parseInt(data.max_sessions) || 1,
+            max_editing_quota: parseInt(data.max_editing_quota) || 0,
+            price_numeric: cleanPrice ? parseFloat(cleanPrice) : null,
+            is_popular: Boolean(data.is_popular),
+        };
+
         if (pkg) {
-            put(`/admin/pricelist/package/${pkg.id}`, {
-                onSuccess: () => onClose(),
+            router.put(`/admin/pricelist/package/${pkg.id}`, submitData, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    if (onSuccess) {
+                        onSuccess('Paket berhasil diperbarui!', 'success');
+                    }
+                    onClose();
+                },
+                onError: (errors) => {
+                    if (onSuccess) {
+                        onSuccess('Gagal memperbarui paket!', 'error');
+                    }
+                },
             });
         } else {
-            post('/admin/pricelist/package', {
-                onSuccess: () => onClose(),
+            router.post('/admin/pricelist/package', submitData, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    if (onSuccess) {
+                        onSuccess('Paket berhasil ditambahkan!', 'success');
+                    }
+                    onClose();
+                },
+                onError: (errors) => {
+                    if (onSuccess) {
+                        onSuccess('Gagal menambahkan paket!', 'error');
+                    }
+                },
             });
         }
     };
@@ -73,28 +138,32 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId }) {
                     </button>
                 </div>
 
-                <form onSubmit={submit} className="p-8 space-y-8 overflow-y-auto max-h-[80vh]">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-2">Nama Paket</label>
-                            <input
-                                type="text"
-                                value={data.name}
-                                onChange={(e) => setData('name', e.target.value)}
-                                className="w-full bg-black/5 dark:bg-white/5 border-0 rounded-xl px-4 py-3 text-sm font-bold text-brand-black dark:text-brand-white focus:ring-2 focus:ring-brand-gold transition-all"
-                                placeholder="Contoh: Basic, Exclusive"
-                                required
-                            />
-                            {errors.name && <p className="mt-1 text-[10px] text-brand-red font-bold uppercase tracking-widest">{errors.name}</p>}
-                        </div>
+                <form onSubmit={submit} className="p-8 space-y-6 overflow-y-auto max-h-[80vh]">
+                    {/* Nama Paket */}
+                    <div>
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-2">Nama Paket</label>
+                        <input
+                            type="text"
+                            value={data.name}
+                            onChange={(e) => setData('name', e.target.value)}
+                            className="w-full bg-black/5 dark:bg-white/5 border-0 rounded-xl px-4 py-3 text-sm font-bold text-brand-black dark:text-brand-white focus:ring-2 focus:ring-brand-gold transition-all"
+                            placeholder="Contoh: Basic, Exclusive"
+                            required
+                        />
+                        {errors.name && <p className="mt-1 text-[10px] text-brand-red font-bold uppercase tracking-widest">{errors.name}</p>}
+                    </div>
+
+                    {/* Harga Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-2">Harga (Angka)</label>
                             <input
-                                type="number"
+                                type="text"
                                 value={data.price_numeric}
-                                onChange={(e) => setData('price_numeric', e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) => setData('price_numeric', formatCurrency(e.target.value))}
                                 className="w-full bg-black/5 dark:bg-white/5 border-0 rounded-xl px-4 py-3 text-sm font-bold text-brand-black dark:text-brand-white focus:ring-2 focus:ring-brand-gold transition-all"
-                                placeholder="Contoh: 500000"
+                                placeholder="Contoh: 50.000"
                             />
                         </div>
                         <div>
@@ -110,18 +179,9 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId }) {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-6">
-                        <div className="flex-1 flex items-center gap-3 p-4 bg-black/5 dark:bg-white/5 rounded-2xl">
-                            <input
-                                type="checkbox"
-                                id="is_popular"
-                                checked={data.is_popular}
-                                onChange={(e) => setData('is_popular', e.target.checked)}
-                                className="w-5 h-5 rounded border-0 bg-black/10 dark:bg-white/10 text-brand-gold focus:ring-brand-gold"
-                            />
-                            <label htmlFor="is_popular" className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white cursor-pointer select-none">Tandai Populer</label>
-                        </div>
-                        <div className="w-32">
+                    {/* Settings Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
                             <label className="block text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-2">Maks Sesi</label>
                             <input
                                 type="number"
@@ -132,8 +192,34 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId }) {
                                 required
                             />
                         </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-2">Kuota Editing</label>
+                            <input
+                                type="number"
+                                min="0"
+                                value={data.max_editing_quota}
+                                onChange={(e) => setData('max_editing_quota', e.target.value)}
+                                className="w-full bg-black/5 dark:bg-white/5 border-0 rounded-xl px-4 py-3 text-sm font-bold text-brand-black dark:text-brand-white focus:ring-2 focus:ring-brand-gold transition-all"
+                                required
+                            />
+                            <p className="text-[8px] text-brand-black/40 dark:text-brand-white/40 mt-1.5">0 = Tidak bisa edit</p>
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-2">&nbsp;</label>
+                            <div className="flex items-center gap-3 p-3 bg-black/5 dark:bg-white/5 rounded-xl h-[44px]">
+                                <input
+                                    type="checkbox"
+                                    id="is_popular"
+                                    checked={data.is_popular}
+                                    onChange={(e) => setData('is_popular', e.target.checked)}
+                                    className="w-5 h-5 rounded border-0 bg-black/10 dark:bg-white/10 text-brand-gold focus:ring-brand-gold"
+                                />
+                                <label htmlFor="is_popular" className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white cursor-pointer select-none">Populer</label>
+                            </div>
+                        </div>
                     </div>
 
+                    {/* Fitur / Points */}
                     <div>
                         <label className="block text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-2">Fitur / Points</label>
                         <div className="flex gap-2 mb-4">
@@ -153,7 +239,7 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId }) {
                                 <PlusIcon className="w-5 h-5" />
                             </button>
                         </div>
-                        <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                             {data.features.map((feature, index) => (
                                 <div key={index} className="flex items-center justify-between p-3 bg-black/2 dark:bg-white/2 border border-black/5 dark:border-white/5 rounded-xl group transition-all hover:border-brand-gold/30">
                                     <span className="text-[10px] font-bold text-brand-black dark:text-brand-white uppercase tracking-wide">{feature}</span>
@@ -167,12 +253,13 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId }) {
                                 </div>
                             ))}
                             {data.features.length === 0 && (
-                                <p className="text-center py-4 text-[10px] font-bold text-brand-black/20 dark:text-brand-white/20 uppercase tracking-widest border-2 border-dashed border-black/5 dark:border-white/5 rounded-xl">Belum ada fitur ditambahkan.</p>
+                                <p className="text-center py-8 text-[10px] font-bold text-brand-black/20 dark:text-brand-white/20 uppercase tracking-widest border-2 border-dashed border-black/5 dark:border-white/5 rounded-xl">Belum ada fitur</p>
                             )}
                         </div>
                     </div>
 
-                    <div className="pt-4">
+                    {/* Submit Button */}
+                    <div className="pt-2">
                         <button
                             type="submit"
                             disabled={processing}

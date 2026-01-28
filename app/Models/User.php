@@ -21,7 +21,9 @@ class User extends Authenticatable
         'name',
         'username',
         'password',
+        'plain_password',
         'role',
+        'phone',
     ];
 
     /**
@@ -59,5 +61,27 @@ class User extends Authenticatable
     public function sessions(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(PhotographerSession::class, 'photographer_id');
+    }
+
+    /**
+     * Normalize phone number to 62 format.
+     */
+    protected function phone(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            set: function ($value) {
+                if (!$value) return $value;
+
+                // Remove non-numeric
+                $clean = preg_replace('/[^0-9]/', '', $value);
+
+                // If starts with 0, replace with 62
+                if (str_starts_with($clean, '0')) {
+                    $clean = '62' . substr($clean, 1);
+                }
+
+                return $clean;
+            },
+        );
     }
 }

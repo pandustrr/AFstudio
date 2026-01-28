@@ -15,6 +15,7 @@ export default function Pricelist({ categories, rooms, locked }) {
     // Modal State
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
     const [selectedPackageForCart, setSelectedPackageForCart] = useState(null);
+    const [bookingMode, setBookingMode] = useState('cart'); // 'cart' or 'direct'
 
     // Handle initial state for locked package
     useEffect(() => {
@@ -25,8 +26,9 @@ export default function Pricelist({ categories, rooms, locked }) {
         }
     }, [locked, categories]);
 
-    const openScheduleModal = (pkg) => {
+    const openScheduleModal = (pkg, mode = 'cart') => {
         setSelectedPackageForCart(pkg);
+        setBookingMode(mode);
         setIsScheduleModalOpen(true);
     };
 
@@ -46,7 +48,7 @@ export default function Pricelist({ categories, rooms, locked }) {
         const totalMinutes = maxSessions * 30;
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
-        
+
         if (hours === 0) return `${minutes}m`;
         if (minutes === 0) return `${hours}h`;
         return `${hours}h ${minutes}m`;
@@ -75,6 +77,7 @@ export default function Pricelist({ categories, rooms, locked }) {
                 packageData={selectedPackageForCart}
                 rooms={rooms}
                 canBook={!!locked}
+                mode={bookingMode}
             />
 
             {/* Header Section */}
@@ -100,8 +103,8 @@ export default function Pricelist({ categories, rooms, locked }) {
                         <span className="text-[8px] font-black uppercase tracking-widest text-brand-gold">Private Access</span>
                     </div>
 
-                    {/* For package share: show vertical hierarchy */}
-                    {locked.type === 'package' && categories[0] ? (
+                    {/* For package or sub-category share: show Category name at top */}
+                    {(locked.type === 'package' || locked.type === 'sub-category') && categories[0] ? (
                         <div className="flex flex-col items-center gap-1">
                             {/* Category Name - Top, Larger Gold Title */}
                             <h2 className="text-3xl md:text-5xl font-black text-brand-gold uppercase tracking-tighter italic leading-tight">
@@ -112,7 +115,7 @@ export default function Pricelist({ categories, rooms, locked }) {
                             <div className="w-16 h-1.5 bg-brand-gold mt-8 rounded-full"></div>
                         </div>
                     ) : (
-                        /* For other locked types: show locked.name as title */
+                        /* For other locked types (all or category): show locked.name as title */
                         <h1 className="text-3xl md:text-5xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter italic mb-3">
                             {locked.name}
                         </h1>
@@ -177,12 +180,23 @@ export default function Pricelist({ categories, rooms, locked }) {
 
             {/* Content Section */}
             {/* Content Section */}
-            <section className="pb-20 px-4 md:px-6 max-w-7xl mx-auto min-h-[500px] relative">
+            <section
+                className="
+                    pb-20 px-4 md:px-6 max-w-7xl mx-auto min-h-[500px] relative
+                "
+            >
 
                 {/* Overlay for Public View (!locked) */}
                 {!locked && (
                     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center p-6 bg-brand-white/50 dark:bg-brand-black/50 backdrop-blur-[2px]">
-                        <div className="bg-white/80 dark:bg-black/80 p-8 md:p-12 rounded-[32px] shadow-2xl border border-white/20 dark:border-white/10 max-w-lg w-full transform hover:scale-105 transition-all duration-500">
+                        <div
+                            className="
+                                bg-white/80 dark:bg-black/80 p-8 md:p-12 rounded-[32px]
+                                shadow-2xl border border-white/20 dark:border-white/10
+                                max-w-lg w-full transform hover:scale-105
+                                transition-all duration-500
+                            "
+                        >
                             <div className="w-16 h-16 md:w-20 md:h-20 bg-brand-gold/20 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
                                 <SparklesIcon className="w-8 h-8 md:w-10 md:h-10 text-brand-gold" />
                             </div>
@@ -256,15 +270,42 @@ export default function Pricelist({ categories, rooms, locked }) {
                                             </div>
 
                                             <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => openScheduleModal(pkg)}
-                                                    className={`block w-full py-3.5 md:py-4 rounded-2xl md:rounded-xl text-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all ${pkg.is_popular
-                                                        ? 'bg-brand-red text-white hover:bg-brand-gold hover:text-brand-black shadow-lg shadow-brand-red/20'
-                                                        : 'bg-black/5 dark:bg-white/10 text-brand-black dark:text-brand-white hover:bg-brand-black hover:text-white dark:hover:bg-brand-gold dark:hover:text-brand-black shadow-sm'
-                                                        }`}
-                                                >
-                                                    {locked ? 'Tambah ke Keranjang' : 'Lihat Detail'}
-                                                </button>
+                                                {locked && (
+                                                    <>
+                                                        {/* Icon Keranjang */}
+                                                        <button
+                                                            onClick={() => openScheduleModal(pkg, 'cart')}
+                                                            className={`flex items-center justify-center w-14 md:w-16 py-3.5 md:py-4 rounded-2xl md:rounded-xl transition-all ${pkg.is_popular
+                                                                ? 'bg-brand-gold/20 text-brand-gold hover:bg-brand-gold hover:text-brand-black border-2 border-brand-gold/30'
+                                                                : 'bg-black/5 dark:bg-white/10 text-brand-black dark:text-brand-white hover:bg-brand-gold hover:text-brand-black border-2 border-black/5 dark:border-white/5'
+                                                                }`}
+                                                        >
+                                                            <ShoppingCartIcon className="w-5 h-5" />
+                                                        </button>
+
+                                                        {/* Tombol Langsung Beli */}
+                                                        <button
+                                                            onClick={() => openScheduleModal(pkg, 'direct')}
+                                                            className={`flex-1 py-3.5 md:py-4 rounded-2xl md:rounded-xl text-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all ${pkg.is_popular
+                                                                ? 'bg-brand-red text-white hover:bg-brand-gold hover:text-brand-black shadow-lg shadow-brand-red/20'
+                                                                : 'bg-black/5 dark:bg-white/10 text-brand-black dark:text-brand-white hover:bg-brand-black hover:text-white dark:hover:bg-brand-gold dark:hover:text-brand-black shadow-sm'
+                                                                }`}
+                                                        >
+                                                            Langsung Beli
+                                                        </button>
+                                                    </>
+                                                )}
+                                                {!locked && (
+                                                    <button
+                                                        onClick={() => openScheduleModal(pkg)}
+                                                        className={`block w-full py-3.5 md:py-4 rounded-2xl md:rounded-xl text-center text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-all ${pkg.is_popular
+                                                            ? 'bg-brand-red text-white hover:bg-brand-gold hover:text-brand-black shadow-lg shadow-brand-red/20'
+                                                            : 'bg-black/5 dark:bg-white/10 text-brand-black dark:text-brand-white hover:bg-brand-black hover:text-white dark:hover:bg-brand-gold dark:hover:text-brand-black shadow-sm'
+                                                            }`}
+                                                    >
+                                                        Lihat Detail
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     ))}

@@ -7,6 +7,7 @@ import ManageCategoriesModal from './Partials/ManageCategoriesModal';
 import SubCategoryModal from './Partials/SubCategoryModal';
 import PackageModal from './Partials/PackageModal';
 import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
+import EditNotif from '@/Components/EditNotif';
 
 export default function Index({ categories }) {
     const [activeCategoryId, setActiveCategoryId] = useState(categories[0]?.id || null);
@@ -16,6 +17,17 @@ export default function Index({ categories }) {
     const [subCategoryModal, setSubCategoryModal] = useState({ show: false, subCategory: null, categoryId: null });
     const [packageModal, setPackageModal] = useState({ show: false, pkg: null, subCategoryId: null });
     const [deleteModal, setDeleteModal] = useState({ show: false, type: '', id: null, title: '', message: '' });
+
+    // Notification State
+    const [showNotif, setShowNotif] = useState(false);
+    const [notifMessage, setNotifMessage] = useState('');
+    const [notifType, setNotifType] = useState('success');
+
+    const handleNotification = (message, type = 'success') => {
+        setNotifMessage(message);
+        setNotifType(type);
+        setShowNotif(true);
+    };
 
     const handleDelete = () => {
         const { type, id } = deleteModal;
@@ -44,21 +56,19 @@ export default function Index({ categories }) {
         const totalMinutes = maxSessions * 30;
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
-        
+
         if (hours === 0) return `${minutes}m`;
         if (minutes === 0) return `${hours}h`;
         return `${hours}h ${minutes}m`;
     };
 
-    const [copyNotification, setCopyNotification] = useState(null);
-
     const copyToClipboard = async (text) => {
         try {
             await navigator.clipboard.writeText(text);
-            setCopyNotification('Tautan berhasil disalin!');
-            setTimeout(() => setCopyNotification(null), 5000);
+            handleNotification('Tautan berhasil disalin!', 'success');
         } catch (err) {
             console.error('Failed to copy: ', err);
+            handleNotification('Gagal menyalin tautan!', 'error');
         }
     };
 
@@ -66,6 +76,7 @@ export default function Index({ categories }) {
         const baseUrl = window.location.origin;
         if (type === 'all') return `${baseUrl}/share/SemuaKategori`;
         if (type === 'category') return `${baseUrl}/share/c/${slug}`;
+        if (type === 'sub-category') return `${baseUrl}/share/s/${slug}`;
         if (type === 'package') return `${baseUrl}/share/p/${slug}`;
         return baseUrl;
     };
@@ -161,6 +172,13 @@ export default function Index({ categories }) {
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <div className="flex items-center gap-2 border-r border-black/10 dark:border-white/10 pr-4 mr-2">
+                                                <button
+                                                    onClick={() => copyToClipboard(getShareLink('sub-category', subCategory.slug))}
+                                                    className="p-1.5 bg-brand-gold/10 text-brand-gold rounded-lg hover:bg-brand-gold hover:text-brand-black transition-all"
+                                                    title="Bagikan Sub-Kategori"
+                                                >
+                                                    <ShareIcon className="w-3.5 h-3.5" />
+                                                </button>
                                                 <button onClick={() => setSubCategoryModal({ show: true, subCategory, categoryId: category.id })} className="p-1.5 bg-black/5 dark:bg-white/5 hover:bg-black hover:text-white dark:hover:bg-brand-gold rounded-lg transition-all"><PencilSquareIcon className="w-3.5 h-3.5" /></button>
                                                 <button onClick={() => setDeleteModal({
                                                     show: true,
@@ -203,7 +221,12 @@ export default function Index({ categories }) {
                                                         {pkg.is_popular && <StarIconSolid className="w-3.5 h-3.5 text-brand-gold dark:text-brand-black" />}
                                                     </div>
 
-                                                    <ul className="space-y-1.5 mb-6 min-h-[60px]">
+                                                    <ul
+                                                        className="
+                                                            space-y-1.5 mb-6
+                                                            min-h-[60px]
+                                                        "
+                                                    >
                                                         {(pkg.features || []).slice(0, 4).map((feature, idx) => (
                                                             <li key={idx} className="flex items-start gap-1.5">
                                                                 <ChevronRightIcon className={`w-2.5 h-2.5 mt-0.5 shrink-0 ${pkg.is_popular ? 'text-white/60 dark:text-brand-black/60' : 'text-brand-black/20 dark:text-brand-white/20'}`} />
@@ -221,14 +244,7 @@ export default function Index({ categories }) {
 
                                                     <div className="flex items-center gap-1.5 justify-end pt-3 border-t border-black/5 dark:border-white/5">
 
-                                                        {/* Package Share Button */}
-                                                        <button
-                                                            onClick={() => copyToClipboard(getShareLink('package', pkg.slug))}
-                                                            className={`p-1.5 rounded-lg transition-all ${pkg.is_popular ? 'bg-white/10 dark:bg-black/10 hover:bg-white/20 dark:hover:bg-black/20 text-white dark:text-brand-black' : 'bg-black/5 dark:bg-white/5 hover:bg-black hover:text-white dark:hover:bg-brand-gold'}`}
-                                                            title="Bagikan Paket"
-                                                        >
-                                                            <ShareIcon className="w-3 h-3" />
-                                                        </button>
+
 
                                                         <button
                                                             onClick={() => setPackageModal({ show: true, pkg, subCategoryId: subCategory.id })}
@@ -265,35 +281,33 @@ export default function Index({ categories }) {
                 ))}
             </div>
 
-            {/* Notification Toast */}
-            {
-                copyNotification && (
-                    <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                        <div className="bg-brand-black dark:bg-brand-gold text-white dark:text-brand-black px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest shadow-2xl flex items-center gap-3">
-                            <ShareIcon className="w-4 h-4" />
-                            {copyNotification}
-                        </div>
-                    </div>
-                )
-            }
-
             {/* Modals */}
+            <EditNotif
+                show={showNotif}
+                onClose={() => setShowNotif(false)}
+                message={notifMessage}
+                type={notifType}
+            />
+
             <ManageCategoriesModal
                 isOpen={manageCategoriesModal}
                 onClose={() => setManageCategoriesModal(false)}
                 categories={categories}
+                onSuccess={handleNotification}
             />
             <SubCategoryModal
                 isOpen={subCategoryModal.show}
                 onClose={() => setSubCategoryModal({ show: false, subCategory: null, categoryId: null })}
                 subCategory={subCategoryModal.subCategory}
                 categoryId={subCategoryModal.categoryId}
+                onSuccess={handleNotification}
             />
             <PackageModal
                 isOpen={packageModal.show}
                 onClose={() => setPackageModal({ show: false, pkg: null, subCategoryId: null })}
                 pkg={packageModal.pkg}
                 subCategoryId={packageModal.subCategoryId}
+                onSuccess={handleNotification}
             />
             <DeleteConfirmModal
                 isOpen={deleteModal.show}

@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import { useForm } from '@inertiajs/react';
+import { useForm, router } from '@inertiajs/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
-export default function SubCategoryModal({ isOpen, onClose, subCategory, categoryId }) {
+export default function SubCategoryModal({ isOpen, onClose, subCategory, categoryId, onSuccess }) {
     const { data, setData, post, put, processing, errors, reset } = useForm({
         name: '',
         category_id: '',
@@ -23,12 +23,34 @@ export default function SubCategoryModal({ isOpen, onClose, subCategory, categor
     const submit = (e) => {
         e.preventDefault();
         if (subCategory) {
-            put(`/admin/pricelist/sub-category/${subCategory.id}`, {
-                onSuccess: () => onClose(),
+            router.put(`/admin/pricelist/sub-category/${subCategory.id}`, data, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    if (onSuccess) {
+                        onSuccess('Sub-kategori berhasil diperbarui!', 'success');
+                    }
+                    onClose();
+                },
+                onError: () => {
+                    if (onSuccess) {
+                        onSuccess('Gagal memperbarui sub-kategori!', 'error');
+                    }
+                },
             });
         } else {
-            post('/admin/pricelist/sub-category', {
-                onSuccess: () => onClose(),
+            router.post('/admin/pricelist/sub-category', data, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    if (onSuccess) {
+                        onSuccess('Sub-kategori berhasil ditambahkan!', 'success');
+                    }
+                    onClose();
+                },
+                onError: () => {
+                    if (onSuccess) {
+                        onSuccess('Gagal menambahkan sub-kategori!', 'error');
+                    }
+                },
             });
         }
     };

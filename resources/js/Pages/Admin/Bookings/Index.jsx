@@ -47,6 +47,16 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
         });
     };
 
+    const updateStatus = (id, newStatus) => {
+        if (confirm(`Are you sure you want to change status to ${newStatus}?`)) {
+            router.patch(`/admin/bookings/${id}`, {
+                status: newStatus
+            }, {
+                preserveScroll: true
+            });
+        }
+    };
+
 
 
     const setToday = () => {
@@ -112,7 +122,7 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
                     {/* Header */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-6">
                         <div>
-                            <h1 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase italic tracking-tighter">Reservations Dashboard</h1>
+                            <h1 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase italic tracking-tighter">List Booking Dashboard</h1>
                             <p className="text-[9px] text-brand-black/50 dark:text-brand-white/50 font-bold uppercase tracking-widest mt-0.5">
                                 Daily schedule monitoring.
                             </p>
@@ -251,10 +261,20 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
                                         {groupedItems[dateKey].map((item) => (
                                             <div key={item.id} className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
                                                 {/* Photographer Badge */}
-                                                <div className="absolute top-0 right-0 p-3">
+                                                <div className="absolute top-0 right-0 p-3 flex flex-col items-end gap-1">
                                                     <span className={`px-2 py-0.5 ${item.photographer ? 'bg-brand-gold/10 text-brand-gold' : 'bg-gray-100 text-gray-400'} rounded-full font-black text-[8px] uppercase tracking-tighter`}>
                                                         {item.photographer?.name || 'No FG'}
                                                     </span>
+                                                    {item.photographer?.phone && (
+                                                        <a
+                                                            href={`https://wa.me/${item.photographer.phone}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-[7px] font-black text-green-500 hover:text-green-600 transition-colors uppercase tracking-widest"
+                                                        >
+                                                            WA: {item.photographer.phone}
+                                                        </a>
+                                                    )}
                                                 </div>
 
                                                 <div className="mb-4">
@@ -270,18 +290,98 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
                                                         {item.package?.name || 'Untitled'}
                                                     </h3>
 
-                                                    <div className="flex items-center gap-2 text-[10px] font-black text-brand-gold italic uppercase tracking-tighter bg-brand-black rounded-lg px-3 py-1.5 w-fit">
-                                                        <ClockIcon className="w-3.5 h-3.5" />
-                                                        {item.start_time?.substring(0, 5) || '--:--'} - {item.end_time?.substring(0, 5) || '--:--'}
+                                                    <div className="flex items-center gap-2 text-[10px] font-black italic uppercase tracking-tighter bg-brand-black rounded-lg px-3 py-1.5 w-fit">
+                                                        <ClockIcon className="w-3.5 h-3.5 text-brand-gold" />
+                                                        <div className="flex flex-col leading-none">
+                                                            {item.start_time !== item.adjusted_start_time ? (
+                                                                <>
+                                                                    <span className="line-through opacity-30 text-[7px] mb-0.5">
+                                                                        {item.start_time?.substring(0, 5)} - {item.end_time?.substring(0, 5)}
+                                                                    </span>
+                                                                    <span className="text-brand-gold">
+                                                                        {item.adjusted_start_time?.substring(0, 5)} - {item.adjusted_end_time?.substring(0, 5)}
+                                                                    </span>
+                                                                </>
+                                                            ) : (
+                                                                <span className="text-brand-gold">
+                                                                    {item.start_time?.substring(0, 5)} - {item.end_time?.substring(0, 5)}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
+
+                                                {item.booking?.payment_proof && item.booking.payment_proof.length > 0 && (
+                                                    <div className="mt-4 mb-4">
+                                                        <div
+                                                            className="relative rounded-xl overflow-hidden cursor-zoom-in group/img h-32 bg-gray-100 dark:bg-white/5 border border-black/5 dark:border-white/5"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                window.open(`/storage/${item.booking.payment_proof[0].file_path}`, '_blank');
+                                                            }}
+                                                        >
+                                                            <img
+                                                                src={`/storage/${item.booking.payment_proof[0].file_path}`}
+                                                                className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-500"
+                                                                alt="Proof"
+                                                            />
+                                                            <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-colors flex items-center justify-center">
+                                                                <MagnifyingGlassIcon className="w-6 h-6 text-white opacity-0 group-hover/img:opacity-100 transition-opacity" />
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-2 flex flex-col gap-2">
+                                                            {item.booking.status === 'pending' ? (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.preventDefault();
+                                                                        updateStatus(item.booking.id, 'confirmed');
+                                                                    }}
+                                                                    className="w-full py-2 bg-brand-black dark:bg-brand-white text-white dark:text-brand-black text-[9px] font-black uppercase tracking-widest rounded-lg hover:scale-[1.02] transition-all"
+                                                                >
+                                                                    Buat Invoice
+                                                                </button>
+                                                            ) : (
+                                                                <div className="flex gap-2">
+                                                                    <a
+                                                                        href={`/admin/bookings/${item.booking.id}/invoice`}
+                                                                        target="_blank"
+                                                                        className="flex-1 py-2 bg-brand-gold text-brand-black text-[9px] font-black uppercase tracking-widest rounded-lg hover:scale-[1.02] transition-all text-center"
+                                                                    >
+                                                                        Invoice
+                                                                    </a>
+                                                                    <a
+                                                                        href={`https://wa.me/${item.booking.phone.startsWith('0') ? '62' + item.booking.phone.substring(1) : item.booking.phone}?text=${encodeURIComponent(`Halo ${item.booking.name}! ${String.fromCodePoint(0x1F44B)} Terima kasih sudah booking di AFstudio. Booking kamu sudah kami konfirmasi, nih! ${String.fromCodePoint(0x1F60A)}\n\nSilakan klik link di bawah untuk melihat rincian invoice kamu:\n${window.location.origin}/pdf/booking/${item.booking.booking_code}\n\nSampai jumpa di sesi nanti! Jika ada pertanyaan, langsung kabari kami, ya. ${String.fromCodePoint(0x2728)}`)}`}
+                                                                        target="_blank"
+                                                                        className="flex-1 py-2 bg-green-500 text-white text-[9px] font-black uppercase tracking-widest rounded-lg hover:scale-[1.02] transition-all text-center"
+                                                                    >
+                                                                        WA
+                                                                    </a>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 <div className="pt-4 border-t border-black/5 dark:border-white/5 flex items-center justify-between">
                                                     <div className="grow overflow-hidden pr-2">
                                                         <p className="text-[8px] font-black uppercase text-brand-black/30 dark:text-brand-white/30 truncate mb-0.5">Customer / Code</p>
-                                                        <p className="font-bold text-[11px] text-brand-black dark:text-brand-white truncate uppercase tracking-tighter">
+                                                        <p className="font-bold text-[11px] text-brand-black dark:text-brand-white truncate uppercase tracking-tighter mb-1">
                                                             <span className="font-mono text-brand-red">{item.booking?.booking_code || '---'}</span> • {item.booking?.name || 'Unknown'}
                                                         </p>
+                                                        {item.booking?.payment_proof && item.booking.payment_proof.length > 0 ? (
+                                                            <span className={`inline-block px-2 py-0.5 rounded text-[7px] font-black uppercase ${item.booking.payment_proof[0].status === 'verified'
+                                                                ? 'bg-green-100 text-green-700'
+                                                                : item.booking.payment_proof[0].status === 'rejected'
+                                                                    ? 'bg-red-100 text-red-700'
+                                                                    : 'bg-yellow-100 text-yellow-700'
+                                                                }`}>
+                                                                Proof: {item.booking.payment_proof[0].status}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-block px-2 py-0.5 rounded text-[7px] font-black uppercase bg-gray-100 text-gray-700">
+                                                                No Proof
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     {item.booking?.id && (
                                                         <div className="flex items-center gap-1.5 shrink-0">

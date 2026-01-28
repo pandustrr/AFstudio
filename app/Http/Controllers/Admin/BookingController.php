@@ -23,7 +23,7 @@ class BookingController extends Controller
         $photographerId = $request->input('photographer_id');
 
         $query = \App\Models\BookingItem::query()
-            ->with(['booking.user', 'package.subCategory', 'photographer']);
+            ->with(['booking.user', 'booking.paymentProof', 'package.subCategory', 'photographer']);
 
         // Filter by Photographer
         if ($photographerId) {
@@ -45,6 +45,11 @@ class BookingController extends Controller
         if ($status && $status !== 'all') {
             $query->whereHas('booking', function ($q) use ($status) {
                 $q->where('status', $status);
+            });
+        } else {
+            // Default: hide cancelled bookings when viewing all
+            $query->whereHas('booking', function ($q) {
+                $q->where('status', '!=', 'cancelled');
             });
         }
 
@@ -132,7 +137,7 @@ class BookingController extends Controller
 
     public function show(Booking $booking)
     {
-        $booking->load(['items.package.subCategory', 'user']);
+        $booking->load(['items.package.subCategory', 'items.photographer', 'user', 'paymentProof']);
 
         return Inertia::render('Admin/Bookings/Show', [
             'booking' => $booking,
@@ -146,26 +151,107 @@ class BookingController extends Controller
             'status' => 'required|in:pending,confirmed,completed,cancelled',
         ]);
 
-        $booking->update([
-            'status' => $request->status,
-        ]);
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($request, $booking) {
+                $oldStatus = $booking->status;
+                $newStatus = $request->status;
 
-        // Auto-create Photo Session if Confirmed
-        if ($request->status === 'confirmed') {
-            $uid = $booking->guest_uid ?? $booking->booking_code;
+                $booking->update([
+                    'status' => $newStatus,
+                ]);
 
-            // Register to Photo Selector system
-            PhotoEditing::updateOrCreate(
-                ['uid' => $uid],
-                [
-                    'customer_name' => $booking->name,
-                    'status' => 'pending',
-                    // raw_folder_id is nullable now, Admin will fill it later
-                ]
-            );
+                // Release photographer slots if the new status is cancelled
+                if ($newStatus === 'cancelled') {
+                    // Get ALL items associated with this booking
+                    $itemIds = \Illuminate\Support\Facades\DB::table('booking_items')
+                        ->where('booking_id', $booking->id)
+                        ->pluck('id')
+                        ->toArray();
+
+                    if (!empty($itemIds)) {
+                        // Use DB::table for maximum reliability and to bypass any Eloquent event issues
+                        \Illuminate\Support\Facades\DB::table('photographer_sessions')
+                            ->whereIn('booking_item_id', $itemIds)
+                            ->update([
+                                'booking_item_id' => null,
+                                'status' => 'open',
+                                'cart_uid' => null,
+                                'updated_at' => now()
+                            ]);
+                    }
+
+                    // Additional safety: Release any session with this guest UID
+                    if ($booking->guest_uid) {
+                        \Illuminate\Support\Facades\DB::table('photographer_sessions')
+                            ->where('cart_uid', $booking->guest_uid)
+                            ->where('status', 'booked')
+                            ->update([
+                                'booking_item_id' => null,
+                                'status' => 'open',
+                                'cart_uid' => null,
+                                'updated_at' => now()
+                            ]);
+                    }
+                }
+
+                // Handle Reset: Cancelled -> Pending
+                // We need to re-book the photographer slots if they are still available.
+                if ($oldStatus === 'cancelled' && $newStatus === 'pending') {
+                    $items = \App\Models\BookingItem::with('package')->where('booking_id', $booking->id)->get();
+                    $bookingUid = $booking->guest_uid ?? $booking->booking_code;
+
+                    foreach ($items as $item) {
+                        // Calculate required sessions based on package duration
+                        $durationMinutes = $item->package->duration ?? 60;
+                        $sessionsNeeded = ceil($durationMinutes / 30);
+
+                        // Generate required time slots
+                        $slots = [];
+                        $time = \Carbon\Carbon::createFromTimeString($item->start_time);
+                        for ($i = 0; $i < $sessionsNeeded; $i++) {
+                            $slots[] = $time->format('H:i:s');
+                            $time->addMinutes(30);
+                        }
+
+                        // Check availability
+                        $availableSessions = \App\Models\PhotographerSession::where('photographer_id', $item->photographer_id)
+                            ->where('date', $item->scheduled_date)
+                            ->whereIn('start_time', $slots)
+                            ->where('status', 'open')
+                            ->get();
+
+                        if ($availableSessions->count() !== count($slots)) {
+                            throw new \Exception("Gagal mereset booking: Slot waktu untuk fotografer sudah terisi oleh orang lain.");
+                        }
+
+                        // Re-book the sessions
+                        \App\Models\PhotographerSession::whereIn('id', $availableSessions->pluck('id'))
+                            ->update([
+                                'status' => 'booked',
+                                'booking_item_id' => $item->id,
+                                'cart_uid' => $bookingUid
+                            ]);
+                    }
+                }
+
+                // Auto-create Photo Session if Confirmed
+                if ($newStatus === 'confirmed' && $oldStatus !== 'confirmed') {
+                    $uid = $booking->guest_uid ?? $booking->booking_code;
+
+                    PhotoEditing::updateOrCreate(
+                        ['uid' => $uid],
+                        [
+                            'customer_name' => $booking->name,
+                            'status' => 'pending',
+                        ]
+                    );
+                }
+            });
+
+            return redirect()->back()->with('success', 'Booking status updated successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
-
-        return redirect()->back()->with('success', 'Booking status updated successfully.');
     }
 
     public function updateItem(Request $request, BookingItem $item)
@@ -184,9 +270,15 @@ class BookingController extends Controller
 
     public function downloadInvoice(Booking $booking)
     {
-        $booking->load(['items.package.subCategory', 'user']);
+        $booking->load(['items.package.subCategory', 'items.photographer', 'user', 'paymentProof']);
 
-        $pdf = PDF::loadView('pdf.invoice', compact('booking'));
+        $pdf = PDF::loadView('pdf.invoice', compact('booking'))
+            ->setOptions([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => false,
+                'isFontSubsettingEnabled' => false,
+            ])
+            ->setWarnings(false);
 
         return $pdf->stream('Invoice-' . $booking->booking_code . '.pdf');
     }

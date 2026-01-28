@@ -25,4 +25,9 @@ class PhotoEditing extends Model
     {
         return $this->hasMany(Review::class, 'photo_session_id');
     }
+
+    public function booking()
+    {
+        return $this->hasOne(Booking::class, 'guest_uid', 'uid');
+    }
 }
