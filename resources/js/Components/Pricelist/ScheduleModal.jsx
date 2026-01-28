@@ -213,25 +213,31 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         setError(null);
 
         if (mode === 'direct') {
-            // Direct booking: redirect to booking form with session data
-            const [h, m] = startTime.split(':').map(Number);
-            const totalMin = h * 60 + m + maxSessions * 30;
-            const endH = Math.floor(totalMin / 60);
-            const endM = totalMin % 60;
-            const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+            // Direct booking: add to cart first then redirect to checkout
+            let uid = localStorage.getItem('afstudio_cart_uid');
+            if (!uid || !uid.includes('-')) {
+                uid = generateAndStoreUID();
+            }
 
-            router.visit('/checkout', {
-                method: 'get',
-                data: {
-                    package_id: packageData.id,
-                    date: date,
-                    start_time: startTime,
-                    end_time: endTime,
-                    sessions: selectedSessions > 0 ? selectedSessions : maxSessions,
-                    photographer_id: photographerId
-                },
+            const payload = {
+                pricelist_package_id: packageData.id,
+                quantity: 1,
+                scheduled_date: date,
+                start_time: startTime,
+                sessions_needed: selectedSessions > 0 ? selectedSessions : maxSessions,
+                photographer_id: photographerId,
+                cart_uid: uid
+            };
+
+            router.post('/cart', payload, {
+                headers: { 'X-Cart-UID': uid },
                 onSuccess: () => {
+                    router.visit('/checkout');
                     onClose();
+                },
+                onError: (errors) => {
+                    const firstError = Object.values(errors).join(', ');
+                    setError(firstError || "Gagal memproses booking.");
                 }
             });
         } else {
@@ -381,13 +387,13 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                 type="time"
                                                                 value={
                                                                     !startTime ? '' :
-                                                                    (() => {
-                                                                        const [h, m] = startTime.split(':').map(Number);
-                                                                        const totalMin = h * 60 + m + maxSessions * 30;
-                                                                        const endH = Math.floor(totalMin / 60);
-                                                                        const endM = totalMin % 60;
-                                                                        return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-                                                                    })()
+                                                                        (() => {
+                                                                            const [h, m] = startTime.split(':').map(Number);
+                                                                            const totalMin = h * 60 + m + maxSessions * 30;
+                                                                            const endH = Math.floor(totalMin / 60);
+                                                                            const endM = totalMin % 60;
+                                                                            return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+                                                                        })()
                                                                 }
                                                                 onChange={(e) => {
                                                                     setAvailabilityStatus(null);
