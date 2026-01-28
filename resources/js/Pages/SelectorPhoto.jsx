@@ -3,6 +3,7 @@ import GuestLayout from '../Layouts/GuestLayout';
 import { Head, router } from '@inertiajs/react';
 import { StarIcon, XMarkIcon, CameraIcon } from '@heroicons/react/24/solid';
 import { StarIcon as StarOutlineIcon } from '@heroicons/react/24/outline';
+import EditNotif from '@/Components/EditNotif';
 
 export default function SelectorPhoto() {
     const [step, setStep] = useState(1);
@@ -29,6 +30,10 @@ export default function SelectorPhoto() {
     const [successType, setSuccessType] = useState('request');
     const [editQuotaRemaining, setEditQuotaRemaining] = useState(0);
     const [maxEditQuota, setMaxEditQuota] = useState(0);
+    const [quotaRequest, setQuotaRequest] = useState('');
+    const [isRequestingQuota, setIsRequestingQuota] = useState(false);
+    const [showQuotaInput, setShowQuotaInput] = useState(false);
+    const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
 
     // Swipe State
     const [touchStart, setTouchStart] = useState(null);
@@ -71,7 +76,8 @@ export default function SelectorPhoto() {
             setSessionData(data.data);
             // Set max edit quota from package (default 0 if not available)
             setMaxEditQuota(data.data.max_editing_quota || 0);
-            setEditQuotaRemaining(data.data.max_editing_quota || 0);
+            setEditQuotaRemaining((data.data.max_editing_quota || 0) - (data.data.requested_count || 0));
+            setQuotaRequest(data.data.quota_request || '');
             setStep(2);
         } catch (err) {
             setError(err.message);
@@ -208,6 +214,41 @@ export default function SelectorPhoto() {
             alert('Error: ' + err.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSendQuotaRequest = async () => {
+        if (!quotaRequest || isRequestingQuota) return;
+        setIsRequestingQuota(true);
+        try {
+            const response = await fetch(`/api/photo-selector/sessions/${uid}/quota-request`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                },
+                body: JSON.stringify({ quota_request: quotaRequest }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Gagal mengirim permintaan');
+
+            setSessionData(prev => ({ ...prev, quota_request: quotaRequest }));
+            setNotif({
+                show: true,
+                message: 'Permintaan kuota tambahan telah dikirim ke admin.',
+                type: 'success'
+            });
+            setShowQuotaInput(false);
+        } catch (err) {
+            setNotif({
+                show: true,
+                message: 'Error: ' + err.message,
+                type: 'error'
+            });
+        } finally {
+            setIsRequestingQuota(false);
         }
     };
 
@@ -424,10 +465,46 @@ export default function SelectorPhoto() {
                                             </div>
                                         )}
 
-                                        <div className="bg-brand-gold/10 border-2 border-brand-gold/40 rounded-full px-6 py-1.5 mt-2 animate-pulse-subtle">
-                                            <p className="text-brand-gold text-[10px] font-black uppercase tracking-widest">
-                                                Kuota Editing: {editQuotaRemaining} / {maxEditQuota} Foto
-                                            </p>
+                                        <div className="flex flex-col items-center gap-2 mt-2 w-full">
+                                            <div className="bg-brand-gold/10 border-2 border-brand-gold/40 rounded-full px-6 py-1.5 animate-pulse-subtle">
+                                                <p className="text-brand-gold text-[10px] font-black uppercase tracking-widest">
+                                                    Kuota Editing: {editQuotaRemaining} / {maxEditQuota} Foto
+                                                </p>
+                                            </div>
+
+                                            {!showQuotaInput ? (
+                                                <button
+                                                    onClick={() => setShowQuotaInput(true)}
+                                                    className="text-[9px] font-black uppercase tracking-[0.2em] text-brand-gold hover:brightness-110 transition-all"
+                                                >
+                                                    {sessionData?.quota_request ? 'Update Request Kuota' : '+ Request Tambah Kuota'}
+                                                </button>
+                                            ) : (
+                                                <div className="flex flex-col items-center gap-2 w-full animate-in fade-in slide-in-from-top-1 duration-300">
+                                                    <input
+                                                        type="text"
+                                                        value={quotaRequest}
+                                                        onChange={(e) => setQuotaRequest(e.target.value)}
+                                                        placeholder="Contoh: Tambah 5 foto lagi..."
+                                                        className="w-full max-w-[200px] bg-black/5 dark:bg-white/5 border border-brand-gold/20 rounded-lg px-3 py-1.5 text-[10px] text-brand-black dark:text-brand-white font-bold focus:outline-none focus:border-brand-gold"
+                                                    />
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={handleSendQuotaRequest}
+                                                            disabled={isRequestingQuota}
+                                                            className="text-[9px] font-black uppercase tracking-widest text-brand-gold hover:underline disabled:opacity-50"
+                                                        >
+                                                            {isRequestingQuota ? 'Kirim...' : 'Kirim'}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setShowQuotaInput(false)}
+                                                            className="text-[9px] font-black uppercase tracking-widest text-brand-red hover:underline"
+                                                        >
+                                                            Batal
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -481,7 +558,7 @@ export default function SelectorPhoto() {
                                     {driveType === 'Mentahan' && (
                                         <div className="bg-brand-gold/10 border-2 border-brand-gold/40 rounded-full px-5 py-1 mt-1 mb-3">
                                             <p className="text-brand-gold text-[9px] font-black uppercase tracking-widest leading-tight">
-                                                Kuota Editing: {sessionData?.requested_count || 0} / 20 Foto
+                                                Kuota Editing: {sessionData?.requested_count || 0} / {maxEditQuota} Foto
                                             </p>
                                         </div>
                                     )}
@@ -576,14 +653,14 @@ export default function SelectorPhoto() {
 
                                             <button
                                                 onClick={() => driveType === 'Mentahan' ? handleSendEditRequest() : setStep(4)}
-                                                disabled={driveType === 'Mentahan' && (sessionData?.remaining_limit === 0 || selectedPhotos.length === 0 || selectedPhotos.length > (20 - (sessionData?.requested_count || 0)))}
+                                                disabled={driveType === 'Mentahan' && (selectedPhotos.length === 0 || selectedPhotos.length > (maxEditQuota - (sessionData?.requested_count || 0)))}
                                                 className="w-full sm:flex-1 bg-brand-gold hover:brightness-90 text-brand-black font-black py-3 sm:py-2.5 rounded-xl uppercase tracking-widest text-[10px] shadow-xl disabled:opacity-50 transition-all font-black px-6"
                                             >
                                                 {driveType === 'Mentahan' ? (
                                                     selectedPhotos.length > 0 ? (
-                                                        (selectedPhotos.length > (20 - (sessionData?.requested_count || 0)))
-                                                            ? `Kelebihan (${(sessionData?.requested_count || 0) + selectedPhotos.length} / 20)`
-                                                            : `Request Editing (${(sessionData?.requested_count || 0) + selectedPhotos.length} / 20)`
+                                                        (selectedPhotos.length > (maxEditQuota - (sessionData?.requested_count || 0)))
+                                                            ? `Kelebihan (${(sessionData?.requested_count || 0) + selectedPhotos.length} / ${maxEditQuota})`
+                                                            : `Request Editing (${(sessionData?.requested_count || 0) + selectedPhotos.length} / ${maxEditQuota})`
                                                     ) : `Pilih Foto`
                                                 ) : `Lanjut Review`}
                                             </button>
@@ -798,6 +875,13 @@ export default function SelectorPhoto() {
                     </div>
                 </div>
             )}
+
+            <EditNotif
+                show={notif.show}
+                onClose={() => setNotif({ ...notif, show: false })}
+                message={notif.message}
+                type={notif.type}
+            />
         </GuestLayout>
     );
 }
