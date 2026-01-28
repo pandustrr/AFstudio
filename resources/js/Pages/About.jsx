@@ -183,6 +183,7 @@ export default function About({ about, moodboards = [] }) {
                                                 src={`/storage/${mb.image_path}`}
                                                 className="w-full h-full object-cover group-hover:scale-110 transition-all duration-1000"
                                                 alt={mb.title}
+                                                loading="lazy"
                                             />
                                             <div
                                                 onClick={() => setPreviewImage(mb)}
@@ -209,6 +210,7 @@ export default function About({ about, moodboards = [] }) {
                                                 src={`/storage/${mb.image_path}`}
                                                 className="w-full h-full object-cover group-hover:scale-110 transition-all duration-1000"
                                                 alt={mb.title}
+                                                loading="lazy"
                                             />
                                             <div
                                                 onClick={() => setPreviewImage(mb)}
@@ -315,6 +317,7 @@ export default function About({ about, moodboards = [] }) {
                 }
                 .animate-marquee-slow {
                     animation: marquee-slow 40s linear infinite;
+                    will-change: transform;
                 }
                 @keyframes marquee {
                     0% { transform: translateX(0); }
@@ -322,6 +325,7 @@ export default function About({ about, moodboards = [] }) {
                 }
                 .animate-marquee {
                     animation: marquee 30s linear infinite;
+                    will-change: transform;
                 }
                 @keyframes marquee-reverse {
                     0% { transform: translateX(-50%); }
@@ -329,6 +333,7 @@ export default function About({ about, moodboards = [] }) {
                 }
                 .animate-marquee-reverse {
                     animation: marquee-reverse 40s linear infinite;
+                    will-change: transform;
                 }
                 .hover\\:pause:hover {
                     animation-play-state: paused;
