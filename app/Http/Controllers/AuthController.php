@@ -70,13 +70,11 @@ class AuthController extends Controller
 
             $request->session()->regenerate();
 
-            // Always redirect Admin to Admin Dashboard to avoid intended cross-guard confusion
-            if ($user->role === 'admin') {
-                return redirect()->route('admin.dashboard');
-            }
-
+            // Redirect based on guard first, so admins can access specific portals
             if ($guard === 'editor') return redirect()->intended(route('editor.dashboard'));
             if ($guard === 'photographer') return redirect()->intended(route('photographer.dashboard'));
+
+            // Default fallback for admin or web guard
             return redirect()->intended(route('admin.dashboard'));
         }
 
