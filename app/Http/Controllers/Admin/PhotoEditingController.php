@@ -19,7 +19,7 @@ class PhotoEditingController extends Controller
         $status = $request->input('status');
 
         // Base Query
-        $query = PhotoEditing::with(['editRequests'])
+        $query = PhotoEditing::with(['editRequests', 'booking'])
             ->withCount(['editRequests', 'reviews']);
 
         // Apply Filters

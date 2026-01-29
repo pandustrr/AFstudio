@@ -108,26 +108,26 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                     {renderMenuItem({ label: 'Dashboard', href: `${prefix}/dashboard`, icon: ChartBarIcon })}
                     {user.role === 'admin' && (
                         <>
-                            {renderMenuItem({ label: 'About Page', href: `${prefix}/about`, icon: BuildingOfficeIcon })}
-                            {renderMenuItem({ label: 'Pricelist', href: `${prefix}/pricelist`, icon: BanknotesIcon })}
-                            {renderMenuItem({ label: 'Voucher Codes', href: `${prefix}/referral-codes`, icon: TicketIcon })}
-                            {renderMenuItem({ label: 'Reviews', href: `${prefix}/reviews`, icon: StarIcon })}
+                            {renderMenuItem({ label: 'About Page', href: `/admin/about`, icon: BuildingOfficeIcon })}
+                            {renderMenuItem({ label: 'Pricelist', href: `/admin/pricelist`, icon: BanknotesIcon })}
+                            {renderMenuItem({ label: 'Voucher Codes', href: `/admin/referral-codes`, icon: TicketIcon })}
+                            {renderMenuItem({ label: 'Reviews', href: `/admin/reviews`, icon: StarIcon })}
 
-                            {/* Photographer Group */}
+                            {/* Photographer Group (Admin Control) */}
                             {renderGroupHeader('Photographer', UserIcon, openGroups.photographer, () => toggleGroup('photographer'))}
                             {openGroups.photographer && (
                                 <div className="space-y-1 mb-2">
-                                    {renderMenuItem({ label: 'List Booking', href: `${prefix}/bookings`, icon: CalendarDaysIcon }, true)}
-                                    {renderMenuItem({ label: 'Manage FG', href: `${prefix}/photographers`, icon: UserIcon }, true)}
+                                    {renderMenuItem({ label: 'List Booking', href: `/admin/bookings`, icon: CalendarDaysIcon }, true)}
+                                    {renderMenuItem({ label: 'Manage FG', href: `/admin/photographers`, icon: UserIcon }, true)}
                                     {renderMenuItem({ label: 'Monitoring FG', href: `/admin/photographer-sessions`, icon: CalendarDaysIcon }, true)}
                                 </div>
                             )}
 
-                            {/* Editor Group */}
+                            {/* Editor Group (Admin Control) */}
                             {renderGroupHeader('Editor', PencilSquareIcon, openGroups.editor, () => toggleGroup('editor'))}
                             {openGroups.editor && (
                                 <div className="space-y-1 mb-2">
-                                    {renderMenuItem({ label: 'Request Edit', href: `${prefix}/photo-editing`, icon: CameraIcon }, true)}
+                                    {renderMenuItem({ label: 'Request Edit', href: `/admin/photo-editing`, icon: CameraIcon }, true)}
                                 </div>
                             )}
 
@@ -135,16 +135,16 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                     )}
 
                     {/* Role Specific Items */}
-                    {user.role === 'photographer' && (
+                    {(user.role === 'photographer' || (user.role === 'admin' && prefix === '/photographer')) && (
                         <div className="space-y-1">
-                            {renderMenuItem({ label: 'Jadwal Sesi', href: `${prefix}/sessions`, icon: CalendarDaysIcon })}
-                            {renderMenuItem({ label: 'List Booking', href: `${prefix}/reservations`, icon: CalendarDaysIcon })}
+                            {renderMenuItem({ label: 'Jadwal Sesi', href: `/photographer/sessions`, icon: CalendarDaysIcon })}
+                            {renderMenuItem({ label: 'List Booking', href: `/photographer/reservations`, icon: CalendarDaysIcon })}
                         </div>
                     )}
 
-                    {user.role === 'editor' && (
+                    {(user.role === 'editor' || (user.role === 'admin' && prefix === '/editor')) && (
                         <div className="space-y-1">
-                            {renderMenuItem({ label: 'Request Edit', href: `${prefix}/photo-editing`, icon: CameraIcon })}
+                            {renderMenuItem({ label: 'Request Edit', href: `/editor/photo-editing`, icon: CameraIcon })}
                         </div>
                     )}
                 </div>

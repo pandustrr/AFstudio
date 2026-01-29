@@ -14,6 +14,7 @@ class PhotoEditing extends Model
         'raw_folder_id',
         'edited_folder_id',
         'status',
+        'quota_request',
     ];
 
     public function editRequests()

@@ -9,9 +9,7 @@ use App\Http\Controllers\Public\CartController;
 use App\Http\Controllers\Public\BookingController;
 use App\Http\Controllers\Public\ScheduleController;
 
-Route::get('/', function () {
-    return Inertia::render('Home');
-});
+Route::get('/', [\App\Http\Controllers\Public\HomeController::class, 'index'])->name('home');
 
 Route::get('/selector-photo', function () {
     return Inertia::render('SelectorPhoto');
@@ -55,6 +53,7 @@ Route::prefix('api/photo-selector')->group(function () {
     Route::get('/sessions/{uid}/photos', [PhotoSelectorController::class, 'getPhotos']);
     Route::post('/sessions/{uid}/edit-request', [PhotoSelectorController::class, 'storeEditRequest']);
     Route::post('/sessions/{uid}/review', [PhotoSelectorController::class, 'storeReview']);
+    Route::post('/sessions/{uid}/quota-request', [PhotoSelectorController::class, 'storeQuotaRequest']);
 });
 
 use App\Http\Controllers\Admin\EditorDashboardController;
@@ -110,6 +109,8 @@ Route::prefix('admin')->group(function () {
         // About & Pricelist
         Route::get('/about', [\App\Http\Controllers\Admin\AboutController::class, 'index'])->name('admin.about.index');
         Route::post('/about', [\App\Http\Controllers\Admin\AboutController::class, 'update'])->name('admin.about.update');
+        Route::post('/about/moodboard', [\App\Http\Controllers\Admin\AboutController::class, 'storeMoodboard'])->name('admin.about.moodboard.store');
+        Route::delete('/about/moodboard/{moodboard}', [\App\Http\Controllers\Admin\AboutController::class, 'destroyMoodboard'])->name('admin.about.moodboard.destroy');
 
         // Bookings
         Route::get('/bookings/{booking}/invoice', [\App\Http\Controllers\Admin\BookingController::class, 'downloadInvoice'])->name('admin.bookings.invoice');

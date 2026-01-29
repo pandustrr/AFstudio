@@ -63,6 +63,7 @@ class PhotoSelectorController extends Controller
                 'status' => $session->status,
                 'requested_count' => $requestedCount,
                 'max_editing_quota' => $maxEditingQuota,
+                'quota_request' => $session->quota_request,
                 'booking' => $bookingDetail,
             ]
         ]);
@@ -233,6 +234,38 @@ class PhotoSelectorController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Gagal menyimpan ulasan',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+    /**
+     * Store quota request
+     */
+    public function storeQuotaRequest(Request $request, $uid)
+    {
+        $session = PhotoEditing::where('uid', $uid)->first();
+
+        if (!$session) {
+            return response()->json(['error' => 'Session not found'], 404);
+        }
+
+        $validated = $request->validate([
+            'quota_request' => 'required|string|max:255',
+        ]);
+
+        try {
+            $session->update([
+                'quota_request' => $validated['quota_request'],
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Permintaan kuota telah dikirim ke admin!',
+                'quota_request' => $session->quota_request
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Gagal mengirim permintaan kuota',
                 'message' => $e->getMessage()
             ], 500);
         }

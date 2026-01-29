@@ -182,7 +182,14 @@ export default function Index({ sessions, filters, options }) {
                                 <tr key={session.id} className="border-b border-black/5 dark:border-white/5 hover:bg-black/2 dark:hover:bg-white/2 transition-colors group">
                                     <td className="px-8 py-6">
                                         <div className="text-sm font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-1">{session.customer_name}</div>
-                                        <div className="text-[10px] font-mono text-brand-red font-black tracking-widest opacity-80">{session.uid}</div>
+                                        <div className="text-[10px] font-mono text-brand-red font-black tracking-widest opacity-80 flex items-center gap-2">
+                                            {session.uid}
+                                            {session.quota_request && (
+                                                <span className="px-1.5 py-0.5 bg-brand-gold text-brand-black text-[8px] rounded animate-pulse">
+                                                    QUOTA REQ
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="px-8 py-6">
                                         <div className="text-xs font-bold text-brand-black dark:text-brand-white">
