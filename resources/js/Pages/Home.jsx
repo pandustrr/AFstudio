@@ -14,7 +14,7 @@ import {
     ChatBubbleBottomCenterTextIcon
 } from '@heroicons/react/24/outline';
 
-export default function Home({ categories = [] }) {
+export default function Home({ categories = [], homePage, galleries = [] }) {
     return (
         <GuestLayout>
             <Head title="Premium Photography & Art Studio" />
@@ -25,8 +25,21 @@ export default function Home({ categories = [] }) {
             {/* Hero Section */}
             <section className="relative min-h-[85vh] lg:min-h-screen flex items-center justify-center overflow-hidden pt-20 lg:pt-16 transition-all duration-700">
                 <div className="absolute inset-0 z-0">
-                    <div className="absolute inset-0 bg-brand-white dark:bg-brand-black transition-colors duration-700"></div>
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-linear-to-tr from-brand-red/5 via-transparent to-brand-gold/5 blur-[120px] animate-pulse"></div>
+                    {homePage?.hero_image_path ? (
+                        <div className="relative w-full h-full">
+                            <img
+                                src={`/storage/${homePage.hero_image_path}`}
+                                alt="AF Studio Home Hero"
+                                className="w-full h-full object-cover scale-110 animate-slow-zoom opacity-60"
+                            />
+                            <div className="absolute inset-0 bg-linear-to-b from-brand-white/20 via-brand-white/10 to-brand-white dark:from-brand-black/40 dark:via-brand-black/20 dark:to-brand-black opacity-100 transition-colors duration-500"></div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="absolute inset-0 bg-brand-white dark:bg-brand-black transition-colors duration-700"></div>
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-linear-to-tr from-brand-red/5 via-transparent to-brand-gold/5 blur-[120px] animate-pulse"></div>
+                        </>
+                    )}
                     <div className="absolute inset-0 flex items-center justify-center select-none pointer-events-none overflow-hidden translate-y-10">
                         <span className="text-[20vw] lg:text-[12vw] font-black text-brand-black/2 dark:text-brand-white/2 leading-none uppercase tracking-tighter">
                             AFSTUDIO
@@ -41,13 +54,34 @@ export default function Home({ categories = [] }) {
                     </div>
 
                     <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-[100px] font-black text-brand-black dark:text-brand-white mb-6 lg:mb-8 tracking-[-0.05em] uppercase leading-[0.9] animate-fade-in-up">
-                        MELAMPAUI <span className="text-brand-red">MOMEN.</span> <br />
-                        <span className="italic font-light text-brand-gold lowercase tracking-tight font-serif">keanggunan</span> ARTISTIK
+                        {homePage?.hero_title ? (
+                            <>
+                                {homePage.hero_title.split(' ').map((word, idx) => (
+                                    idx === homePage.hero_title.split(' ').length - 1 ? (
+                                        <span key={idx} className="text-brand-red">{word}</span>
+                                    ) : (
+                                        <span key={idx}>{word} </span>
+                                    )
+                                ))}
+                                <br />
+                                <span className="italic font-light text-brand-gold lowercase tracking-tight font-serif">{homePage.hero_subtitle}</span>
+                            </>
+                        ) : (
+                            <>
+                                MELAMPAUI <span className="text-brand-red">MOMEN.</span> <br />
+                                <span className="italic font-light text-brand-gold lowercase tracking-tight font-serif">keanggunan</span> ARTISTIK
+                            </>
+                        )}
                     </h1>
 
                     <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] sm:text-xs lg:text-base max-w-2xl mx-auto mb-10 lg:mb-12 font-bold uppercase tracking-[0.2em] leading-relaxed animate-fade-in delay-200">
-                        Mari abadikan setiap penggalan cerita Anda dengan sentuhan estetik yang tidak lekang oleh waktu. <br className="hidden md:block" />
-                        Ruang di mana setiap bayangan dan cahaya berkolaborasi untuk Anda.
+                        {homePage?.hero_description || 'Mari abadikan setiap penggalan cerita Anda dengan sentuhan estetik yang tidak lekang oleh waktu.'}
+                        {!homePage?.hero_description && (
+                            <>
+                                <br className="hidden md:block" />
+                                Ruang di mana setiap bayangan dan cahaya berkolaborasi untuk Anda.
+                            </>
+                        )}
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 lg:gap-6 animate-fade-in delay-300">
@@ -57,7 +91,7 @@ export default function Home({ categories = [] }) {
                         >
                             <div className="absolute inset-0 bg-brand-gold translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
                             <span className="relative z-10 font-black uppercase tracking-[0.2em] text-[9px] lg:text-xs flex items-center justify-center gap-3 group-hover:text-brand-black transition-colors">
-                                Mulai Cerita Anda <ArrowRightIcon className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                                {homePage?.cta_button_text || 'Mulai Cerita Anda'} <ArrowRightIcon className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                             </span>
                         </Link>
 
@@ -68,7 +102,7 @@ export default function Home({ categories = [] }) {
                             <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full border border-black/10 dark:border-white/10 flex items-center justify-center group-hover:border-brand-gold transition-all duration-500">
                                 <span className="font-serif italic text-base lg:text-lg text-brand-gold group-hover:scale-110 transition-transform">i</span>
                             </div>
-                            <span className="font-black uppercase tracking-[0.2em] text-[8px] lg:text-[10px] group-hover:text-brand-gold transition-colors underline decoration-brand-gold/30 underline-offset-8">Mengenal Kami</span>
+                            <span className="font-black uppercase tracking-[0.2em] text-[8px] lg:text-[10px] group-hover:text-brand-gold transition-colors underline decoration-brand-gold/30 underline-offset-8">{homePage?.about_button_text || 'Mengenal Kami'}</span>
                         </Link>
                     </div>
                 </div>

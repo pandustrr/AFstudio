@@ -48,10 +48,10 @@ class AboutController extends Controller
                 Storage::disk('public')->delete($about->image_path);
             }
             $path = $request->file('image')->store('about-images', 'public');
-            $about->image_path = $path;
+            $validated['image_path'] = $path;
         }
 
-        $about->update($request->except('image'));
+        $about->update($validated);
 
         return back()->with('success', 'Halaman About berhasil diperbarui.');
     }

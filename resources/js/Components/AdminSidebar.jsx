@@ -108,6 +108,7 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                     {renderMenuItem({ label: 'Dashboard', href: `${prefix}/dashboard`, icon: ChartBarIcon })}
                     {user.role === 'admin' && (
                         <>
+                            {renderMenuItem({ label: 'Home Page', href: `/admin/home`, icon: BuildingOfficeIcon })}
                             {renderMenuItem({ label: 'About Page', href: `/admin/about`, icon: BuildingOfficeIcon })}
                             {renderMenuItem({ label: 'Pricelist', href: `/admin/pricelist`, icon: BanknotesIcon })}
                             {renderMenuItem({ label: 'Voucher Codes', href: `/admin/referral-codes`, icon: TicketIcon })}
