@@ -2,9 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
 import { TrashIcon, MinusIcon, PlusIcon, ShoppingBagIcon, XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
 
 export default function CartIndex({ carts, transactionHistory, uid }) {
     const [selectedItems, setSelectedItems] = useState([]);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null);
+    const [processingDelete, setProcessingDelete] = useState(false);
 
     // Toggle check for a single item
     const toggleItem = (id) => {
@@ -34,14 +38,25 @@ export default function CartIndex({ carts, transactionHistory, uid }) {
     };
 
     const removeItem = (id) => {
-        if (confirm('Are you sure you want to remove this item?')) {
-            const uid = localStorage.getItem('afstudio_cart_uid');
-            router.delete(`/cart/${id}`, {
-                headers: { 'X-Cart-UID': uid },
-                data: { cart_uid: uid }, // Some servers need matching body
-                preserveScroll: true
-            });
-        }
+        setItemToDelete(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmRemove = () => {
+        if (!itemToDelete) return;
+
+        setProcessingDelete(true);
+        const uid = localStorage.getItem('afstudio_cart_uid');
+        router.delete(`/cart/${itemToDelete}`, {
+            headers: { 'X-Cart-UID': uid },
+            data: { cart_uid: uid },
+            preserveScroll: true,
+            onFinish: () => {
+                setIsDeleteModalOpen(false);
+                setItemToDelete(null);
+                setProcessingDelete(false);
+            }
+        });
     };
 
     // Calculate total
@@ -250,6 +265,15 @@ export default function CartIndex({ carts, transactionHistory, uid }) {
                     </>
                 )}
             </div>
+
+            <DeleteConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmRemove}
+                title="Hapus Item"
+                message="Yakin ingin menghapus paket ini dari keranjang belanja?"
+                processing={processingDelete}
+            />
         </div>
     );
 }

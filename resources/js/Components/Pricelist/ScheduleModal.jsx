@@ -8,6 +8,7 @@ import SuccessModal from './Modals/SuccessModal';
 export default function ScheduleModal({ isOpen, onClose, packageData, rooms: initialRooms = [], mode = 'cart' }) {
     const { flash } = usePage().props;
     const [date, setDate] = useState('');
+    const [dateInput, setDateInput] = useState('');
     const [roomId, setRoomId] = useState(null);
     const [loading, setLoading] = useState(false);
     const [slots, setSlots] = useState([]);
@@ -74,6 +75,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
             setDate(today);
+            setDateInput(`${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`);
             setPhotographerId(null);
             setPhotographers([]);
             setSlots([]);
@@ -86,6 +88,50 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             setMaxSessions(packageData?.max_sessions || 1);
         }
     }, [isOpen, packageData]);
+
+    const handleDateInput = (e) => {
+        let val = e.target.value;
+
+        // Limit length and allow only numbers and slashes
+        val = val.replace(/[^0-9/]/g, '').substring(0, 10);
+
+        // Auto-slash logic
+        if (val.length === 2 && !val.includes('/') && e.nativeEvent.inputType !== 'deleteContentBackward') {
+            val += '/';
+        } else if (val.length === 5 && val.split('/').length === 2 && e.nativeEvent.inputType !== 'deleteContentBackward') {
+            val += '/';
+        }
+
+        setDateInput(val);
+
+        // Parse DD/MM/YYYY
+        const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+        const match = val.match(regex);
+        if (match) {
+            const d = match[1].padStart(2, '0');
+            const m = match[2].padStart(2, '0');
+            const y = match[3];
+            const newDate = `${y}-${m}-${d}`;
+            const dObj = new Date(newDate);
+
+            if (!isNaN(dObj.getTime())) {
+                setDate(newDate);
+            }
+        }
+    };
+
+    // Sync text input when date changes from picker
+    useEffect(() => {
+        if (date) {
+            const [y, m, d] = date.split('-');
+            if (y && m && d) {
+                const formatted = `${d}/${m}/${y}`;
+                if (dateInput !== formatted) {
+                    setDateInput(formatted);
+                }
+            }
+        }
+    }, [date]);
 
     // Fetch photographer availability when date changes
     useEffect(() => {
@@ -213,25 +259,31 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         setError(null);
 
         if (mode === 'direct') {
-            // Direct booking: redirect to booking form with session data
-            const [h, m] = startTime.split(':').map(Number);
-            const totalMin = h * 60 + m + maxSessions * 30;
-            const endH = Math.floor(totalMin / 60);
-            const endM = totalMin % 60;
-            const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+            // Direct booking: add to cart first then redirect to checkout
+            let uid = localStorage.getItem('afstudio_cart_uid');
+            if (!uid || !uid.includes('-')) {
+                uid = generateAndStoreUID();
+            }
 
-            router.visit('/checkout', {
-                method: 'get',
-                data: {
-                    package_id: packageData.id,
-                    date: date,
-                    start_time: startTime,
-                    end_time: endTime,
-                    sessions: selectedSessions > 0 ? selectedSessions : maxSessions,
-                    photographer_id: photographerId
-                },
+            const payload = {
+                pricelist_package_id: packageData.id,
+                quantity: 1,
+                scheduled_date: date,
+                start_time: startTime,
+                sessions_needed: selectedSessions > 0 ? selectedSessions : maxSessions,
+                photographer_id: photographerId,
+                cart_uid: uid
+            };
+
+            router.post('/cart', payload, {
+                headers: { 'X-Cart-UID': uid },
                 onSuccess: () => {
+                    router.visit('/checkout');
                     onClose();
+                },
+                onError: (errors) => {
+                    const firstError = Object.values(errors).join(', ');
+                    setError(firstError || "Gagal memproses booking.");
                 }
             });
         } else {
@@ -332,25 +384,36 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                         {/* Right Column: Form */}
                                         <div className="space-y-6">
                                             {/* Date Selection */}
-                                            <div className="space-y-2">
+                                            <div className="space-y-3">
                                                 <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
                                                     <CalendarIcon className="w-4 h-4" /> Pilih Tanggal Booking
                                                 </label>
                                                 <div className="relative group">
                                                     <input
-                                                        type="date"
-                                                        value={date}
-                                                        min={new Date().toISOString().split('T')[0]}
-                                                        onChange={(e) => setDate(e.target.value)}
-                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                        type="text"
+                                                        placeholder="DD/MM/YYYY"
+                                                        value={dateInput}
+                                                        onChange={handleDateInput}
+                                                        className="w-full bg-black/5 dark:bg-white/5 border-2 border-transparent group-hover:border-brand-gold/30 focus:border-brand-gold focus:outline-none rounded-2xl px-5 py-4 text-brand-black dark:text-brand-white font-bold text-lg transition-all"
                                                     />
-                                                    <div className="w-full bg-black/5 dark:bg-white/5 border-2 border-transparent group-hover:border-brand-gold/30 rounded-2xl px-5 py-4 text-brand-black dark:text-brand-white font-bold text-lg capitalize flex items-center justify-between transition-all">
-                                                        <span>
-                                                            {date ? new Date(date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : 'Pilih Tanggal'}
-                                                        </span>
-                                                        <CalendarIcon className="w-5 h-5 opacity-20 group-hover:opacity-100 group-hover:text-brand-gold transition-all" />
+                                                    <div className="absolute right-5 top-1/2 -translate-y-1/2">
+                                                        <div className="relative">
+                                                            <input
+                                                                type="date"
+                                                                value={date}
+                                                                min={new Date().toISOString().split('T')[0]}
+                                                                onChange={(e) => setDate(e.target.value)}
+                                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                            />
+                                                            <CalendarIcon className="w-6 h-6 opacity-20 group-hover:opacity-100 group-hover:text-brand-gold transition-all" />
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                {date && (
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold px-1">
+                                                        {new Date(date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })}
+                                                    </p>
+                                                )}
                                             </div>
 
                                             {/* Time Input for Photographer Packages */}
@@ -381,13 +444,13 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                 type="time"
                                                                 value={
                                                                     !startTime ? '' :
-                                                                    (() => {
-                                                                        const [h, m] = startTime.split(':').map(Number);
-                                                                        const totalMin = h * 60 + m + maxSessions * 30;
-                                                                        const endH = Math.floor(totalMin / 60);
-                                                                        const endM = totalMin % 60;
-                                                                        return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-                                                                    })()
+                                                                        (() => {
+                                                                            const [h, m] = startTime.split(':').map(Number);
+                                                                            const totalMin = h * 60 + m + maxSessions * 30;
+                                                                            const endH = Math.floor(totalMin / 60);
+                                                                            const endM = totalMin % 60;
+                                                                            return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+                                                                        })()
                                                                 }
                                                                 onChange={(e) => {
                                                                     setAvailabilityStatus(null);

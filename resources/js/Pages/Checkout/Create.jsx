@@ -7,6 +7,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
     const { auth } = usePage().props;
     const [appliedDiscount, setAppliedDiscount] = useState(null);
     const [validatingCode, setValidatingCode] = useState(false);
+    const [voucherError, setVoucherError] = useState(null);
 
     const getRoomLabel = (id) => {
         const room = rooms.find(r => r.id === parseInt(id));
@@ -46,6 +47,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
     const validateReferralCode = async (code) => {
         if (!code.trim()) {
             setAppliedDiscount(null);
+            setVoucherError(null);
             return;
         }
 
@@ -68,11 +70,10 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
 
             if (response.ok && result.valid) {
                 setAppliedDiscount(result.code);
+                setVoucherError(null);
             } else {
                 setAppliedDiscount(null);
-                if (result.message) {
-                    console.warn('Referral validation:', result.message);
-                }
+                setVoucherError(result.message || 'Kode voucher tidak ditemukan.');
             }
         } catch (error) {
             console.error('Error validating referral code:', error);
@@ -89,6 +90,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
             validateReferralCode(code);
         } else {
             setAppliedDiscount(null);
+            setVoucherError(null);
         }
     };
 
@@ -306,6 +308,11 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                                         ✓ Kode valid! Diskon {appliedDiscount.discount_type === 'percentage' ? `${appliedDiscount.discount_value}%` : `Rp${appliedDiscount.discount_value}`} diterapkan
                                     </p>
                                 )}
+                                {voucherError && (
+                                    <p className="text-xs font-bold text-red-500 dark:text-red-400">
+                                        ⚠ {voucherError}
+                                    </p>
+                                )}
                             </div>
 
                             {/* Catatan Tambahan */}
@@ -374,19 +381,21 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                                                 <ClockIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
                                                 <span>{cart.start_time?.substring(0, 5)} - {cart.end_time?.substring(0, 5)}</span>
                                             </div>
-                                            <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white">
-                                                {cart.photographer_id ? (
-                                                    <>
-                                                        <UserIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
-                                                        <span>FG: {getPhotographerName(cart.photographer_id)}</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <MapPinIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
-                                                        <span>Studio {getRoomLabel(cart.room_id)}</span>
-                                                    </>
-                                                )}
-                                            </div>
+                                            {(cart.photographer_id || cart.room_id) && (
+                                                <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white">
+                                                    {cart.photographer_id ? (
+                                                        <>
+                                                            <UserIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
+                                                            <span>FG: {getPhotographerName(cart.photographer_id)}</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <MapPinIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
+                                                            <span>Studio {getRoomLabel(cart.room_id)}</span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}

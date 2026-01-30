@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\About;
+use App\Models\Moodboard;
 use App\Models\Pricelist;
 use Inertia\Inertia;
 
@@ -13,13 +14,14 @@ class PageController extends Controller
     {
         $about = About::first();
         return Inertia::render('About', [
-            'about' => $about
+            'about' => $about,
+            'moodboards' => Moodboard::latest()->get()
         ]);
     }
 
     public function pricelist()
     {
-        $categories = \App\Models\PricelistCategory::with(['subCategories' => function($query) {
+        $categories = \App\Models\PricelistCategory::with(['subCategories' => function ($query) {
             $query->with(['category', 'packages']);
         }])->get();
         $rooms = \App\Models\Room::all();

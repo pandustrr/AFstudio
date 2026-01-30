@@ -1,14 +1,14 @@
 import React from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { PhotoIcon, BuildingOfficeIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
+import { PhotoIcon, BuildingOfficeIcon, GlobeAltIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextArea from '@/Components/TextArea';
 
-export default function Index({ about }) {
+export default function Index({ about, moodboards }) {
     const { data, setData, post, processing, errors } = useForm({
         _method: 'POST',
         title: about.title || '',
@@ -40,14 +40,41 @@ export default function Index({ about }) {
         });
     };
 
+    // Moodboard Form
+    const { data: mData, setData: setMData, post: postMoodboard, processing: mProcessing, reset: mReset } = useForm({
+        image: null,
+        title: '',
+    });
+
+    const [mImagePreview, setMImagePreview] = React.useState(null);
+
+    const handleMoodboardSubmit = (e) => {
+        e.preventDefault();
+        postMoodboard('/admin/about/moodboard', {
+            preserveScroll: true,
+            onSuccess: () => {
+                mReset();
+                setMImagePreview(null);
+            },
+        });
+    };
+
+    const handleDeleteMoodboard = (id) => {
+        if (confirm('Hapus gambar ini dari Moodboard?')) {
+            router.delete(`/admin/about/moodboard/${id}`, {
+                preserveScroll: true,
+            });
+        }
+    };
+
     return (
         <AdminLayout>
             <Head title="About Settings" />
 
             <div className="pt-12 lg:pt-20 pb-20 px-6 max-w-5xl mx-auto">
                 <div className="flex flex-col gap-2 mb-10">
-                    <h1 className="text-4xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter">About Company</h1>
-                    <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest">Atur konten halaman About, Visi Misi, dan Kontak.</p>
+                    <h1 className="text-3xl lg:text-4xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter leading-tight">About Company</h1>
+                    <p className="text-brand-black/40 dark:text-brand-white/40 text-[9px] sm:text-[10px] font-black uppercase tracking-widest leading-relaxed">Atur konten halaman About, Visi Misi, dan Kontak.</p>
                 </div>
 
                 <form onSubmit={submit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -197,6 +224,98 @@ export default function Index({ about }) {
                         </div>
                     </div>
                 </form>
+
+                {/* Moodboard Section */}
+                <div className="mt-16 sm:mt-24 space-y-8">
+                    <div className="flex flex-col gap-2">
+                        <h2 className="text-2xl sm:text-3xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter">Moodboard Gallery</h2>
+                        <p className="text-brand-black/40 dark:text-brand-white/40 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Koleksi inspirasi dan referensi gaya fotografi.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* List Moodboards */}
+                        <div className="lg:col-span-2 order-2 lg:order-1">
+                            {moodboards.length === 0 ? (
+                                <div className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-12 text-center">
+                                    <PhotoIcon className="w-12 h-12 mx-auto text-brand-black/10 mb-4" />
+                                    <p className="text-xs font-bold uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Belum ada gambar moodboard.</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                                    {moodboards.map((mb) => (
+                                        <div key={mb.id} className="relative group aspect-square bg-black/5 rounded-xl overflow-hidden border border-black/5 dark:border-white/5 shadow-sm">
+                                            <img src={`/storage/${mb.image_path}`} alt={mb.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                            <div className="absolute inset-x-0 bottom-0 p-2 sm:p-3 bg-linear-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <p className="text-[8px] sm:text-[10px] font-bold text-white uppercase truncate mb-2">{mb.title || 'Untitled'}</p>
+                                                <button
+                                                    onClick={() => handleDeleteMoodboard(mb.id)}
+                                                    className="w-full py-1.5 bg-brand-red text-white text-[7px] sm:text-[8px] font-black uppercase tracking-widest rounded-lg flex items-center justify-center gap-1 hover:brightness-110 transition-all"
+                                                >
+                                                    <TrashIcon className="w-3 h-3" /> Hapus
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Add Moodboard Form */}
+                        <div className="order-1 lg:order-2">
+                            <form onSubmit={handleMoodboardSubmit} className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-6 sm:p-8 space-y-6 sticky top-24">
+                                <div className="flex items-center gap-3 border-b border-black/5 dark:border-white/5 pb-4 mb-4">
+                                    <PlusIcon className="w-5 h-5 text-brand-black dark:text-brand-white" />
+                                    <h2 className="text-lg font-black uppercase tracking-tighter text-brand-black dark:text-brand-white">Tambah Moodboard</h2>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <InputLabel value="Moodboard Image" className="mb-2" />
+                                        <div className="relative group w-full aspect-video bg-black/5 dark:bg-white/5 rounded-xl overflow-hidden border-2 border-dashed border-black/10 dark:border-white/10 hover:border-brand-gold transition-colors">
+                                            {mImagePreview ? (
+                                                <img src={mImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center h-full text-brand-black/20 dark:text-brand-white/20">
+                                                    <PhotoIcon className="w-8 h-8 mb-2" />
+                                                    <span className="text-[10px] uppercase font-black tracking-widest leading-none">Pilih Gambar</span>
+                                                </div>
+                                            )}
+                                            <input
+                                                type="file"
+                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                                onChange={(e) => {
+                                                    const file = e.target.files[0];
+                                                    if (file) {
+                                                        setMData('image', file);
+                                                        setMImagePreview(URL.createObjectURL(file));
+                                                    }
+                                                }}
+                                                accept="image/*"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <InputLabel value="Title (Optional)" />
+                                        <TextInput
+                                            value={mData.title}
+                                            onChange={(e) => setMData('title', e.target.value)}
+                                            className="w-full mt-1"
+                                            placeholder="Contoh: Warm Tone Style"
+                                        />
+                                    </div>
+
+                                    <div className="pt-2">
+                                        <PrimaryButton className="w-full justify-center py-4 text-[10px] tracking-widest uppercase font-black" disabled={mProcessing}>
+                                            {mProcessing ? 'Mengunggah...' : 'Upload Gambar'}
+                                        </PrimaryButton>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
         </AdminLayout>
     );
