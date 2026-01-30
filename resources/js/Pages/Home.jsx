@@ -133,14 +133,19 @@ export default function Home({ categories = [], homePage, galleries = [] }) {
             {/* Scrolling Banner */}
             <div className="py-6 bg-brand-black dark:bg-white/5 overflow-hidden border-y border-white/5 relative z-20">
                 <div className="flex whitespace-nowrap animate-marquee">
-                    {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="flex items-center gap-12 px-6">
-                            <span className="text-white/20 dark:text-white/10 text-2xl lg:text-4xl font-black uppercase tracking-[0.3em] italic">Visi Artistik</span>
-                            <div className="w-2 h-2 bg-brand-gold rounded-full"></div>
-                            <span className="text-white/20 dark:text-white/10 text-2xl lg:text-4xl font-black uppercase tracking-[0.3em] italic">Jiwa Sinematik</span>
-                            <div className="w-2 h-2 bg-brand-red rounded-full"></div>
-                            <span className="text-white/20 dark:text-white/10 text-2xl lg:text-4xl font-black uppercase tracking-[0.3em] italic">Bingkai Abadi</span>
-                            <div className="w-2 h-2 bg-brand-gold rounded-full"></div>
+                    {[1, 2, 3, 4].map((iteration) => (
+                        <div key={iteration} className="flex items-center gap-12 px-6">
+                            {(homePage?.running_text
+                                ? homePage.running_text.split('|').map(t => t.trim()).filter(Boolean)
+                                : ['Visi Artistik', 'Jiwa Sinematik', 'Bingkai Abadi']
+                            ).map((text, idx) => (
+                                <React.Fragment key={idx}>
+                                    <span className="text-white/20 dark:text-white/10 text-2xl lg:text-4xl font-black uppercase tracking-[0.3em] italic">
+                                        {text}
+                                    </span>
+                                    <div className={`w-2 h-2 rounded-full ${idx % 2 === 0 ? 'bg-brand-gold' : 'bg-brand-red'}`}></div>
+                                </React.Fragment>
+                            ))}
                         </div>
                     ))}
                 </div>
@@ -173,15 +178,28 @@ export default function Home({ categories = [], homePage, galleries = [] }) {
                         <div className="lg:col-span-8 space-y-4 lg:space-y-6">
                             <div className="flex items-center gap-4">
                                 <div className="h-px w-10 lg:w-12 bg-brand-red"></div>
-                                <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.4em] text-brand-red">Layanan Pilihan</span>
+                                <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.4em] text-brand-red">
+                                    {homePage?.services_subtitle || 'Layanan Pilihan'}
+                                </span>
                             </div>
                             <h2 className="text-3xl md:text-5xl lg:text-7xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter leading-none italic transition-colors">
-                                LAYANAN YANG <br /> <span className="text-brand-gold underline decoration-brand-red/10 underline-offset-12">MENGINSPIRASI.</span>
+                                {homePage?.services_title ? (
+                                    <>
+                                        {homePage.services_title.split(' ').slice(0, -1).join(' ')} <br />
+                                        <span className="text-brand-gold underline decoration-brand-red/10 underline-offset-12">
+                                            {homePage.services_title.split(' ').slice(-1)}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        LAYANAN YANG <br /> <span className="text-brand-gold underline decoration-brand-red/10 underline-offset-12">MENGINSPIRASI.</span>
+                                    </>
+                                )}
                             </h2>
                         </div>
                         <div className="lg:col-span-4 pb-0 lg:pb-4 border-l-2 lg:border-l border-brand-gold/30 pl-6 lg:pl-8">
                             <p className="text-brand-black/40 dark:text-brand-white/40 text-xs lg:text-sm font-bold uppercase tracking-widest leading-relaxed transition-colors">
-                                Setiap momen memiliki jiwanya sendiri. Kami hadir untuk menangkap esensi terdalam melalui lensa profesional kami.
+                                {homePage?.services_description || 'Setiap momen memiliki jiwanya sendiri. Kami hadir untuk menangkap esensi terdalam melalui lensa profesional kami.'}
                             </p>
                         </div>
                     </div>
@@ -191,7 +209,7 @@ export default function Home({ categories = [], homePage, galleries = [] }) {
                             categories.map((cat, i) => (
                                 <Link key={cat.id} href="/price-list" className="group block relative aspect-4/5 rounded-4xl overflow-hidden bg-black/5 dark:bg-white/5 shadow-xl transition-all duration-1000">
                                     <img
-                                        src={cat.background_image || "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&q=80"}
+                                        src={cat.background_image ? `/storage/${cat.background_image}` : "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&q=80"}
                                         alt={cat.name}
                                         className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000 opacity-80 group-hover:opacity-100"
                                     />

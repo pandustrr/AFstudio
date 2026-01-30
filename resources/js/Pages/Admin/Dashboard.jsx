@@ -222,7 +222,7 @@ export default function Dashboard({ stats, recentBookings, recentReviews }) {
                                 <div key={review.id} className="relative group">
                                     <div className="flex items-start gap-4 mb-3">
                                         <div className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/10 flex items-center justify-center shrink-0 border border-black/5 dark:border-white/10">
-                                            <span className="text-[10px] font-black uppercase text-brand-black/30 dark:text-brand-white/30 truncate px-1">{review.name.substring(0, 2)}</span>
+                                            <span className="text-[10px] font-black uppercase text-brand-black/30 dark:text-brand-white/30 truncate px-1">{(review.name || 'NN').substring(0, 2)}</span>
                                         </div>
                                         <div>
                                             <div className="flex gap-0.5 mb-1">
