@@ -15,11 +15,19 @@ class HomeController extends Controller
         $homePage = HomePage::first();
         $categories = PricelistCategory::all();
         $galleries = HomePageGallery::orderBy('order')->get();
-        
+
+        $stats = [
+            'booking_count' => \App\Models\Booking::count(),
+            'package_count' => \App\Models\PricelistPackage::count(),
+            'rating' => round(\App\Models\Review::avg('rating') ?? 5, 1),
+            'years_active' => date('Y') - 2019,
+        ];
+
         return Inertia::render('Home', [
             'homePage' => $homePage,
             'categories' => $categories,
             'galleries' => $galleries,
+            'stats' => $stats,
         ]);
     }
 }

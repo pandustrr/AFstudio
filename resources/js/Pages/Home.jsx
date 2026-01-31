@@ -14,7 +14,7 @@ import {
     ChatBubbleBottomCenterTextIcon
 } from '@heroicons/react/24/outline';
 
-export default function Home({ categories = [], homePage, galleries = [] }) {
+export default function Home({ categories = [], homePage, galleries = [], stats }) {
     return (
         <GuestLayout>
             <Head title="Premium Photography & Art Studio" />
@@ -156,10 +156,10 @@ export default function Home({ categories = [], homePage, galleries = [] }) {
                 <div className="max-w-7xl mx-auto px-6">
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
                         {[
-                            { label: 'Momen Diabadikan', val: '2.5K+', icon: CameraIcon },
-                            { label: 'Klien Bahagia', val: '1.2K+', icon: UserGroupIcon },
-                            { label: 'Tahun Berkarya', val: '05+', icon: SparklesIcon },
-                            { label: 'Penghargaan', val: '12+', icon: TrophyIcon },
+                            { label: 'Total Booking', val: `${stats?.booking_count || 0}+`, icon: CameraIcon },
+                            { label: 'Pilihan Paket', val: `${stats?.package_count || 0}+`, icon: UserGroupIcon },
+                            { label: 'Tahun Berkarya', val: `${stats?.years_active || 0}+`, icon: SparklesIcon },
+                            { label: 'Rating Klien', val: `${stats?.rating || 5}/5`, icon: TrophyIcon },
                         ].map((stat, i) => (
                             <div key={i} className="group p-8 rounded-4xl bg-black/2 dark:bg-white/2 border border-black/5 dark:border-white/5 hover:border-brand-gold/30 transition-all duration-700">
                                 <stat.icon className="w-6 h-6 text-brand-red mb-6 group-hover:scale-110 transition-transform" />
