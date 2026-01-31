@@ -39,8 +39,12 @@ class HomePageController extends Controller
             'hero_image' => 'nullable|image|max:5120',
             'cta_button_text' => 'nullable|string|max:255',
             'about_button_text' => 'nullable|string|max:255',
+            'running_text' => 'nullable|string',
             'gallery_title' => 'nullable|string|max:255',
             'gallery_subtitle' => 'nullable|string',
+            'services_title' => 'nullable|string|max:255',
+            'services_subtitle' => 'nullable|string|max:255',
+            'services_description' => 'nullable|string',
         ]);
 
         if ($request->hasFile('hero_image')) {

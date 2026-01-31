@@ -10,6 +10,7 @@ use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class PricelistController extends Controller
 {
@@ -27,7 +28,13 @@ class PricelistController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|in:room,photographer',
+            'background_image' => 'nullable|image|max:5120',
         ]);
+
+        if ($request->hasFile('background_image')) {
+            $path = $request->file('background_image')->store('category-backgrounds', 'public');
+            $validated['background_image'] = $path; // Fixed: Use direct key background_image
+        }
 
         PricelistCategory::create($validated);
 
@@ -39,7 +46,16 @@ class PricelistController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'type' => 'required|in:room,photographer',
+            'background_image' => 'nullable|image|max:5120',
         ]);
+
+        if ($request->hasFile('background_image')) {
+            if ($category->background_image) {
+                Storage::disk('public')->delete($category->background_image);
+            }
+            $path = $request->file('background_image')->store('category-backgrounds', 'public');
+            $validated['background_image'] = $path;
+        }
 
         $category->update($validated);
 
@@ -48,6 +64,9 @@ class PricelistController extends Controller
 
     public function destroyCategory(PricelistCategory $category)
     {
+        if ($category->background_image) {
+            Storage::disk('public')->delete($category->background_image);
+        }
         $category->delete();
         return back()->with('success', 'Kategori berhasil dihapus.');
     }
