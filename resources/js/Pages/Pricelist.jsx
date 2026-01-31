@@ -32,6 +32,11 @@ export default function Pricelist({ categories, rooms, locked }) {
         setIsScheduleModalOpen(true);
     };
 
+    // Fungsi redirect ke halaman checkout
+    const handleLanjutBooking = () => {
+        window.location.href = '/checkout/create'; // Jika pakai Inertia: Inertia.visit('/checkout/create')
+    };
+
     const formatPrice = (price) => {
         if (!price) return '';
         const numericPrice = typeof price === 'string' ? parseFloat(price.replace(/[^0-9.-]+/g, "")) : price;
@@ -78,6 +83,7 @@ export default function Pricelist({ categories, rooms, locked }) {
                 rooms={rooms}
                 canBook={!!locked}
                 mode={bookingMode}
+                 onLanjutBooking={handleLanjutBooking}
             />
 
             {/* Header Section */}
