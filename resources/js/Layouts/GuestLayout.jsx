@@ -1,5 +1,6 @@
 import React from 'react';
 import Navbar from '../Components/Navbar';
+import WhatsAppButton from '../Components/WhatsAppButton';
 
 export default function GuestLayout({ children }) {
     return (
@@ -13,6 +14,7 @@ export default function GuestLayout({ children }) {
                     &copy; {new Date().getFullYear()} <span className="text-brand-gold">AFstudio</span>. Professional Photography.
                 </p>
             </footer>
+            <WhatsAppButton />
         </div>
     );
 }

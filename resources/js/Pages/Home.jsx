@@ -13,6 +13,7 @@ import {
     TrophyIcon,
     ChatBubbleBottomCenterTextIcon
 } from '@heroicons/react/24/outline';
+import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
 export default function Home({ categories = [], homePage, galleries = [], stats }) {
     return (
@@ -154,16 +155,31 @@ export default function Home({ categories = [], homePage, galleries = [], stats 
             {/* Impact Section */}
             <section className="py-24 lg:py-32 bg-brand-white dark:bg-brand-black">
                 <div className="max-w-7xl mx-auto px-6">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
                         {[
                             { label: 'Total Booking', val: `${stats?.booking_count || 0}+`, icon: CameraIcon },
                             { label: 'Pilihan Paket', val: `${stats?.package_count || 0}+`, icon: UserGroupIcon },
-                            { label: 'Tahun Berkarya', val: `${stats?.years_active || 0}+`, icon: SparklesIcon },
-                            { label: 'Rating Klien', val: `${stats?.rating || 5}/5`, icon: TrophyIcon },
+                            { label: 'Rating Klien', val: stats?.rating || 5, icon: TrophyIcon, isRating: true },
                         ].map((stat, i) => (
                             <div key={i} className="group p-8 rounded-4xl bg-black/2 dark:bg-white/2 border border-black/5 dark:border-white/5 hover:border-brand-gold/30 transition-all duration-700">
                                 <stat.icon className="w-6 h-6 text-brand-red mb-6 group-hover:scale-110 transition-transform" />
-                                <div className="text-3xl lg:text-5xl font-black text-brand-black dark:text-brand-white mb-2 tracking-tighter italic">{stat.val}</div>
+                                {stat.isRating ? (
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="text-3xl lg:text-5xl font-black text-brand-black dark:text-brand-white tracking-tighter italic">
+                                            {stat.val}
+                                        </div>
+                                        <div className="flex gap-1">
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <StarIconSolid
+                                                    key={star}
+                                                    className={`w-3 h-3 lg:w-4 lg:h-4 ${star <= Math.round(Number(stat.val)) ? 'text-brand-gold' : 'text-black/10 dark:text-white/10'}`}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-3xl lg:text-5xl font-black text-brand-black dark:text-brand-white mb-2 tracking-tighter italic">{stat.val}</div>
+                                )}
                                 <div className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.3em] text-brand-black/40 dark:text-brand-white/40">{stat.label}</div>
                             </div>
                         ))}
@@ -288,63 +304,7 @@ export default function Home({ categories = [], homePage, galleries = [], stats 
                 </div>
             </section>
 
-            {/* Why Choice Section */}
-            <section className="py-24 lg:py-40 bg-brand-white dark:bg-brand-black">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-                        <div className="relative order-2 lg:order-1">
-                            <div className="absolute -inset-4 bg-brand-gold/10 blur-[60px] rounded-full animate-pulse"></div>
-                            <div className="relative grid grid-cols-2 gap-4">
-                                <div className="space-y-4 pt-12">
-                                    <div className="aspect-square rounded-4xl overflow-hidden shadow-2xl text-0 leading-none">
-                                        <img src="https://images.unsplash.com/photo-1554048612-b6a482bc67e5?auto=format&fit=crop&q=80" className="w-full h-full object-cover" alt="Detail Art 1" />
-                                    </div>
-                                    <div className="aspect-4/5 rounded-4xl overflow-hidden shadow-2xl text-0 leading-none">
-                                        <img src="https://images.unsplash.com/photo-1493863641943-9b68992a8d07?auto=format&fit=crop&q=80" className="w-full h-full object-cover" alt="Detail Art 2" />
-                                    </div>
-                                </div>
-                                <div className="space-y-4">
-                                    <div className="aspect-4/5 rounded-4xl overflow-hidden shadow-2xl text-0 leading-none">
-                                        <img src="https://images.unsplash.com/photo-1452508334461-17aa3a7279fb?auto=format&fit=crop&q=80" className="w-full h-full object-cover" alt="Detail Art 3" />
-                                    </div>
-                                    <div className="aspect-square rounded-4xl overflow-hidden shadow-2xl text-0 leading-none">
-                                        <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=80" className="w-full h-full object-cover" alt="Detail Art 4" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="space-y-10 lg:pl-12 order-1 lg:order-2">
-                            <div className="space-y-6">
-                                <span className="text-brand-red text-[10px] font-black uppercase tracking-[0.5em] block">Mengapa AFSTUDIO</span>
-                                <h2 className="text-4xl lg:text-7xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter leading-[0.9] italic">
-                                    MELAMPAUI <br /><span className="text-brand-gold">YANG BIASA.</span>
-                                </h2>
-                                <p className="text-brand-black/50 dark:text-brand-white/40 text-sm font-bold uppercase tracking-widest leading-relaxed max-w-md">
-                                    Kami percaya setiap frame harus menceritakan sesuatu yang abadi. Bukan sekadar foto, tapi sebuah warisan visual.
-                                </p>
-                            </div>
 
-                            <div className="space-y-8">
-                                {[
-                                    { title: 'Pencahayaan Utama', desc: 'Penguasaan cahaya untuk dramatisasi maksimal.', icon: SparklesIcon },
-                                    { title: 'Retouch Canggih', desc: 'Editing premium yang natural namun tajam.', icon: CursorArrowRaysIcon },
-                                    { title: 'Resonansi Emosional', desc: 'Menangkap perasaan, bukan hanya sekadar pose.', icon: HeartIcon },
-                                ].map((item, i) => (
-                                    <div key={i} className="flex gap-6 group">
-                                        <div className="w-12 h-12 shrink-0 bg-brand-black/5 dark:bg-white/5 rounded-2xl flex items-center justify-center group-hover:bg-brand-gold transition-all duration-500">
-                                            <item.icon className="w-5 h-5 text-brand-black dark:text-brand-white group-hover:text-brand-black transition-colors" />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-black text-brand-black dark:text-brand-white uppercase tracking-widest mb-1">{item.title}</h4>
-                                            <p className="text-[10px] font-black text-brand-black/30 dark:text-brand-white/30 uppercase tracking-widest">{item.desc}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
 
             {/* Journey Section */}
             <section className="py-24 lg:py-40 bg-brand-black relative overflow-hidden">
