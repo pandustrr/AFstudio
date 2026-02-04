@@ -1,5 +1,7 @@
 import React from 'react';
-import { useForm, router } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
+import AdminLayout from '@/Layouts/AdminLayout';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -16,7 +18,10 @@ export default function SettingsIndex({ settings, flash }) {
     };
 
     return (
-        <div className="py-12 px-6">
+        <AdminLayout>
+            <Head title="Settings" />
+            
+            <div className="pt-24 pb-20 px-6 max-w-7xl mx-auto">
             <div className="max-w-2xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">
@@ -113,6 +118,7 @@ export default function SettingsIndex({ settings, flash }) {
                     </p>
                 </div>
             </div>
-        </div>
+            </div>
+        </AdminLayout>
     );
 }

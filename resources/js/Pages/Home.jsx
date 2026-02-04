@@ -11,17 +11,28 @@ import {
     CursorArrowRaysIcon,
     HeartIcon,
     TrophyIcon,
-    ChatBubbleBottomCenterTextIcon
+    ChatBubbleBottomCenterTextIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
 export default function Home({ categories = [], homePage, galleries = [], journeySteps = [], stats }) {
+    const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
     const { data, setData, processing } = useForm({
         full_name: '',
         email_whatsapp: '',
         service_category: '',
         message: '',
     });
+
+    const handleNextGallery = () => {
+        setCurrentGalleryIndex((prev) => (prev + 1) % (galleries.length || 5));
+    };
+
+    const handlePrevGallery = () => {
+        setCurrentGalleryIndex((prev) => (prev - 1 + (galleries.length || 5)) % (galleries.length || 5));
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -303,77 +314,155 @@ ${data.message}`;
 
             {/* Recent Masterpieces */}
             <section className="py-24 bg-brand-white dark:bg-brand-black overflow-hidden relative">
-                <div className="max-w-7xl mx-auto px-6 mb-16 flex justify-between items-end">
+                <div className="max-w-7xl mx-auto px-6 mb-16 flex justify-between items-center">
                     <div className="space-y-4">
                         <span className="text-brand-red text-[10px] font-black uppercase tracking-[0.5em] block">Arsip Digital</span>
                         <h2 className="text-4xl lg:text-6xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter italic">KARYA <span className="text-brand-gold">TERBARU.</span></h2>
                     </div>
-                    <Link href="/selector-photo" className="hidden md:flex items-center gap-3 text-[10px] font-black text-brand-black dark:text-brand-white uppercase tracking-widest hover:text-brand-gold transition-colors">
-                        Lihat Semua Karya <ArrowRightIcon className="w-4 h-4" />
-                    </Link>
+                    <div className="hidden md:flex items-center gap-3">
+                        <button
+                            onClick={handlePrevGallery}
+                            className="w-12 h-12 rounded-full border border-brand-gold/30 hover:border-brand-gold flex items-center justify-center text-brand-gold hover:bg-brand-gold hover:text-brand-black transition-all duration-300 group"
+                        >
+                            <ChevronLeftIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        </button>
+                        <button
+                            onClick={handleNextGallery}
+                            className="w-12 h-12 rounded-full border border-brand-gold/30 hover:border-brand-gold flex items-center justify-center text-brand-gold hover:bg-brand-gold hover:text-brand-black transition-all duration-300 group"
+                        >
+                            <ChevronRightIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        </button>
+                    </div>
                 </div>
 
                 {galleries && galleries.length > 0 ? (
-                    <div className="flex gap-6 animate-marquee-slow hover:pause cursor-pointer pb-10">
-                        {/* Display actual gallery items */}
-                        {galleries.map((gallery, i) => (
-                            <div key={gallery.id} className="min-w-[300px] md:min-w-[450px] aspect-3/4 rounded-4xl overflow-hidden relative group shadow-2xl">
-                                <img 
-                                    src={`/storage/${gallery.image_path}`} 
-                                    className="w-full h-full object-cover grayscale transition-all duration-1000 group-hover:grayscale-0 group-hover:scale-110" 
-                                    alt={gallery.title || `Work ${i + 1}`}
-                                    onError={(e) => {
-                                        e.target.src = 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80';
-                                    }}
+                    <div className="relative">
+                        <div className="flex gap-6 overflow-hidden pb-10">
+                            {galleries.map((gallery, i) => {
+                                const isActive = i === currentGalleryIndex;
+                                const isNext = i === (currentGalleryIndex + 1) % galleries.length;
+                                return (
+                                    <div 
+                                        key={gallery.id}
+                                        className={`transition-all duration-700 ease-out shrink-0 ${
+                                            isActive 
+                                                ? 'min-w-[300px] md:min-w-[450px] opacity-100 translate-x-0' 
+                                                : isNext
+                                                ? 'min-w-[300px] md:min-w-[450px] opacity-30 translate-x-full blur-sm'
+                                                : 'hidden'
+                                        } aspect-3/4 rounded-4xl overflow-hidden relative group shadow-2xl`}
+                                    >
+                                        <img 
+                                            src={`/storage/${gallery.image_path}`} 
+                                            className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000" 
+                                            alt={gallery.title || 'Work'}
+                                            onError={(e) => {
+                                                e.target.src = 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80';
+                                            }}
+                                        />
+                                        <div className="absolute inset-x-0 bottom-0 p-8 bg-linear-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                                            <span className="text-brand-gold text-[9px] font-black uppercase tracking-[0.4em] mb-2 block">Sesi Premium</span>
+                                            <h4 className="text-white text-xl font-black uppercase tracking-tight">{gallery.title || 'Karya Studio'}</h4>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Dots Indicator */}
+                        <div className="flex justify-center gap-2 mt-8">
+                            {galleries.map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setCurrentGalleryIndex(i)}
+                                    className={`transition-all duration-300 rounded-full ${
+                                        i === currentGalleryIndex 
+                                            ? 'w-8 h-2 bg-brand-gold' 
+                                            : 'w-2 h-2 bg-brand-black/20 dark:bg-brand-white/20 hover:bg-brand-gold/50'
+                                    }`}
                                 />
-                                <div className="absolute inset-x-0 bottom-0 p-8 bg-linear-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                                    <span className="text-brand-gold text-[9px] font-black uppercase tracking-[0.4em] mb-2 block">Sesi Premium</span>
-                                    <h4 className="text-white text-xl font-black uppercase tracking-tight">{gallery.title || `Karya ${i + 1}`}</h4>
-                                </div>
-                            </div>
-                        ))}
-                        
-                        {/* Loop galleries again for marquee effect */}
-                        {galleries.length > 0 && galleries.slice(0, Math.min(3, galleries.length)).map((gallery, i) => (
-                            <div key={`dup-${gallery.id}`} className="min-w-[300px] md:min-w-[450px] aspect-3/4 rounded-4xl overflow-hidden relative group shadow-2xl">
-                                <img 
-                                    src={`/storage/${gallery.image_path}`} 
-                                    className="w-full h-full object-cover grayscale transition-all duration-1000 group-hover:grayscale-0 group-hover:scale-110" 
-                                    alt={gallery.title || `Work duplicate ${i + 1}`}
-                                    onError={(e) => {
-                                        e.target.src = 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80';
-                                    }}
-                                />
-                            </div>
-                        ))}
+                            ))}
+                        </div>
+
+                        {/* Mobile Navigation Buttons */}
+                        <div className="md:hidden flex justify-center gap-4 mt-6">
+                            <button
+                                onClick={handlePrevGallery}
+                                className="px-6 py-3 rounded-full border border-brand-gold/30 hover:border-brand-gold text-brand-gold hover:bg-brand-gold hover:text-brand-black transition-all duration-300 font-black text-xs uppercase tracking-widest"
+                            >
+                                ← Sebelumnya
+                            </button>
+                            <button
+                                onClick={handleNextGallery}
+                                className="px-6 py-3 rounded-full border border-brand-gold/30 hover:border-brand-gold text-brand-gold hover:bg-brand-gold hover:text-brand-black transition-all duration-300 font-black text-xs uppercase tracking-widest"
+                            >
+                                Selanjutnya →
+                            </button>
+                        </div>
                     </div>
                 ) : (
-                    <div className="flex gap-6 animate-marquee-slow hover:pause cursor-pointer pb-10">
-                        {/* Fallback to dummy images if no galleries */}
-                        {[
-                            'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80',
-                            'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&q=80',
-                            'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80',
-                            'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80',
-                            'https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&q=80',
-                        ].map((img, i) => (
-                            <div key={i} className="min-w-[300px] md:min-w-[450px] aspect-3/4 rounded-4xl overflow-hidden relative group shadow-2xl">
-                                <img src={img} className="w-full h-full object-cover grayscale transition-all duration-1000 group-hover:grayscale-0 group-hover:scale-110" alt="Work Preview" />
-                                <div className="absolute inset-x-0 bottom-0 p-8 bg-linear-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                                    <span className="text-brand-gold text-[9px] font-black uppercase tracking-[0.4em] mb-2 block">Sesi Premium</span>
-                                    <h4 className="text-white text-xl font-black uppercase tracking-tight">Arsip Studio Vol. {i + 1}</h4>
-                                </div>
-                            </div>
-                        ))}
-                        {[
-                            'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80',
-                            'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&q=80',
-                            'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80',
-                        ].map((img, i) => (
-                            <div key={`dup-${i}`} className="min-w-[300px] md:min-w-[450px] aspect-3/4 rounded-4xl overflow-hidden relative group shadow-2xl">
-                                <img src={img} className="w-full h-full object-cover grayscale transition-all duration-1000 group-hover:grayscale-0 group-hover:scale-110" alt="Work Preview duplicate" />
-                            </div>
-                        ))}
+                    <div className="relative">
+                        <div className="flex gap-6 overflow-hidden pb-10">
+                            {[
+                                'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80',
+                                'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&q=80',
+                                'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80',
+                                'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80',
+                                'https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&q=80',
+                            ].map((img, i) => {
+                                const isActive = i === currentGalleryIndex;
+                                const isNext = i === (currentGalleryIndex + 1) % 5;
+                                return (
+                                    <div 
+                                        key={i}
+                                        className={`transition-all duration-700 ease-out shrink-0 ${
+                                            isActive 
+                                                ? 'min-w-[300px] md:min-w-[450px] opacity-100 translate-x-0' 
+                                                : isNext
+                                                ? 'min-w-[300px] md:min-w-[450px] opacity-30 translate-x-full blur-sm'
+                                                : 'hidden'
+                                        } aspect-3/4 rounded-4xl overflow-hidden relative group shadow-2xl`}
+                                    >
+                                        <img src={img} className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000" alt="Work Preview" />
+                                        <div className="absolute inset-x-0 bottom-0 p-8 bg-linear-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                                            <span className="text-brand-gold text-[9px] font-black uppercase tracking-[0.4em] mb-2 block">Sesi Premium</span>
+                                            <h4 className="text-white text-xl font-black uppercase tracking-tight">Arsip Studio Vol. {i + 1}</h4>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Dots Indicator */}
+                        <div className="flex justify-center gap-2 mt-8">
+                            {[0, 1, 2, 3, 4].map((i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setCurrentGalleryIndex(i)}
+                                    className={`transition-all duration-300 rounded-full ${
+                                        i === currentGalleryIndex 
+                                            ? 'w-8 h-2 bg-brand-gold' 
+                                            : 'w-2 h-2 bg-brand-black/20 dark:bg-brand-white/20 hover:bg-brand-gold/50'
+                                    }`}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Mobile Navigation Buttons */}
+                        <div className="md:hidden flex justify-center gap-4 mt-6">
+                            <button
+                                onClick={handlePrevGallery}
+                                className="px-6 py-3 rounded-full border border-brand-gold/30 hover:border-brand-gold text-brand-gold hover:bg-brand-gold hover:text-brand-black transition-all duration-300 font-black text-xs uppercase tracking-widest"
+                            >
+                                ← Sebelumnya
+                            </button>
+                            <button
+                                onClick={handleNextGallery}
+                                className="px-6 py-3 rounded-full border border-brand-gold/30 hover:border-brand-gold text-brand-gold hover:bg-brand-gold hover:text-brand-black transition-all duration-300 font-black text-xs uppercase tracking-widest"
+                            >
+                                Selanjutnya →
+                            </button>
+                        </div>
                     </div>
                 )}
             </section>
