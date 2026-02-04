@@ -1,5 +1,5 @@
 import React from 'react';
-import { useForm } from '@inertiajs/react';
+import { useForm, router } from '@inertiajs/react';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -12,7 +12,7 @@ export default function SettingsIndex({ settings, flash }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        patch(route('admin.settings.update'));
+        patch('/admin/settings');
     };
 
     return (
