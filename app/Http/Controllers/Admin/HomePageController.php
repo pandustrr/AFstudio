@@ -59,6 +59,7 @@ class HomePageController extends Controller
             'contact_form_title' => 'nullable|string|max:255',
             'contact_form_placeholder' => 'nullable|string|max:255',
             'contact_button_text' => 'nullable|string|max:255',
+            'admin_whatsapp' => 'nullable|string|max:20',
         ]);
 
         if ($request->hasFile('hero_image')) {

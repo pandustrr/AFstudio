@@ -87,6 +87,7 @@ export default function Index({ homePage, galleries, journeySteps }) {
         contact_form_title: homePage?.contact_form_title || 'Pesan Anda',
         contact_form_placeholder: homePage?.contact_form_placeholder || 'Ceritakan sedikit tentang visi Anda...',
         contact_button_text: homePage?.contact_button_text || 'Kirim Pesan Sekarang',
+        admin_whatsapp: homePage?.admin_whatsapp || '6281230487469',
         hero_image: null,
     });
 
@@ -625,6 +626,18 @@ export default function Index({ homePage, galleries, journeySteps }) {
                                         placeholder="Kirim Pesan Sekarang"
                                     />
                                     {errors.contact_button_text && <p className="text-red-500 text-[10px] mt-1">{errors.contact_button_text}</p>}
+                                </div>
+
+                                <div>
+                                    <InputLabel value="Nomor WhatsApp Admin" />
+                                    <TextInput
+                                        value={data.admin_whatsapp}
+                                        onChange={(e) => setData('admin_whatsapp', e.target.value)}
+                                        className="w-full mt-1 py-2 text-xs"
+                                        placeholder="6281230487469"
+                                    />
+                                    <p className="text-gray-500 text-[10px] mt-1">Format: 62xxxxxxxxxx (tanpa +)</p>
+                                    {errors.admin_whatsapp && <p className="text-red-500 text-[10px] mt-1">{errors.admin_whatsapp}</p>}
                                 </div>
                             </div>
                         </div>
