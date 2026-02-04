@@ -111,6 +111,8 @@ Route::prefix('admin')->group(function () {
         Route::post('/home', [\App\Http\Controllers\Admin\HomePageController::class, 'update'])->name('admin.home.update');
         Route::post('/home/gallery', [\App\Http\Controllers\Admin\HomePageController::class, 'storeGallery'])->name('admin.home.gallery.store');
         Route::delete('/home/gallery/{gallery}', [\App\Http\Controllers\Admin\HomePageController::class, 'destroyGallery'])->name('admin.home.gallery.destroy');
+        Route::patch('/home/journey/{journey}', [\App\Http\Controllers\Admin\HomePageController::class, 'updateJourney'])->name('admin.home.journey.update');
+        Route::delete('/home/journey/{journey}', [\App\Http\Controllers\Admin\HomePageController::class, 'destroyJourney'])->name('admin.home.journey.destroy');
 
         // About & Pricelist
         Route::get('/about', [\App\Http\Controllers\Admin\AboutController::class, 'index'])->name('admin.about.index');

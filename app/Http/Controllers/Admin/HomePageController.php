@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\HomePage;
 use App\Models\HomePageGallery;
+use App\Models\JourneyStep;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
@@ -25,6 +26,7 @@ class HomePageController extends Controller
         return Inertia::render('Admin/HomePage/Index', [
             'homePage' => $homePage,
             'galleries' => HomePageGallery::orderBy('order')->get(),
+            'journeySteps' => JourneyStep::orderBy('order')->get(),
         ]);
     }
 
@@ -45,6 +47,18 @@ class HomePageController extends Controller
             'services_title' => 'nullable|string|max:255',
             'services_subtitle' => 'nullable|string|max:255',
             'services_description' => 'nullable|string',
+            'contact_label' => 'nullable|string|max:255',
+            'contact_title' => 'nullable|string|max:255',
+            'contact_description' => 'nullable|string',
+            'operation_title' => 'nullable|string|max:255',
+            'operation_days' => 'nullable|string|max:255',
+            'operation_hours' => 'nullable|string|max:255',
+            'response_title' => 'nullable|string|max:255',
+            'response_method' => 'nullable|string|max:255',
+            'response_time' => 'nullable|string|max:255',
+            'contact_form_title' => 'nullable|string|max:255',
+            'contact_form_placeholder' => 'nullable|string|max:255',
+            'contact_button_text' => 'nullable|string|max:255',
         ]);
 
         if ($request->hasFile('hero_image')) {
@@ -87,5 +101,26 @@ class HomePageController extends Controller
         $gallery->delete();
 
         return back()->with('success', 'Gambar berhasil dihapus.');
+    }
+
+    public function updateJourney(Request $request, JourneyStep $journey)
+    {
+        $validated = $request->validate([
+            'step_number' => 'required|string|max:10',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'order' => 'nullable|integer|min:1',
+        ]);
+
+        $journey->update($validated);
+
+        return back()->with('success', 'Langkah perjalanan berhasil diperbarui.');
+    }
+
+    public function destroyJourney(JourneyStep $journey)
+    {
+        $journey->delete();
+
+        return back()->with('success', 'Langkah perjalanan berhasil dihapus.');
     }
 }
