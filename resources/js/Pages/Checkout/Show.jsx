@@ -42,7 +42,7 @@ export default function CheckoutShow({ booking, rooms = [] }) {
     };
 
     // Prepare WhatsApp Message
-    const waNumber = "6281230487469"; // Admin Number
+    const waNumber = homePage?.admin_whatsapp || "6281230487469"; // Admin Number
 
     let itemsMessage = "";
     booking.items.forEach((item, index) => {

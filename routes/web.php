@@ -102,6 +102,10 @@ Route::prefix('admin')->group(function () {
     Route::middleware(['auth:web', 'role:admin'])->group(function () {
         Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('admin.dashboard');
 
+        // Settings
+        Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('admin.settings.index');
+        Route::patch('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('admin.settings.update');
+
         Route::resource('photo-editing', PhotoEditingController::class)->names('admin.photo-editing');
         Route::patch('/reviews/{review}/toggle', [\App\Http\Controllers\Admin\ReviewController::class, 'toggleVisibility'])->name('admin.reviews.toggle');
         Route::resource('reviews', ReviewController::class)->only(['index', 'show', 'destroy'])->names('admin.reviews');
@@ -111,6 +115,8 @@ Route::prefix('admin')->group(function () {
         Route::post('/home', [\App\Http\Controllers\Admin\HomePageController::class, 'update'])->name('admin.home.update');
         Route::post('/home/gallery', [\App\Http\Controllers\Admin\HomePageController::class, 'storeGallery'])->name('admin.home.gallery.store');
         Route::delete('/home/gallery/{gallery}', [\App\Http\Controllers\Admin\HomePageController::class, 'destroyGallery'])->name('admin.home.gallery.destroy');
+        Route::patch('/home/journey/{journey}', [\App\Http\Controllers\Admin\HomePageController::class, 'updateJourney'])->name('admin.home.journey.update');
+        Route::delete('/home/journey/{journey}', [\App\Http\Controllers\Admin\HomePageController::class, 'destroyJourney'])->name('admin.home.journey.destroy');
 
         // About & Pricelist
         Route::get('/about', [\App\Http\Controllers\Admin\AboutController::class, 'index'])->name('admin.about.index');

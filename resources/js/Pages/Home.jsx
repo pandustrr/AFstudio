@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import GuestLayout from '../Layouts/GuestLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import {
     SparklesIcon,
     ArrowRightIcon,
@@ -11,11 +11,59 @@ import {
     CursorArrowRaysIcon,
     HeartIcon,
     TrophyIcon,
-    ChatBubbleBottomCenterTextIcon
+    ChatBubbleBottomCenterTextIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
-export default function Home({ categories = [], homePage, galleries = [], stats }) {
+export default function Home({ categories = [], homePage, galleries = [], journeySteps = [], stats }) {
+    const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
+    const { data, setData, processing } = useForm({
+        full_name: '',
+        email_whatsapp: '',
+        service_category: '',
+        message: '',
+    });
+
+    const handleNextGallery = () => {
+        setCurrentGalleryIndex((prev) => (prev + 1) % (galleries.length || 5));
+    };
+
+    const handlePrevGallery = () => {
+        setCurrentGalleryIndex((prev) => (prev - 1 + (galleries.length || 5)) % (galleries.length || 5));
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        
+        // Build WhatsApp message
+        const message = `*Pesan dari AFStudio Website*
+
+Nama: ${data.full_name}
+Kontak: ${data.email_whatsapp}
+Layanan: ${data.service_category || '-'}
+
+Pesan:
+${data.message}`;
+
+        // Encode message for URL
+        const encodedMessage = encodeURIComponent(message);
+        
+        // WhatsApp admin number from database
+        const adminNumber = homePage?.admin_whatsapp || '6281230487469';
+        
+        // Open WhatsApp
+        window.open(`https://wa.me/${adminNumber}?text=${encodedMessage}`, '_blank');
+        
+        // Clear form
+        setData({
+            full_name: '',
+            email_whatsapp: '',
+            service_category: '',
+            message: '',
+        });
+    };
     return (
         <GuestLayout>
             <Head title="Premium Photography & Art Studio" />
@@ -266,42 +314,157 @@ export default function Home({ categories = [], homePage, galleries = [], stats 
 
             {/* Recent Masterpieces */}
             <section className="py-24 bg-brand-white dark:bg-brand-black overflow-hidden relative">
-                <div className="max-w-7xl mx-auto px-6 mb-16 flex justify-between items-end">
+                <div className="max-w-7xl mx-auto px-6 mb-16 flex justify-between items-center">
                     <div className="space-y-4">
                         <span className="text-brand-red text-[10px] font-black uppercase tracking-[0.5em] block">Arsip Digital</span>
                         <h2 className="text-4xl lg:text-6xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter italic">KARYA <span className="text-brand-gold">TERBARU.</span></h2>
                     </div>
-                    <Link href="/selector-photo" className="hidden md:flex items-center gap-3 text-[10px] font-black text-brand-black dark:text-brand-white uppercase tracking-widest hover:text-brand-gold transition-colors">
-                        Lihat Semua Karya <ArrowRightIcon className="w-4 h-4" />
-                    </Link>
+                    <div className="hidden md:flex items-center gap-3">
+                        <button
+                            onClick={handlePrevGallery}
+                            className="w-12 h-12 rounded-full border border-brand-gold/30 hover:border-brand-gold flex items-center justify-center text-brand-gold hover:bg-brand-gold hover:text-brand-black transition-all duration-300 group"
+                        >
+                            <ChevronLeftIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        </button>
+                        <button
+                            onClick={handleNextGallery}
+                            className="w-12 h-12 rounded-full border border-brand-gold/30 hover:border-brand-gold flex items-center justify-center text-brand-gold hover:bg-brand-gold hover:text-brand-black transition-all duration-300 group"
+                        >
+                            <ChevronRightIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        </button>
+                    </div>
                 </div>
 
-                <div className="flex gap-6 animate-marquee-slow hover:pause cursor-pointer pb-10">
-                    {[
-                        'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&q=80',
-                    ].map((img, i) => (
-                        <div key={i} className="min-w-[300px] md:min-w-[450px] aspect-3/4 rounded-4xl overflow-hidden relative group shadow-2xl">
-                            <img src={img} className="w-full h-full object-cover grayscale transition-all duration-1000 group-hover:grayscale-0 group-hover:scale-110" alt="Work Preview" />
-                            <div className="absolute inset-x-0 bottom-0 p-8 bg-linear-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                                <span className="text-brand-gold text-[9px] font-black uppercase tracking-[0.4em] mb-2 block">Sesi Premium</span>
-                                <h4 className="text-white text-xl font-black uppercase tracking-tight">Arsip Studio Vol. {i + 1}</h4>
-                            </div>
+                {galleries && galleries.length > 0 ? (
+                    <div className="relative">
+                        <div className="flex gap-6 overflow-hidden pb-10">
+                            {galleries.map((gallery, i) => {
+                                const isActive = i === currentGalleryIndex;
+                                const isNext = i === (currentGalleryIndex + 1) % galleries.length;
+                                return (
+                                    <div 
+                                        key={gallery.id}
+                                        className={`transition-all duration-700 ease-out shrink-0 ${
+                                            isActive 
+                                                ? 'min-w-[300px] md:min-w-[450px] opacity-100 translate-x-0' 
+                                                : isNext
+                                                ? 'min-w-[300px] md:min-w-[450px] opacity-30 translate-x-full blur-sm'
+                                                : 'hidden'
+                                        } aspect-3/4 rounded-4xl overflow-hidden relative group shadow-2xl`}
+                                    >
+                                        <img 
+                                            src={`/storage/${gallery.image_path}`} 
+                                            className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000" 
+                                            alt={gallery.title || 'Work'}
+                                            onError={(e) => {
+                                                e.target.src = 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80';
+                                            }}
+                                        />
+                                        <div className="absolute inset-x-0 bottom-0 p-8 bg-linear-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                                            <span className="text-brand-gold text-[9px] font-black uppercase tracking-[0.4em] mb-2 block">Sesi Premium</span>
+                                            <h4 className="text-white text-xl font-black uppercase tracking-tight">{gallery.title || 'Karya Studio'}</h4>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
-                    ))}
-                    {[
-                        'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&q=80',
-                        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80',
-                    ].map((img, i) => (
-                        <div key={`dup-${i}`} className="min-w-[300px] md:min-w-[450px] aspect-3/4 rounded-4xl overflow-hidden relative group shadow-2xl">
-                            <img src={img} className="w-full h-full object-cover grayscale transition-all duration-1000 group-hover:grayscale-0 group-hover:scale-110" alt="Work Preview duplicate" />
+
+                        {/* Dots Indicator */}
+                        <div className="flex justify-center gap-2 mt-8">
+                            {galleries.map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setCurrentGalleryIndex(i)}
+                                    className={`transition-all duration-300 rounded-full ${
+                                        i === currentGalleryIndex 
+                                            ? 'w-8 h-2 bg-brand-gold' 
+                                            : 'w-2 h-2 bg-brand-black/20 dark:bg-brand-white/20 hover:bg-brand-gold/50'
+                                    }`}
+                                />
+                            ))}
                         </div>
-                    ))}
-                </div>
+
+                        {/* Mobile Navigation Buttons */}
+                        <div className="md:hidden flex justify-center gap-4 mt-6">
+                            <button
+                                onClick={handlePrevGallery}
+                                className="px-6 py-3 rounded-full border border-brand-gold/30 hover:border-brand-gold text-brand-gold hover:bg-brand-gold hover:text-brand-black transition-all duration-300 font-black text-xs uppercase tracking-widest"
+                            >
+                                ← Sebelumnya
+                            </button>
+                            <button
+                                onClick={handleNextGallery}
+                                className="px-6 py-3 rounded-full border border-brand-gold/30 hover:border-brand-gold text-brand-gold hover:bg-brand-gold hover:text-brand-black transition-all duration-300 font-black text-xs uppercase tracking-widest"
+                            >
+                                Selanjutnya →
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="relative">
+                        <div className="flex gap-6 overflow-hidden pb-10">
+                            {[
+                                'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80',
+                                'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&q=80',
+                                'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80',
+                                'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80',
+                                'https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&q=80',
+                            ].map((img, i) => {
+                                const isActive = i === currentGalleryIndex;
+                                const isNext = i === (currentGalleryIndex + 1) % 5;
+                                return (
+                                    <div 
+                                        key={i}
+                                        className={`transition-all duration-700 ease-out shrink-0 ${
+                                            isActive 
+                                                ? 'min-w-[300px] md:min-w-[450px] opacity-100 translate-x-0' 
+                                                : isNext
+                                                ? 'min-w-[300px] md:min-w-[450px] opacity-30 translate-x-full blur-sm'
+                                                : 'hidden'
+                                        } aspect-3/4 rounded-4xl overflow-hidden relative group shadow-2xl`}
+                                    >
+                                        <img src={img} className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000" alt="Work Preview" />
+                                        <div className="absolute inset-x-0 bottom-0 p-8 bg-linear-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                                            <span className="text-brand-gold text-[9px] font-black uppercase tracking-[0.4em] mb-2 block">Sesi Premium</span>
+                                            <h4 className="text-white text-xl font-black uppercase tracking-tight">Arsip Studio Vol. {i + 1}</h4>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Dots Indicator */}
+                        <div className="flex justify-center gap-2 mt-8">
+                            {[0, 1, 2, 3, 4].map((i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setCurrentGalleryIndex(i)}
+                                    className={`transition-all duration-300 rounded-full ${
+                                        i === currentGalleryIndex 
+                                            ? 'w-8 h-2 bg-brand-gold' 
+                                            : 'w-2 h-2 bg-brand-black/20 dark:bg-brand-white/20 hover:bg-brand-gold/50'
+                                    }`}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Mobile Navigation Buttons */}
+                        <div className="md:hidden flex justify-center gap-4 mt-6">
+                            <button
+                                onClick={handlePrevGallery}
+                                className="px-6 py-3 rounded-full border border-brand-gold/30 hover:border-brand-gold text-brand-gold hover:bg-brand-gold hover:text-brand-black transition-all duration-300 font-black text-xs uppercase tracking-widest"
+                            >
+                                ← Sebelumnya
+                            </button>
+                            <button
+                                onClick={handleNextGallery}
+                                className="px-6 py-3 rounded-full border border-brand-gold/30 hover:border-brand-gold text-brand-gold hover:bg-brand-gold hover:text-brand-black transition-all duration-300 font-black text-xs uppercase tracking-widest"
+                            >
+                                Selanjutnya →
+                            </button>
+                        </div>
+                    </div>
+                )}
             </section>
 
 
@@ -317,19 +480,31 @@ export default function Home({ categories = [], homePage, galleries = [], stats 
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 lg:gap-24 relative">
                         <div className="hidden lg:block absolute top-[60px] left-0 w-full h-px bg-white/10"></div>
-                        {[
-                            { step: '01', title: 'Konsultasi', desc: 'Mendiskusikan visi, gaya, dan esensi yang ingin Anda abadikan.', icon: ChatBubbleBottomCenterTextIcon },
-                            { step: '02', title: 'Produksi', desc: 'Sesi profesional dengan arahan artistik penuh.', icon: CameraIcon },
-                            { step: '03', title: 'Mahakarya', desc: 'Proses editing premium untuk hasil akhir yang abadi.', icon: StarIcon },
-                        ].map((item, i) => (
-                            <div key={i} className="relative group text-center lg:text-left">
-                                <div className="w-20 h-20 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mx-auto lg:mx-0 mb-10 group-hover:border-brand-gold transition-all duration-700 relative z-20 shadow-2xl backdrop-blur-md">
-                                    <span className="text-2xl font-black text-brand-gold italic">{item.step}</span>
+                        {journeySteps && journeySteps.length > 0 ? (
+                            journeySteps.map((step, i) => (
+                                <div key={step.id} className="relative group text-center lg:text-left">
+                                    <div className="w-20 h-20 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mx-auto lg:mx-0 mb-10 group-hover:border-brand-gold transition-all duration-700 relative z-20 shadow-2xl backdrop-blur-md">
+                                        <span className="text-2xl font-black text-brand-gold italic">{step.step_number}</span>
+                                    </div>
+                                    <h3 className="text-2xl font-black text-white uppercase mb-4 tracking-tight group-hover:text-brand-gold transition-colors">{step.title}</h3>
+                                    <p className="text-white/40 text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.2em] leading-relaxed max-w-xs mx-auto lg:mx-0">{step.description}</p>
                                 </div>
-                                <h3 className="text-2xl font-black text-white uppercase mb-4 tracking-tight group-hover:text-brand-gold transition-colors">{item.title}</h3>
-                                <p className="text-white/40 text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.2em] leading-relaxed max-w-xs mx-auto lg:mx-0">{item.desc}</p>
-                            </div>
-                        ))}
+                            ))
+                        ) : (
+                            [
+                                { step_number: '01', title: 'Konsultasi', description: 'Mendiskusikan visi, gaya, dan esensi yang ingin Anda abadikan.' },
+                                { step_number: '02', title: 'Produksi', description: 'Sesi profesional dengan arahan artistik penuh.' },
+                                { step_number: '03', title: 'Mahakarya', description: 'Proses editing premium untuk hasil akhir yang abadi.' },
+                            ].map((item, i) => (
+                                <div key={i} className="relative group text-center lg:text-left">
+                                    <div className="w-20 h-20 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mx-auto lg:mx-0 mb-10 group-hover:border-brand-gold transition-all duration-700 relative z-20 shadow-2xl backdrop-blur-md">
+                                        <span className="text-2xl font-black text-brand-gold italic">{item.step_number}</span>
+                                    </div>
+                                    <h3 className="text-2xl font-black text-white uppercase mb-4 tracking-tight group-hover:text-brand-gold transition-colors">{item.title}</h3>
+                                    <p className="text-white/40 text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.2em] leading-relaxed max-w-xs mx-auto lg:mx-0">{item.description}</p>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </section>
@@ -341,38 +516,40 @@ export default function Home({ categories = [], homePage, galleries = [], stats 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
                         <div className="space-y-10">
                             <div className="space-y-6">
-                                <span className="text-brand-red text-[10px] font-black uppercase tracking-[0.5em] block">Hubungi Kami</span>
+                                <span className="text-brand-red text-[10px] font-black uppercase tracking-[0.5em] block">{homePage?.contact_label || 'Hubungi Kami'}</span>
                                 <h2 className="text-4xl lg:text-7xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter leading-[0.9] italic">
-                                    HADIRKAN <br /><span className="text-brand-gold">VISI ANDA.</span>
+                                    {homePage?.contact_title || 'HADIRKAN'} <br /><span className="text-brand-gold">{homePage?.contact_title?.includes('VISI') ? 'VISI ANDA.' : 'ANDA.'}</span>
                                 </h2>
                                 <p className="text-brand-black/50 dark:text-brand-white/40 text-sm font-bold uppercase tracking-widest leading-relaxed max-w-md">
-                                    Punya pertanyaan atau ide gila untuk sesi Anda? Kirimkan pesan, mari kita diskusikan mahakarya selanjutnya.
+                                    {homePage?.contact_description || 'Punya pertanyaan atau ide gila untuk sesi Anda? Kirimkan pesan, mari kita diskusikan mahakarya selanjutnya.'}
                                 </p>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                                 <div className="space-y-2">
-                                    <div className="text-[10px] font-black text-brand-gold uppercase tracking-widest">Waktu Operasional</div>
-                                    <div className="text-sm font-bold text-brand-black dark:text-brand-white uppercase">Senin — Minggu</div>
-                                    <div className="text-[10px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-widest">09:00 — 21:00 WIB</div>
+                                    <div className="text-[10px] font-black text-brand-gold uppercase tracking-widest">{homePage?.operation_title || 'Waktu Operasional'}</div>
+                                    <div className="text-sm font-bold text-brand-black dark:text-brand-white uppercase">{homePage?.operation_days || 'Senin — Minggu'}</div>
+                                    <div className="text-[10px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-widest">{homePage?.operation_hours || '09:00 — 21:00 WIB'}</div>
                                 </div>
                                 <div className="space-y-2">
-                                    <div className="text-[10px] font-black text-brand-gold uppercase tracking-widest">Respon Cepat</div>
-                                    <div className="text-sm font-bold text-brand-black dark:text-brand-white uppercase">WhatsApp Priority</div>
-                                    <div className="text-[10px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-widest">Rata-rata &lt; 15 Menit</div>
+                                    <div className="text-[10px] font-black text-brand-gold uppercase tracking-widest">{homePage?.response_title || 'Respon Cepat'}</div>
+                                    <div className="text-sm font-bold text-brand-black dark:text-brand-white uppercase">{homePage?.response_method || 'WhatsApp Priority'}</div>
+                                    <div className="text-[10px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-widest">{homePage?.response_time || 'Rata-rata < 15 Menit'}</div>
                                 </div>
                             </div>
                         </div>
 
                         <div className="relative">
                             <div className="absolute -inset-1 bg-linear-to-r from-brand-red to-brand-gold rounded-[2.5rem] blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
-                            <form className="relative bg-white dark:bg-white/5 p-8 lg:p-12 rounded-[2.5rem] border border-black/5 dark:border-white/10 shadow-3xl space-y-6">
+                            <form onSubmit={handleSubmit} className="relative bg-white dark:bg-white/5 p-8 lg:p-12 rounded-[2.5rem] border border-black/5 dark:border-white/10 shadow-3xl space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-[9px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-[0.2em] ml-2">Nama Lengkap</label>
                                         <input
                                             type="text"
                                             placeholder="Jhon Doe"
+                                            value={data.full_name}
+                                            onChange={(e) => setData('full_name', e.target.value)}
                                             className="w-full bg-black/5 dark:bg-white/5 border-none rounded-2xl px-6 py-4 text-brand-black dark:text-brand-white text-sm font-bold focus:ring-2 focus:ring-brand-gold transition-all"
                                         />
                                     </div>
@@ -381,6 +558,8 @@ export default function Home({ categories = [], homePage, galleries = [], stats 
                                         <input
                                             type="text"
                                             placeholder="@handle / 0812..."
+                                            value={data.email_whatsapp}
+                                            onChange={(e) => setData('email_whatsapp', e.target.value)}
                                             className="w-full bg-black/5 dark:bg-white/5 border-none rounded-2xl px-6 py-4 text-brand-black dark:text-brand-white text-sm font-bold focus:ring-2 focus:ring-brand-red transition-all"
                                         />
                                     </div>
@@ -388,10 +567,13 @@ export default function Home({ categories = [], homePage, galleries = [], stats 
 
                                 <div className="space-y-2">
                                     <label className="text-[9px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-[0.2em] ml-2">Pilih Layanan</label>
-                                    <select className="w-full bg-black/5 dark:bg-white/5 border-none rounded-2xl px-6 py-4 text-brand-black dark:text-brand-white text-sm font-bold focus:ring-2 focus:ring-brand-gold transition-all appearance-none cursor-pointer">
+                                    <select 
+                                        value={data.service_category}
+                                        onChange={(e) => setData('service_category', e.target.value)}
+                                        className="w-full bg-black/5 dark:bg-white/5 border-none rounded-2xl px-6 py-4 text-brand-black dark:text-brand-white text-sm font-bold focus:ring-2 focus:ring-brand-gold transition-all appearance-none cursor-pointer">
                                         <option value="">Pilih Kategori...</option>
                                         {categories.map(cat => (
-                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                            <option key={cat.id} value={cat.name}>{cat.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -401,12 +583,17 @@ export default function Home({ categories = [], homePage, galleries = [], stats 
                                     <textarea
                                         rows="4"
                                         placeholder="Ceritakan sedikit tentang visi Anda..."
+                                        value={data.message}
+                                        onChange={(e) => setData('message', e.target.value)}
                                         className="w-full bg-black/5 dark:bg-white/5 border-none rounded-2xl px-6 py-4 text-brand-black dark:text-brand-white text-sm font-bold focus:ring-2 focus:ring-brand-gold transition-all resize-none"
                                     ></textarea>
                                 </div>
 
-                                <button type="button" className="w-full py-5 bg-brand-black dark:bg-brand-white text-brand-white dark:text-brand-black rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] hover:bg-brand-gold hover:text-brand-black transition-all duration-500 shadow-xl active:scale-95">
-                                    Kirim Pesan Sekarang
+                                <button 
+                                    type="submit" 
+                                    disabled={processing}
+                                    className="w-full py-5 bg-brand-black dark:bg-brand-white text-brand-white dark:text-brand-black rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] hover:bg-brand-gold hover:text-brand-black transition-all duration-500 shadow-xl active:scale-95 disabled:opacity-50">
+                                    {processing ? 'Mengirim...' : (homePage?.contact_button_text || 'Kirim Pesan Sekarang')}
                                 </button>
                             </form>
                         </div>

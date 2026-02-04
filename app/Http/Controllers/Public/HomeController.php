@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\HomePage;
 use App\Models\HomePageGallery;
+use App\Models\JourneyStep;
 use App\Models\PricelistCategory;
 use Inertia\Inertia;
 
@@ -26,6 +27,7 @@ class HomeController extends Controller
             'homePage' => $homePage,
             'categories' => $categories,
             'galleries' => $galleries,
+            'journeySteps' => JourneyStep::orderBy('order')->get(),
             'stats' => $stats,
         ]);
     }

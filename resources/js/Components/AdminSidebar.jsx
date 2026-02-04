@@ -12,7 +12,8 @@ import {
     ChevronDownIcon,
     ChevronRightIcon,
     PencilSquareIcon,
-    TicketIcon
+    TicketIcon,
+    CogIcon
 } from '@heroicons/react/24/outline';
 import { useState, useEffect } from 'react';
 
@@ -151,6 +152,12 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                 </div>
 
                 <div className="mt-auto pt-4">
+                    {user.role === 'admin' && (
+                        <>
+                            {renderMenuItem({ label: 'Settings', href: `/admin/settings`, icon: CogIcon })}
+                            <div className="mt-2"></div>
+                        </>
+                    )}
                     {renderMenuItem({ label: 'Profile', href: `${prefix}/profile`, icon: UserIcon })}
                     <div className="mt-2 pt-4 border-t border-black/5 dark:border-white/5">
                         <Link
