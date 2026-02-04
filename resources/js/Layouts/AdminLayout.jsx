@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import ThemeToggle from '../Components/ThemeToggle';
 import { useTheme } from '../Contexts/ThemeContext';
 import AdminSidebar from '../Components/AdminSidebar';
-import WhatsAppButton from '../Components/WhatsAppButton';
 import { usePage, Link } from '@inertiajs/react';
 import { UserCircleIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import TopBar from '@/Components/TopBar';
@@ -51,7 +50,6 @@ export default function AdminLayout({ children, showToggle = true, showSidebar =
                     {children}
                 </main>
             </div>
-            <WhatsAppButton />
         </div>
     );
 }
