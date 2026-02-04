@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
+import GuestLayout from '@/Layouts/GuestLayout';
 import Navbar from '@/Components/Navbar';
 import { CheckBadgeIcon, SparklesIcon, FireIcon, ChevronRightIcon, ShoppingCartIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 
@@ -72,10 +73,8 @@ export default function Pricelist({ categories, rooms, locked }) {
     }, [activeCategoryId, activeCategory]);
 
     return (
-        <div className="min-h-screen bg-brand-white dark:bg-brand-black transition-colors duration-300">
+        <GuestLayout>
             <Head title="Price List - AFSTUDIO" />
-
-            <Navbar />
 
             {/* Schedule Modal */}
             <ScheduleModal
@@ -361,6 +360,6 @@ export default function Pricelist({ categories, rooms, locked }) {
                     </div>
                 </section>
             )}
-        </div>
+        </GuestLayout>
     );
 }
