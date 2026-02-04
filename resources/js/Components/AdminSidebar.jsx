@@ -12,7 +12,8 @@ import {
     ChevronDownIcon,
     ChevronRightIcon,
     PencilSquareIcon,
-    TicketIcon
+    TicketIcon,
+    CogIcon
 } from '@heroicons/react/24/outline';
 import { useState, useEffect } from 'react';
 
@@ -108,6 +109,7 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                     {renderMenuItem({ label: 'Dashboard', href: `${prefix}/dashboard`, icon: ChartBarIcon })}
                     {user.role === 'admin' && (
                         <>
+                            {renderMenuItem({ label: 'Settings', href: `/admin/settings`, icon: CogIcon })}
                             {renderMenuItem({ label: 'Home Page', href: `/admin/home`, icon: BuildingOfficeIcon })}
                             {renderMenuItem({ label: 'About Page', href: `/admin/about`, icon: BuildingOfficeIcon })}
                             {renderMenuItem({ label: 'Pricelist', href: `/admin/pricelist`, icon: BanknotesIcon })}
