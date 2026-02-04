@@ -109,7 +109,6 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                     {renderMenuItem({ label: 'Dashboard', href: `${prefix}/dashboard`, icon: ChartBarIcon })}
                     {user.role === 'admin' && (
                         <>
-                            {renderMenuItem({ label: 'Settings', href: `/admin/settings`, icon: CogIcon })}
                             {renderMenuItem({ label: 'Home Page', href: `/admin/home`, icon: BuildingOfficeIcon })}
                             {renderMenuItem({ label: 'About Page', href: `/admin/about`, icon: BuildingOfficeIcon })}
                             {renderMenuItem({ label: 'Pricelist', href: `/admin/pricelist`, icon: BanknotesIcon })}
@@ -153,6 +152,12 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                 </div>
 
                 <div className="mt-auto pt-4">
+                    {user.role === 'admin' && (
+                        <>
+                            {renderMenuItem({ label: 'Settings', href: `/admin/settings`, icon: CogIcon })}
+                            <div className="mt-2"></div>
+                        </>
+                    )}
                     {renderMenuItem({ label: 'Profile', href: `${prefix}/profile`, icon: UserIcon })}
                     <div className="mt-2 pt-4 border-t border-black/5 dark:border-white/5">
                         <Link
