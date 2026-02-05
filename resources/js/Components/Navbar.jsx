@@ -82,9 +82,11 @@ export default function Navbar() {
                 <div className="flex items-center justify-between h-10 md:h-14">
                     {/* Logo */}
                     <Link href="/" className="group flex items-center space-x-2.5">
-                        <div className="w-5.5 h-5.5 md:w-7 md:h-7 bg-brand-red rounded-full flex items-center justify-center group-hover:bg-brand-gold transition-all duration-500 shadow-lg shadow-brand-red/20">
-                            <span className="text-brand-white font-black text-[8px] md:text-[10px]">AF</span>
-                        </div>
+                        <img
+                            src="/images/logo.png"
+                            alt="AF Studio Logo"
+                            className="h-8 md:h-10 w-auto group-hover:scale-110 transition-transform duration-500"
+                        />
                         <span className={`text-sm md:text-lg font-black tracking-[0.2em] uppercase transition-colors duration-300 ${!scrolled && (url === '/about' || url === '/review')
                             ? 'text-white'
                             : 'text-brand-black dark:text-brand-white'
@@ -138,8 +140,8 @@ export default function Navbar() {
                             onClick={() => {
                                 setIsCartModalOpen(true);
                             }}
-                            className={`p-2 rounded-lg transition-all duration-300 ${!scrolled && (url === '/about' || url === '/review') 
-                                ? 'text-white hover:bg-white/10 active:scale-90' 
+                            className={`p-2 rounded-lg transition-all duration-300 ${!scrolled && (url === '/about' || url === '/review')
+                                ? 'text-white hover:bg-white/10 active:scale-90'
                                 : 'text-brand-black/70 dark:text-brand-white/70 hover:bg-black/5 dark:hover:bg-white/5'
                             } hover:text-brand-gold`}
                             title="Cart"
@@ -195,7 +197,7 @@ export default function Navbar() {
                                 {/* Background Decoration */}
                                 <div className="absolute top-0 right-0 w-40 h-40 bg-brand-gold/10 blur-3xl -mr-20 -mt-20"></div>
                                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-brand-red/5 blur-3xl -ml-16 -mb-16"></div>
-                                
+
                                 {/* Header */}
                                 <div className="relative z-10 flex flex-col items-center space-y-4 mb-8">
                                     <div className="flex flex-col items-center gap-2">
@@ -214,8 +216,8 @@ export default function Navbar() {
                                             key={link.name}
                                             href={link.href}
                                             onClick={() => setIsOpen(false)}
-                                            className={`px-4 py-3.5 rounded-xl font-black uppercase tracking-[0.2em] transition-all duration-300 text-sm border border-transparent ${url === link.href 
-                                                ? 'bg-gradient-to-r from-brand-red to-brand-gold text-white shadow-lg shadow-brand-red/20 scale-105 border-white/10' 
+                                            className={`px-4 py-3.5 rounded-xl font-black uppercase tracking-[0.2em] transition-all duration-300 text-sm border border-transparent ${url === link.href
+                                                ? 'bg-gradient-to-r from-brand-red to-brand-gold text-white shadow-lg shadow-brand-red/20 scale-105 border-white/10'
                                                 : 'text-brand-black/70 dark:text-brand-white/70 hover:bg-black/5 dark:hover:bg-white/5 hover:text-brand-gold border-brand-gold/0 hover:border-brand-gold/20'
                                                 }`}
                                             style={{ transitionDelay: `${i * 50}ms` }}
@@ -241,8 +243,8 @@ export default function Navbar() {
                                         <span>Buka Keranjang</span>
                                     </button>
 
-                                    <button 
-                                        onClick={() => setIsOpen(false)} 
+                                    <button
+                                        onClick={() => setIsOpen(false)}
                                         className="w-full p-3 bg-brand-gold/10 text-brand-gold rounded-xl hover:bg-brand-gold hover:text-brand-black transition-all font-black uppercase text-[9px] tracking-widest active:scale-95"
                                     >
                                         Tutup Menu
