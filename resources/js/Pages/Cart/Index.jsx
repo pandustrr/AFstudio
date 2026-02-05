@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
 import { TrashIcon, MinusIcon, PlusIcon, ShoppingBagIcon, XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
+import ConfirmModal from '@/Components/ConfirmModal';
 
 export default function CartIndex({ carts, transactionHistory, uid }) {
     const [selectedItems, setSelectedItems] = useState([]);
@@ -266,13 +266,14 @@ export default function CartIndex({ carts, transactionHistory, uid }) {
                 )}
             </div>
 
-            <DeleteConfirmModal
+            <ConfirmModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={confirmRemove}
                 title="Hapus Item"
                 message="Yakin ingin menghapus paket ini dari keranjang belanja?"
                 processing={processingDelete}
+                variant="danger"
             />
         </div>
     );

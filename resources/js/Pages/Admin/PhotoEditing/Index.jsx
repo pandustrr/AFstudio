@@ -4,7 +4,7 @@ import { Head, router } from '@inertiajs/react';
 import { EyeIcon, PencilSquareIcon, TrashIcon, XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import EditModal from './EditModal';
 import ViewModal from './ViewModal';
-import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
+import ConfirmModal from '@/Components/ConfirmModal';
 
 
 export default function Index({ sessions, filters, options }) {
@@ -302,13 +302,14 @@ export default function Index({ sessions, filters, options }) {
                 }
 
                 {/* Delete Confirmation Modal */}
-                <DeleteConfirmModal
+                <ConfirmModal
                     isOpen={!!deleteSession}
                     onClose={() => setDeleteSession(null)}
                     onConfirm={handleDelete}
                     processing={isDeleting}
                     title="Hapus Request"
                     message={`Apakah Anda yakin ingin menghapus request dari ${deleteSession?.customer_name}? Data foto dan seleksi akan ikut terhapus.`}
+                    variant="danger"
                 />
             </div>
         </AdminLayout>

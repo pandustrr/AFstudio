@@ -10,7 +10,7 @@ import {
     XCircleIcon,
 } from '@heroicons/react/24/outline';
 import EditNotif from '@/Components/EditNotif';
-import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
+import ConfirmModal from '@/Components/ConfirmModal';
 
 export default function ReferralCodeIndex({ codes }) {
     const { flash } = usePage().props;
@@ -208,13 +208,14 @@ export default function ReferralCodeIndex({ codes }) {
                 type={notifType}
             />
 
-            <DeleteConfirmModal
+            <ConfirmModal
                 isOpen={deleteModal.show}
                 onClose={() => setDeleteModal({ show: false, id: null, code: '' })}
                 onConfirm={confirmDelete}
                 title="Hapus Voucher Code"
                 message={`Yakin ingin menghapus voucher code "${deleteModal.code}"?`}
                 processing={deleting}
+                variant="danger"
             />
         </AdminLayout>
     );
