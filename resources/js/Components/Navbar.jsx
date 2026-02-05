@@ -74,12 +74,12 @@ export default function Navbar() {
     return (
         <nav
             className={`fixed top-0 w-full z-100 transition-all duration-500 ${scrolled
-                ? 'bg-white/70 dark:bg-brand-black/70 backdrop-blur-2xl py-1 md:py-2 border-b border-black/5 dark:border-white/5 shadow-sm'
-                : 'bg-transparent py-2.5 md:py-4'
+                ? 'bg-white/70 dark:bg-brand-black/70 backdrop-blur-2xl py-2 md:py-2 border-b border-black/5 dark:border-white/5 shadow-lg'
+                : 'bg-transparent py-3 md:py-4'
                 }`}
         >
-            <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-9 md:h-14">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between h-10 md:h-14">
                     {/* Logo */}
                     <Link href="/" className="group flex items-center space-x-2.5">
                         <div className="w-5.5 h-5.5 md:w-7 md:h-7 bg-brand-red rounded-full flex items-center justify-center group-hover:bg-brand-gold transition-all duration-500 shadow-lg shadow-brand-red/20">
@@ -133,7 +133,19 @@ export default function Navbar() {
                     </div>
 
                     {/* Mobile Toggle & Theme Button */}
-                    <div className="md:hidden flex items-center space-x-3">
+                    <div className="md:hidden flex items-center space-x-2">
+                        <button
+                            onClick={() => {
+                                setIsCartModalOpen(true);
+                            }}
+                            className={`p-2 rounded-lg transition-all duration-300 ${!scrolled && (url === '/about' || url === '/review') 
+                                ? 'text-white hover:bg-white/10 active:scale-90' 
+                                : 'text-brand-black/70 dark:text-brand-white/70 hover:bg-black/5 dark:hover:bg-white/5'
+                            } hover:text-brand-gold`}
+                            title="Cart"
+                        >
+                            <ShoppingCartIcon className="w-5 h-5" />
+                        </button>
                         <ThemeToggle
                             theme={theme}
                             toggleTheme={toggleTheme}
@@ -141,10 +153,10 @@ export default function Navbar() {
                         />
                         <button
                             onClick={() => setIsOpen(!isOpen)}
-                            className={`p-1.5 focus:outline-none transition-colors ${!scrolled && (url === '/about' || url === '/review') ? 'text-white' : 'text-brand-black dark:text-brand-white'
+                            className={`p-2 rounded-lg focus:outline-none transition-all duration-300 ${!scrolled && (url === '/about' || url === '/review') ? 'text-white hover:bg-white/10 active:scale-90' : 'text-brand-black dark:text-brand-white hover:bg-black/5 dark:hover:bg-white/5'
                                 }`}
                         >
-                            <div className="w-5 h-3.5 flex flex-col justify-between items-end">
+                            <div className="w-5 h-4 flex flex-col justify-between items-end">
                                 <span className={`h-0.5 bg-current transition-all duration-500 rounded-full ${isOpen ? 'w-5 -rotate-45 translate-y-1.5' : 'w-5'}`}></span>
                                 <span className={`h-0.5 bg-brand-gold transition-all duration-500 rounded-full ${isOpen ? 'opacity-0' : 'w-3.5'}`}></span>
                                 <span className={`h-0.5 bg-current transition-all duration-500 rounded-full ${isOpen ? 'w-5 rotate-45 -translate-y-1.5' : 'w-4'}`}></span>
@@ -179,43 +191,61 @@ export default function Navbar() {
                             leaveFrom="translate-x-0"
                             leaveTo="translate-x-full"
                         >
-                            <Dialog.Panel className="w-[70%] max-w-[260px] h-full bg-white dark:bg-brand-black p-6 shadow-2xl border-l border-black/5 dark:border-white/10 overflow-y-auto relative">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-gold/10 blur-3xl -mr-16 -mt-16"></div>
-                                <div className="relative z-10 flex flex-col items-center space-y-6">
-                                    <div className="grid grid-cols-1 gap-1 items-center justify-items-center mb-2">
-                                        <div className="w-10 h-10 bg-brand-red rounded-full flex items-center justify-center mb-1 shadow-xl shadow-brand-red/30">
-                                            <span className="text-white font-black text-xs">AF</span>
+                            <Dialog.Panel className="w-[75%] max-w-[280px] h-full bg-white dark:bg-brand-black p-6 sm:p-8 shadow-2xl border-l border-black/5 dark:border-white/10 overflow-y-auto relative flex flex-col">
+                                {/* Background Decoration */}
+                                <div className="absolute top-0 right-0 w-40 h-40 bg-brand-gold/10 blur-3xl -mr-20 -mt-20"></div>
+                                <div className="absolute bottom-0 left-0 w-32 h-32 bg-brand-red/5 blur-3xl -ml-16 -mb-16"></div>
+                                
+                                {/* Header */}
+                                <div className="relative z-10 flex flex-col items-center space-y-4 mb-8">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="w-12 h-12 bg-gradient-to-br from-brand-red to-brand-gold rounded-full flex items-center justify-center shadow-xl shadow-brand-red/30 scale-110">
+                                            <span className="text-white font-black text-sm">AF</span>
                                         </div>
-                                        <span className="text-xs font-black uppercase tracking-[0.4em] text-brand-gold">Menu Navigasi</span>
+                                        <span className="text-[9px] font-black uppercase tracking-[0.4em] text-brand-gold">Menu</span>
                                     </div>
+                                    <div className="w-12 h-0.5 bg-gradient-to-r from-transparent via-brand-gold to-transparent"></div>
+                                </div>
 
+                                {/* Navigation Links */}
+                                <div className="flex-1 relative z-10 flex flex-col space-y-1">
                                     {navLinks.map((link, i) => (
                                         <Link
                                             key={link.name}
                                             href={link.href}
                                             onClick={() => setIsOpen(false)}
-                                            className={`text-base font-black uppercase tracking-[0.25em] transition-all duration-300 hover:text-brand-gold ${url === link.href ? 'text-brand-red scale-105' : 'text-brand-black/70 dark:text-brand-white/70'
+                                            className={`px-4 py-3.5 rounded-xl font-black uppercase tracking-[0.2em] transition-all duration-300 text-sm border border-transparent ${url === link.href 
+                                                ? 'bg-gradient-to-r from-brand-red to-brand-gold text-white shadow-lg shadow-brand-red/20 scale-105 border-white/10' 
+                                                : 'text-brand-black/70 dark:text-brand-white/70 hover:bg-black/5 dark:hover:bg-white/5 hover:text-brand-gold border-brand-gold/0 hover:border-brand-gold/20'
                                                 }`}
                                             style={{ transitionDelay: `${i * 50}ms` }}
                                         >
                                             {link.name}
                                         </Link>
                                     ))}
+                                </div>
 
-                                    <div className="w-full h-px bg-black/5 dark:bg-white/5 my-2"></div>
+                                {/* Divider */}
+                                <div className="relative z-10 w-full h-px bg-gradient-to-r from-transparent via-black/10 dark:via-white/10 to-transparent my-6"></div>
 
+                                {/* Action Buttons */}
+                                <div className="relative z-10 flex flex-col gap-3">
                                     <button
                                         onClick={() => {
                                             setIsOpen(false);
                                             setIsCartModalOpen(true);
                                         }}
-                                        className="p-4 bg-brand-black dark:bg-brand-white text-white dark:text-brand-black rounded-2xl active:scale-90 transition-all shadow-xl hover:bg-brand-gold hover:text-brand-black"
+                                        className="w-full p-4 bg-gradient-to-r from-brand-black to-brand-black dark:from-brand-white dark:to-brand-white text-white dark:text-brand-black rounded-xl active:scale-95 transition-all shadow-lg shadow-brand-black/20 dark:shadow-brand-white/20 hover:shadow-xl flex items-center justify-center gap-3 font-black uppercase text-[10px] tracking-widest group"
                                     >
-                                        <ShoppingCartIcon className="w-6 h-6" />
+                                        <ShoppingCartIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                        <span>Buka Keranjang</span>
                                     </button>
 
-                                    <button onClick={() => setIsOpen(false)} className="mt-4 p-3 bg-black/5 dark:bg-white/5 rounded-full hover:bg-brand-red hover:text-white transition-all">
-                                        <XMarkIcon className="w-5 h-5" />
+                                    <button 
+                                        onClick={() => setIsOpen(false)} 
+                                        className="w-full p-3 bg-brand-gold/10 text-brand-gold rounded-xl hover:bg-brand-gold hover:text-brand-black transition-all font-black uppercase text-[9px] tracking-widest active:scale-95"
+                                    >
+                                        Tutup Menu
                                     </button>
                                 </div>
                             </Dialog.Panel>

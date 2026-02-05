@@ -6,7 +6,6 @@ export default function WhatsAppButton() {
     const [isOpen, setIsOpen] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
-        interest: '',
         message: ''
     });
 
@@ -18,7 +17,6 @@ export default function WhatsAppButton() {
         const text = `Halo AFstudio!
 
 Nama: ${formData.name}
-Ketertarikan: ${formData.interest}
 Pesan: ${formData.message}
 
 Saya ingin tanya-tanya lebih lanjut.`;
@@ -27,7 +25,7 @@ Saya ingin tanya-tanya lebih lanjut.`;
         window.open(whatsappUrl, '_blank');
         setIsOpen(false);
         // Clear form after delay
-        setTimeout(() => setFormData({ name: '', interest: '', message: '' }), 1000);
+        setTimeout(() => setFormData({ name: '', message: '' }), 1000);
     };
 
     return (
@@ -78,22 +76,6 @@ Saya ingin tanya-tanya lebih lanjut.`;
                                 placeholder="Jhon Doe"
                                 className="w-full bg-black/5 dark:bg-white/5 border-none rounded-2xl px-5 py-3.5 text-sm font-bold placeholder:text-black/20 dark:placeholder:text-white/20 focus:ring-2 focus:ring-brand-gold transition-all"
                             />
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <label className="text-[9px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-widest ml-1">Ketertarikan</label>
-                            <select
-                                required
-                                value={formData.interest}
-                                onChange={(e) => setFormData({ ...formData, interest: e.target.value })}
-                                className="w-full bg-black/5 dark:bg-white/5 border-none rounded-2xl px-5 py-3.5 text-sm font-bold focus:ring-2 focus:ring-brand-red transition-all appearance-none cursor-pointer"
-                            >
-                                <option value="" disabled>Pilih layanan...</option>
-                                <option value="Wedding / Engagement">Wedding / Engagement</option>
-                                <option value="Personal / Branding">Personal / Branding</option>
-                                <option value="Commercial / Products">Commercial / Products</option>
-                                <option value="Lainnya">Lainnya</option>
-                            </select>
                         </div>
 
                         <div className="space-y-1.5">

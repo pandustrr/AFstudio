@@ -1,6 +1,6 @@
 import React from 'react';
 import { Head } from '@inertiajs/react';
-import Navbar from '@/Components/Navbar';
+import GuestLayout from '@/Layouts/GuestLayout';
 import { BuildingOfficeIcon, SparklesIcon, EnvelopeIcon, PhoneIcon, XMarkIcon, CameraIcon, ChevronLeftIcon, ChevronRightIcon, BoltIcon, HeartIcon, UserGroupIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 
 export default function About({ about, moodboards = [] }) {
@@ -12,13 +12,12 @@ export default function About({ about, moodboards = [] }) {
     const row2 = moodboards.slice(midPoint);
 
     return (
-        <div className="min-h-screen bg-brand-white dark:bg-brand-black transition-colors duration-500 relative overflow-hidden">
+        <GuestLayout>
             <Head title="Tentang Kami - AFSTUDIO" />
 
-            {/* Artistic Noise Texture Overlay */}
-            <div className="fixed inset-0 pointer-events-none opacity-[0.04] dark:opacity-[0.06] z-9999 bg-[url('https://www.transparenttextures.com/patterns/p6.png')]"></div>
-
-            <Navbar />
+            <div className="min-h-screen bg-brand-white dark:bg-brand-black transition-colors duration-500 relative overflow-hidden">
+                {/* Artistic Noise Texture Overlay */}
+                <div className="fixed inset-0 pointer-events-none opacity-[0.04] dark:opacity-[0.06] z-9999 bg-[url('https://www.transparenttextures.com/patterns/p6.png')]"></div>
 
             {/* Hero Section */}
             <section className="relative h-[40vh] md:h-[50vh] flex items-center justify-center overflow-hidden bg-brand-black">
@@ -360,6 +359,7 @@ export default function About({ about, moodboards = [] }) {
                     animation: fade-in-up 1s cubic-bezier(0.23, 1, 0.32, 1) forwards;
                 }
             `}</style>
-        </div>
+            </div>
+        </GuestLayout>
     );
 }

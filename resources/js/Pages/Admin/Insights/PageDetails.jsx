@@ -11,7 +11,7 @@ export default function PageDetails({ pageName, pageViews, stats, filters }) {
         <AdminLayout>
             <Head title={`${pageName} - Insights`} />
 
-            <div className="pt-12 lg:pt-20 pb-20 px-6 min-h-screen">
+            <div className="pt-8 lg:pt-16 pb-20 px-4 sm:px-6 min-h-screen">
                 <div className="max-w-7xl mx-auto">
                     {/* Header */}
                     <div className="mb-12">

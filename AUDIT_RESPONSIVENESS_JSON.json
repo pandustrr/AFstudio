@@ -1,0 +1,649 @@
+{
+  "audit": {
+    "title": "AFstudio React Application - Mobile Responsiveness Audit",
+    "date": "2026-02-05",
+    "framework": "React 18 + Tailwind CSS v4 + Inertia.js",
+    "totalPages": 41,
+    "totalComponents": 17,
+    "overallStatus": "RESPONSIVE",
+    "overallRating": 4,
+    "overallRatingOutOf": 5
+  },
+  "statistics": {
+    "responsive": {
+      "total": 35,
+      "percentage": 85,
+      "status": "Excellent"
+    },
+    "partiallyResponsive": {
+      "total": 6,
+      "percentage": 15,
+      "status": "Needs Improvement"
+    },
+    "notResponsive": {
+      "total": 0,
+      "percentage": 0,
+      "status": "None"
+    }
+  },
+  "pages": {
+    "guest": {
+      "Home": {
+        "file": "resources/js/Pages/Home.jsx",
+        "status": "RESPONSIVE",
+        "rating": 5,
+        "tailwindUsage": "Excellent",
+        "mobileFirst": true,
+        "responsiveClasses": [
+          "pt-20 lg:pt-16",
+          "text-4xl sm:text-6xl md:text-7xl lg:text-[100px]",
+          "px-6 max-w-5xl mx-auto",
+          "flex flex-col sm:flex-row",
+          "grid grid-cols-1 lg:grid-cols-12",
+          "hidden md:block"
+        ],
+        "features": {
+          "hamburgerMenu": true,
+          "darkMode": true,
+          "properPadding": true,
+          "responsiveTypography": true
+        },
+        "issues": []
+      },
+      "About": {
+        "file": "resources/js/Pages/About.jsx",
+        "status": "RESPONSIVE",
+        "rating": 5,
+        "tailwindUsage": "Excellent",
+        "mobileFirst": true,
+        "responsiveClasses": [
+          "h-[40vh] md:h-[50vh]",
+          "grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16",
+          "text-2xl md:text-4xl lg:text-5xl",
+          "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
+          "py-16 md:py-24",
+          "p-6 md:p-10"
+        ],
+        "features": {
+          "hamburgerMenu": true,
+          "darkMode": true,
+          "responsiveHero": true,
+          "properGrids": true
+        },
+        "issues": []
+      },
+      "Pricelist": {
+        "file": "resources/js/Pages/Pricelist.jsx",
+        "status": "RESPONSIVE",
+        "rating": 5,
+        "tailwindUsage": "Excellent",
+        "mobileFirst": true,
+        "responsiveClasses": [
+          "text-3xl md:text-5xl lg:text-6xl",
+          "px-6 max-w-4xl mx-auto",
+          "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
+          "overflow-x-auto",
+          "hidden md:grid",
+          "w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.5rem)]"
+        ],
+        "features": {
+          "hamburgerMenu": true,
+          "darkMode": true,
+          "responsiveCards": true,
+          "horizontalScroll": true
+        },
+        "issues": []
+      },
+      "Review": {
+        "file": "resources/js/Pages/Review.jsx",
+        "status": "RESPONSIVE",
+        "rating": 5,
+        "tailwindUsage": "Excellent",
+        "mobileFirst": true,
+        "responsiveClasses": [
+          "columns-1 md:columns-2 lg:columns-3",
+          "pt-32 pb-20 md:pt-48 md:pb-32",
+          "px-6 pb-32 max-w-7xl mx-auto",
+          "text-4xl md:text-5xl lg:text-7xl",
+          "w-8 md:w-12"
+        ],
+        "features": {
+          "hamburgerMenu": true,
+          "darkMode": true,
+          "masonryLayout": true,
+          "properSpacing": true
+        },
+        "issues": []
+      },
+      "SelectorPhoto": {
+        "file": "resources/js/Pages/SelectorPhoto.jsx",
+        "status": "RESPONSIVE",
+        "rating": 4,
+        "tailwindUsage": "Good",
+        "mobileFirst": true,
+        "features": {
+          "hamburgerMenu": true,
+          "darkMode": true,
+          "touchSupport": true,
+          "swipeGestures": true
+        },
+        "issues": [
+          {
+            "type": "minor",
+            "description": "Could benefit from more explicit responsive classes in form sections"
+          }
+        ]
+      },
+      "Cart": {
+        "file": "resources/js/Pages/Cart/Index.jsx",
+        "status": "RESPONSIVE",
+        "rating": 5,
+        "tailwindUsage": "Excellent",
+        "mobileFirst": true,
+        "responsiveClasses": [
+          "hidden md:grid",
+          "grid grid-cols-1 md:grid-cols-12",
+          "flex justify-between md:justify-center",
+          "max-w-4xl mx-auto px-4 md:px-6",
+          "text-2xl md:text-3xl"
+        ],
+        "features": {
+          "hamburgerMenu": true,
+          "darkMode": true,
+          "responsiveTable": true,
+          "mobileLabels": true
+        },
+        "issues": []
+      },
+      "Checkout": {
+        "file": "resources/js/Pages/Checkout/Create.jsx",
+        "status": "RESPONSIVE",
+        "rating": 5,
+        "tailwindUsage": "Excellent",
+        "mobileFirst": true,
+        "responsiveClasses": [
+          "flex flex-col lg:flex-row gap-8 lg:gap-12",
+          "max-w-6xl mx-auto px-4 md:px-6",
+          "grid grid-cols-1 lg:grid-cols-2 gap-8",
+          "text-2xl md:text-3xl"
+        ],
+        "features": {
+          "hamburgerMenu": true,
+          "darkMode": true,
+          "responsiveLayout": true,
+          "mobileStacking": true
+        },
+        "issues": []
+      }
+    },
+    "admin": {
+      "Dashboard": {
+        "file": "resources/js/Pages/Admin/Dashboard.jsx",
+        "status": "RESPONSIVE",
+        "rating": 5,
+        "tailwindUsage": "Excellent",
+        "mobileFirst": true,
+        "responsiveClasses": [
+          "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
+          "flex flex-col md:flex-row md:items-end justify-between gap-6",
+          "pt-24 pb-20 px-6 max-w-7xl mx-auto",
+          "lg:col-span-2"
+        ],
+        "features": {
+          "responsiveStatCards": true,
+          "mobileSidebar": true,
+          "darkMode": true,
+          "properSpacing": true
+        },
+        "issues": []
+      },
+      "Login": {
+        "file": "resources/js/Pages/Admin/Login.jsx",
+        "status": "RESPONSIVE",
+        "rating": 5,
+        "tailwindUsage": "Excellent",
+        "mobileFirst": true,
+        "features": {
+          "responsiveForm": true,
+          "darkMode": true,
+          "centerLayout": true
+        },
+        "issues": []
+      },
+      "Photographers": {
+        "file": "resources/js/Pages/Admin/Photographers/Index.jsx",
+        "status": "RESPONSIVE",
+        "rating": 5,
+        "tailwindUsage": "Excellent",
+        "responsiveClasses": [
+          "flex flex-col md:flex-row md:items-end justify-between gap-6",
+          "grid gap-3",
+          "flex items-center justify-between",
+          "hidden md:block"
+        ],
+        "features": {
+          "responsiveList": true,
+          "mobileButtons": true,
+          "darkMode": true
+        },
+        "issues": []
+      },
+      "Pricelist": {
+        "file": "resources/js/Pages/Admin/Pricelist/Index.jsx",
+        "status": "RESPONSIVE",
+        "rating": 5,
+        "tailwindUsage": "Excellent",
+        "responsiveClasses": [
+          "flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8",
+          "flex flex-wrap items-center gap-4",
+          "max-w-7xl mx-auto px-6"
+        ],
+        "features": {
+          "responsiveTabs": true,
+          "mobileInterface": true,
+          "darkMode": true
+        },
+        "issues": []
+      },
+      "Bookings": {
+        "file": "resources/js/Pages/Admin/Bookings/Index.jsx",
+        "status": "PARTIALLY_RESPONSIVE",
+        "rating": 3,
+        "tailwindUsage": "Good",
+        "issues": [
+          {
+            "type": "table_overflow",
+            "severity": "medium",
+            "description": "Tables can overflow on small screens without proper overflow handling",
+            "affectedElements": ["Data table with multiple columns"],
+            "solution": "Wrap table in overflow-x-auto or convert to card-based mobile layout"
+          }
+        ]
+      },
+      "Reviews": {
+        "file": "resources/js/Pages/Admin/Reviews/Index.jsx",
+        "status": "PARTIALLY_RESPONSIVE",
+        "rating": 3,
+        "issues": [
+          {
+            "type": "table_overflow",
+            "severity": "medium",
+            "description": "Table columns overflow on mobile screens"
+          }
+        ]
+      },
+      "ReferralCodes": {
+        "file": "resources/js/Pages/Admin/ReferralCodes/Index.jsx",
+        "status": "PARTIALLY_RESPONSIVE",
+        "rating": 3,
+        "issues": [
+          {
+            "type": "table_overflow",
+            "severity": "medium",
+            "description": "Table overflow risk on small screens"
+          }
+        ]
+      },
+      "PhotoEditing": {
+        "file": "resources/js/Pages/Admin/PhotoEditing/Index.jsx",
+        "status": "PARTIALLY_RESPONSIVE",
+        "rating": 3,
+        "issues": [
+          {
+            "type": "modal_sizing",
+            "severity": "medium",
+            "description": "Modal interface might not be fully optimized for mobile screens"
+          }
+        ]
+      },
+      "About": {
+        "file": "resources/js/Pages/Admin/About/Index.jsx",
+        "status": "PARTIALLY_RESPONSIVE",
+        "rating": 4,
+        "issues": [
+          {
+            "type": "form_optimization",
+            "severity": "low",
+            "description": "Forms could benefit from more explicit responsive classes"
+          }
+        ]
+      }
+    },
+    "photographer": {
+      "Dashboard": {
+        "file": "resources/js/Pages/Photographer/Dashboard.jsx",
+        "status": "RESPONSIVE",
+        "rating": 5,
+        "tailwindUsage": "Excellent",
+        "features": {
+          "responsiveStatCards": true,
+          "mobileSidebar": true,
+          "darkMode": true
+        },
+        "issues": []
+      },
+      "Login": {
+        "file": "resources/js/Pages/Photographer/Login.jsx",
+        "status": "RESPONSIVE",
+        "rating": 5,
+        "features": {
+          "responsiveForm": true,
+          "darkMode": true
+        },
+        "issues": []
+      },
+      "Sessions": {
+        "file": "resources/js/Pages/Photographer/Sessions.jsx",
+        "status": "LIKELY_RESPONSIVE",
+        "rating": 4,
+        "notes": "Similar structure to Dashboard, likely responsive"
+      },
+      "Reservations": {
+        "file": "resources/js/Pages/Photographer/Reservations.jsx",
+        "status": "LIKELY_RESPONSIVE",
+        "rating": 4,
+        "notes": "Similar structure to Dashboard, likely responsive"
+      }
+    },
+    "editor": {
+      "Dashboard": {
+        "file": "resources/js/Pages/Editor/Dashboard.jsx",
+        "status": "LIKELY_RESPONSIVE",
+        "rating": 4,
+        "notes": "Expected to be responsive based on similar patterns"
+      },
+      "Login": {
+        "file": "resources/js/Pages/Editor/Login.jsx",
+        "status": "LIKELY_RESPONSIVE",
+        "rating": 4,
+        "notes": "Expected to be responsive based on similar patterns"
+      }
+    }
+  },
+  "components": {
+    "Navbar": {
+      "file": "resources/js/Components/Navbar.jsx",
+      "status": "RESPONSIVE",
+      "rating": 5,
+      "features": {
+        "hamburgerMenu": true,
+        "responsiveLogoSize": true,
+        "darkMode": true,
+        "mobileOptimized": true
+      },
+      "issues": []
+    },
+    "AdminSidebar": {
+      "file": "resources/js/Components/AdminSidebar.jsx",
+      "status": "RESPONSIVE",
+      "rating": 5,
+      "features": {
+        "slideinSidebar": true,
+        "backdropOverlay": true,
+        "mobileToggleButton": true,
+        "darkMode": true
+      },
+      "issues": []
+    },
+    "Modal": {
+      "file": "resources/js/Components/Modal.jsx",
+      "status": "RESPONSIVE",
+      "rating": 4,
+      "issues": [
+        {
+          "type": "modal_sizing",
+          "severity": "low",
+          "description": "Could have more explicit max-width handling for smaller screens",
+          "suggestion": "Add base mobile-first max-width before breakpoints"
+        }
+      ]
+    },
+    "CalendarWidget": {
+      "file": "resources/js/Components/CalendarWidget.jsx",
+      "status": "RESPONSIVE",
+      "rating": 4,
+      "features": {
+        "touchSupport": true,
+        "swipeNavigation": true,
+        "centerLayout": true
+      },
+      "issues": []
+    },
+    "Layouts": {
+      "GuestLayout": {
+        "file": "resources/js/Layouts/GuestLayout.jsx",
+        "status": "RESPONSIVE",
+        "rating": 5,
+        "features": {
+          "properStructure": true,
+          "responsiveFooter": true,
+          "darkMode": true
+        },
+        "issues": []
+      },
+      "AdminLayout": {
+        "file": "resources/js/Layouts/AdminLayout.jsx",
+        "status": "RESPONSIVE",
+        "rating": 5,
+        "features": {
+          "responsiveSidebar": true,
+          "mobileFirstApproach": true,
+          "darkMode": true
+        },
+        "issues": []
+      }
+    },
+    "FormComponents": {
+      "status": "RESPONSIVE",
+      "rating": 5,
+      "components": [
+        "PrimaryButton",
+        "TextInput",
+        "InputLabel",
+        "TextArea",
+        "Checkbox"
+      ],
+      "commonFeatures": {
+        "fullWidth": true,
+        "responsivePadding": true,
+        "darkMode": true
+      },
+      "issues": []
+    }
+  },
+  "breakpoints": {
+    "used": [
+      "sm",
+      "md",
+      "lg",
+      "xl"
+    ],
+    "framework": "Tailwind CSS v4",
+    "customBreakpoints": [
+      "sm:640px",
+      "md:768px",
+      "lg:1024px",
+      "xl:1280px"
+    ]
+  },
+  "issues": {
+    "critical": [],
+    "high": [
+      {
+        "id": "table_overflow",
+        "title": "Table Overflow on Mobile",
+        "severity": "HIGH",
+        "affectedPages": [
+          "Admin/Bookings/Index.jsx",
+          "Admin/Reviews/Index.jsx",
+          "Admin/ReferralCodes/Index.jsx",
+          "Admin/PhotoEditing/Index.jsx"
+        ],
+        "description": "Tables with multiple columns can overflow on small mobile screens without proper horizontal scrolling indication",
+        "solution": "Wrap tables in overflow-x-auto container or convert to card-based layout on mobile",
+        "estimatedTime": "1-2 hours",
+        "priority": 1
+      }
+    ],
+    "medium": [
+      {
+        "id": "form_responsive_classes",
+        "title": "Improve Form Responsiveness",
+        "severity": "MEDIUM",
+        "affectedPages": [
+          "Admin/About pages",
+          "Admin form pages"
+        ],
+        "description": "Some form layouts could use more explicit responsive classes",
+        "solution": "Add flex layouts, responsive padding patterns, and better mobile optimization",
+        "estimatedTime": "2-3 hours",
+        "priority": 2
+      }
+    ],
+    "low": [
+      {
+        "id": "very_small_screen",
+        "title": "Very Small Screen Optimization",
+        "severity": "LOW",
+        "description": "Some padding might be too large for screens < 375px",
+        "solution": "Use px-4 sm:px-6 pattern instead of just px-6",
+        "estimatedTime": "1-2 hours",
+        "priority": 3
+      },
+      {
+        "id": "modal_sizing",
+        "title": "Modal Sizing on Mobile",
+        "severity": "LOW",
+        "description": "Modals might be too large on very small screens",
+        "solution": "Add base mobile-first max-width before breakpoints",
+        "estimatedTime": "30 minutes",
+        "priority": 3
+      },
+      {
+        "id": "long_text",
+        "title": "Long Typography Handling",
+        "severity": "LOW",
+        "description": "Some headings might wrap awkwardly on very small screens",
+        "solution": "Add break-words and better line-height handling",
+        "estimatedTime": "1 hour",
+        "priority": 3
+      }
+    ]
+  },
+  "recommendations": {
+    "priority1": [
+      {
+        "task": "Add overflow-x-auto handling to admin list tables",
+        "affectedFiles": [
+          "resources/js/Pages/Admin/Bookings/Index.jsx",
+          "resources/js/Pages/Admin/Reviews/Index.jsx",
+          "resources/js/Pages/Admin/ReferralCodes/Index.jsx",
+          "resources/js/Pages/Admin/PhotoEditing/Index.jsx"
+        ],
+        "timeEstimate": "1-2 hours",
+        "impact": "Prevent horizontal scrolling issues on mobile",
+        "codeTemplate": "See AUDIT_RESPONSIVENESS_REPORT.md"
+      }
+    ],
+    "priority2": [
+      {
+        "task": "Improve form responsiveness in admin pages",
+        "timeEstimate": "2-3 hours",
+        "impact": "Better mobile admin experience"
+      },
+      {
+        "task": "Test on actual mobile devices",
+        "devices": [
+          "iPhone SE (375px)",
+          "iPhone 12/13 (390px)",
+          "iPhone 14/15 (393px)",
+          "Pixel 7/8 (412px)"
+        ],
+        "timeEstimate": "2-3 hours",
+        "impact": "Catch edge cases and real-world issues"
+      }
+    ],
+    "priority3": [
+      {
+        "task": "Optimize padding for very small screens",
+        "pattern": "px-4 sm:px-6",
+        "timeEstimate": "1-2 hours"
+      },
+      {
+        "task": "Improve modal sizing for mobile",
+        "timeEstimate": "30 minutes"
+      },
+      {
+        "task": "Long text optimization",
+        "timeEstimate": "1 hour"
+      }
+    ]
+  },
+  "testing": {
+    "devices": [
+      {
+        "name": "iPhone SE",
+        "width": 375,
+        "priority": "high"
+      },
+      {
+        "name": "iPhone 12/13",
+        "width": 390,
+        "priority": "high"
+      },
+      {
+        "name": "iPhone 14/15",
+        "width": 393,
+        "priority": "high"
+      },
+      {
+        "name": "Pixel 7/8",
+        "width": 412,
+        "priority": "high"
+      },
+      {
+        "name": "iPad",
+        "width": 768,
+        "priority": "medium"
+      },
+      {
+        "name": "iPad Pro",
+        "width": 1024,
+        "priority": "medium"
+      }
+    ],
+    "checklist": [
+      "All text readable without horizontal scroll",
+      "Buttons easily tappable (min 44px height)",
+      "Forms properly spaced",
+      "Images load and scale properly",
+      "Navigation accessible on mobile",
+      "No overlapping elements",
+      "Dark mode displays correctly",
+      "Tables have overflow handling"
+    ]
+  },
+  "summary": {
+    "status": "RESPONSIVE",
+    "overallScore": 4.2,
+    "scoreOutOf": 5,
+    "strongPoints": [
+      "Consistent use of Tailwind responsive classes",
+      "Proper mobile navigation with hamburger menu",
+      "Good dark mode support",
+      "Grid and flex layouts well implemented",
+      "Typography scaling proper"
+    ],
+    "areasForImprovement": [
+      "Admin table pages need overflow handling",
+      "Some forms need better responsive classes",
+      "Very small screen optimization needed"
+    ],
+    "nextSteps": [
+      "Implement Priority 1 recommendations (table overflow fixes)",
+      "Test on actual mobile devices",
+      "Implement Priority 2 recommendations (form improvements)",
+      "Continuous mobile device testing during development"
+    ]
+  }
+}

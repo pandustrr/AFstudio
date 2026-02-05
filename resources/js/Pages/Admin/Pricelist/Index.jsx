@@ -91,7 +91,7 @@ export default function Index({ categories }) {
         <AdminLayout>
             <Head title="Kelola Pricelist" />
 
-            <div className="pt-12 lg:pt-20 pb-20 px-6 max-w-7xl mx-auto">
+            <div className="pt-8 lg:pt-16 pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
                 <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
                         <h1 className="text-4xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-2 italic">Pricelist</h1>

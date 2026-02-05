@@ -184,7 +184,7 @@ export default function Index({ homePage, galleries, journeySteps }) {
         <AdminLayout>
             <Head title="Home Page Settings" />
 
-            <div className="pt-8 lg:pt-12 pb-12 px-6 max-w-4xl mx-auto">
+            <div className="pt-8 lg:pt-12 pb-12 px-4 sm:px-6 max-w-4xl mx-auto">
                 <div className="flex flex-col gap-1 mb-8">
                     <h1 className="text-2xl lg:text-3xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter leading-tight">Home Page</h1>
                     <p className="text-brand-black/40 dark:text-brand-white/40 text-[9px] sm:text-[10px] font-black uppercase tracking-widest leading-relaxed">Atur konten Hero Section dan tombol CTA halaman Home.</p>

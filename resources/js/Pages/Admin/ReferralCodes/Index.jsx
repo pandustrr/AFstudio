@@ -85,7 +85,7 @@ export default function ReferralCodeIndex({ codes }) {
         <AdminLayout>
             <Head title="Voucher Codes" />
 
-            <div className="pt-16 pb-12 px-6">
+            <div className="pt-8 lg:pt-16 pb-12 px-4 sm:px-6">
                 <div className="max-w-6xl mx-auto">
                     {/* Header */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
