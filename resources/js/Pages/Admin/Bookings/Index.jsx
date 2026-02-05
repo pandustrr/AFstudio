@@ -116,7 +116,7 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
         <AdminLayout>
             <Head title="Daily Schedule Overview" />
 
-            <div className="pt-16 pb-12 px-6">
+            <div className="pt-8 lg:pt-16 pb-12 px-4 sm:px-6">
                 <div className="max-w-7xl mx-auto">
 
                     {/* Header */}

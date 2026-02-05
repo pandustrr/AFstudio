@@ -46,19 +46,19 @@ export default function Edit({ user }) {
         <AdminLayout>
             <Head title="Edit Profil" />
 
-            <div className="pt-24 pb-20 px-6 max-w-2xl mx-auto">
+            <div className="pt-8 lg:pt-16 pb-20 px-4 sm:px-6 max-w-2xl mx-auto">
                 <EditNotif
                     show={showNotif}
                     onClose={() => setShowNotif(false)}
                     message="Profil Anda telah berhasil diperbarui!"
                 />
 
-                <div className="mb-10">
-                    <h1 className="text-2xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-1 leading-none">Pengaturan Profil</h1>
+                <div className="mb-8 sm:mb-10">
+                    <h1 className="text-2xl sm:text-3xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-1 leading-none">Pengaturan Profil</h1>
                     <p className="text-brand-black/40 dark:text-brand-white/40 text-[9px] font-black uppercase tracking-widest leading-none">Perbarui informasi akun dan keamanan Anda.</p>
                 </div>
 
-                <form onSubmit={handleSubmitClick} className="space-y-6 bg-white dark:bg-white/5 p-8 rounded-3xl border border-black/5 dark:border-white/5 shadow-xl relative overflow-hidden">
+                <form onSubmit={handleSubmitClick} className="space-y-6 bg-white dark:bg-white/5 p-6 sm:p-8 rounded-3xl border border-black/5 dark:border-white/5 shadow-xl relative overflow-hidden">
                     {/* Username */}
                     <div>
                         <label className="block text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-2 px-1">Username (Login)</label>

@@ -71,7 +71,7 @@ export default function Index({ about, moodboards }) {
         <AdminLayout>
             <Head title="About Settings" />
 
-            <div className="pt-12 lg:pt-20 pb-20 px-6 max-w-5xl mx-auto">
+            <div className="pt-8 lg:pt-16 pb-20 px-4 sm:px-6 max-w-5xl mx-auto">
                 <div className="flex flex-col gap-2 mb-10">
                     <h1 className="text-3xl lg:text-4xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter leading-tight">About Company</h1>
                     <p className="text-brand-black/40 dark:text-brand-white/40 text-[9px] sm:text-[10px] font-black uppercase tracking-widest leading-relaxed">Atur konten halaman About, Visi Misi, dan Kontak.</p>

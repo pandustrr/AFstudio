@@ -21,7 +21,7 @@ export default function Index({ stats = {}, filters = {} }) {
         <AdminLayout>
             <Head title="Insights - Admin Dashboard" />
 
-            <div className="pt-12 lg:pt-20 pb-20 px-6 min-h-screen">
+            <div className="pt-8 lg:pt-16 pb-20 px-4 sm:px-6 min-h-screen">
                 <div className="max-w-7xl mx-auto">
                     {/* Header */}
                     <div className="flex flex-col sm:flex-row justify-between items-center mb-12 gap-6">

@@ -84,7 +84,7 @@ export default function BookingShow({ booking, photographers = [] }) {
                 processing={processing}
             />
 
-            <div className="pt-24 pb-12 px-6">
+            <div className="pt-8 lg:pt-16 pb-12 px-4 sm:px-6">
                 <div className="max-w-4xl mx-auto">
 
                     {/* Back Button */}

@@ -46,7 +46,7 @@ export default function VoucherCodeEdit({ code }) {
         <AdminLayout>
             <Head title={`Edit Voucher Code - ${code.code}`} />
 
-            <div className="pt-16 pb-12 px-6">
+            <div className="pt-8 lg:pt-16 pb-12 px-4 sm:px-6">
                 <div className="max-w-2xl mx-auto">
                     {/* Back Button */}
                     <Link

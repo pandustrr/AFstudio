@@ -39,7 +39,7 @@ export default function Dashboard({ stats, recentBookings, recentReviews }) {
         <AdminLayout>
             <Head title="Admin Dashboard" />
 
-            <div className="pt-24 pb-20 px-6 max-w-7xl mx-auto">
+            <div className="pt-8 lg:pt-16 pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
                 {/* Welcome Header */}
                 <div className="mb-12">
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">

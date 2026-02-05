@@ -95,7 +95,7 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
             )}
 
             <aside
-                className={`w-64 min-h-screen bg-white dark:bg-brand-black border-r border-black/5 dark:border-white/5 flex flex-col pt-8 pb-6 px-5 fixed left-0 top-0 z-50 transition-all duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+                className={`w-64 h-screen bg-white dark:bg-brand-black border-r border-black/5 dark:border-white/5 flex flex-col pt-8 pb-6 px-5 fixed left-0 top-0 z-50 transition-all duration-300 overflow-y-auto ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
                     }`}
             >
                 {/* Brand / Logo */}
@@ -104,12 +104,11 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                     <span className="font-black uppercase tracking-tighter text-sm text-brand-black dark:text-brand-white">Control Panel</span>
                 </div>
 
-                <div className="flex flex-col space-y-1 overflow-y-auto pr-2 custom-scrollbar">
+                <div className="flex flex-col space-y-1 overflow-y-auto flex-1 pr-2 custom-scrollbar">
                     {/* Top Level Items */}
                     {renderMenuItem({ label: 'Dashboard', href: `${prefix}/dashboard`, icon: ChartBarIcon })}
                     {user.role === 'admin' && (
                         <>
-                            {renderMenuItem({ label: 'Settings', href: `/admin/settings`, icon: CogIcon })}
                             {renderMenuItem({ label: 'Home Page', href: `/admin/home`, icon: BuildingOfficeIcon })}
                             {renderMenuItem({ label: 'About Page', href: `/admin/about`, icon: BuildingOfficeIcon })}
                             {renderMenuItem({ label: 'Pricelist', href: `/admin/pricelist`, icon: BanknotesIcon })}
@@ -154,6 +153,7 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
 
                 <div className="mt-auto pt-4">
                     {renderMenuItem({ label: 'Profile', href: `${prefix}/profile`, icon: UserIcon })}
+                    {user.role === 'admin' && renderMenuItem({ label: 'Settings', href: `/admin/settings`, icon: CogIcon })}
                     <div className="mt-2 pt-4 border-t border-black/5 dark:border-white/5">
                         <Link
                             href={url.startsWith('/photographer') ? "/photographer/logout" : (url.startsWith('/editor') ? "/editor/logout" : "/admin/logout")}

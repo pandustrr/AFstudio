@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
-import Navbar from '@/Components/Navbar';
+import GuestLayout from '@/Layouts/GuestLayout';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { XMarkIcon, SparklesIcon, ChatBubbleBottomCenterTextIcon, CameraIcon, ArrowsPointingOutIcon } from '@heroicons/react/24/outline';
 
@@ -8,13 +8,12 @@ export default function Review({ reviews }) {
     const [selectedPhoto, setSelectedPhoto] = useState(null);
 
     return (
-        <div className="bg-brand-white dark:bg-brand-black min-h-screen font-sans transition-colors duration-500 relative overflow-hidden">
+        <GuestLayout>
             <Head title="Suara Mereka - AFSTUDIO" />
 
-            {/* Artistic Noise Texture */}
-            <div className="fixed inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.05] z-50 bg-[url('https://www.transparenttextures.com/patterns/p6.png')]"></div>
-
-            <Navbar />
+            <div className="bg-brand-white dark:bg-brand-black min-h-screen font-sans transition-colors duration-500 relative overflow-hidden">
+                {/* Artistic Noise Texture */}
+                <div className="fixed inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.05] z-50 bg-[url('https://www.transparenttextures.com/patterns/p6.png')]"></div>
 
             {/* Hero Section - Ultra Premium Style */}
             <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-6 overflow-hidden">
@@ -205,6 +204,7 @@ export default function Review({ reviews }) {
                     animation: zoom-in 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
                 }
             `}</style>
-        </div>
+            </div>
+        </GuestLayout>
     );
 }

@@ -82,7 +82,7 @@ export default function Index({ sessions, filters, options }) {
         <AdminLayout>
             <Head title="Manage Requests" />
 
-            <div className="pt-12 lg:pt-20 pb-20 px-6 max-w-7xl mx-auto">
+            <div className="pt-8 lg:pt-16 pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
                 <div className="flex flex-col gap-5 mb-6">
                     <div>
                         <h1 className="text-4xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-2">Daftar Request</h1>
