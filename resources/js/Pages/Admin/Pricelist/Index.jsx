@@ -6,7 +6,7 @@ import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import ManageCategoriesModal from './Partials/ManageCategoriesModal';
 import SubCategoryModal from './Partials/SubCategoryModal';
 import PackageModal from './Partials/PackageModal';
-import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
+import ConfirmModal from '@/Components/ConfirmModal';
 import EditNotif from '@/Components/EditNotif';
 
 export default function Index({ categories }) {
@@ -309,12 +309,13 @@ export default function Index({ categories }) {
                 subCategoryId={packageModal.subCategoryId}
                 onSuccess={handleNotification}
             />
-            <DeleteConfirmModal
+            <ConfirmModal
                 isOpen={deleteModal.show}
                 onClose={() => setDeleteModal({ ...deleteModal, show: false })}
                 onConfirm={handleDelete}
                 title={deleteModal.title}
                 message={deleteModal.message}
+                variant="danger"
             />
         </AdminLayout >
     );

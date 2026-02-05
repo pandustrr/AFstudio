@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Link, Head, router } from '@inertiajs/react';
 import { PlusIcon, PencilSquareIcon, TrashIcon, CalendarDaysIcon, UserIcon } from '@heroicons/react/24/outline';
-import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
+import ConfirmModal from '@/Components/ConfirmModal';
 import Edit from './Edit';
 
 export default function Index({ photographers }) {
@@ -119,13 +119,14 @@ export default function Index({ photographers }) {
                 photographer={editingFG}
             />
 
-            <DeleteConfirmModal
+            <ConfirmModal
                 isOpen={!!deleteFG}
                 onClose={() => setDeleteFG(null)}
                 onConfirm={handleDelete}
                 processing={processing}
                 title="Hapus Fotografer"
                 message={`Apakah Anda yakin ingin menghapus akun ${deleteFG?.name}? Semua data sesi mereka akan tetap tersimpan namun akun tidak bisa digunakan.`}
+                variant="danger"
             />
         </AdminLayout>
     );

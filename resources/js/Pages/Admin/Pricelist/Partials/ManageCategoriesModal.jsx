@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm, router } from '@inertiajs/react';
 import { XMarkIcon, TrashIcon, PlusIcon, CheckIcon, PhotoIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
-import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
+import ConfirmModal from '@/Components/ConfirmModal';
 
 export default function ManageCategoriesModal({ isOpen, onClose, categories, onSuccess }) {
     const [editingId, setEditingId] = useState(null);
@@ -290,13 +290,14 @@ export default function ManageCategoriesModal({ isOpen, onClose, categories, onS
                     </div>
                 </div>
 
-                <DeleteConfirmModal
+                <ConfirmModal
                     isOpen={deleteModal.show}
                     onClose={() => setDeleteModal({ show: false, id: null, name: '' })}
                     onConfirm={confirmDelete}
                     title="Hapus Kategori"
                     message={`Yakin ingin menghapus kategori "${deleteModal.name}"? Semua sub-kategori dan paket di dalamnya akan ikut terhapus.`}
                     processing={deleting}
+                    variant="danger"
                 />
             </div>
         </div>

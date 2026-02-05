@@ -3,7 +3,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { CalendarIcon } from '@heroicons/react/24/outline';
-import DeleteConfirmModal from '@/Components/DeleteConfirmModal';
+import ConfirmModal from '@/Components/ConfirmModal';
 
 export default function Show({ review }) {
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -160,13 +160,14 @@ export default function Show({ review }) {
                     </div>
                 </div>
 
-                <DeleteConfirmModal
+                <ConfirmModal
                     isOpen={deleteModalOpen}
                     onClose={() => setDeleteModalOpen(false)}
                     onConfirm={handleDelete}
                     title="Hapus Review"
                     message="Review ini akan dihapus permanen. Lanjutkan?"
                     processing={processing}
+                    variant="danger"
                 />
             </div>
         </AdminLayout>
