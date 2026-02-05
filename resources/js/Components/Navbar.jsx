@@ -193,17 +193,19 @@ export default function Navbar() {
                             leaveFrom="translate-x-0"
                             leaveTo="translate-x-full"
                         >
-                            <Dialog.Panel className="w-[75%] max-w-[280px] h-full bg-white dark:bg-brand-black p-6 sm:p-8 shadow-2xl border-l border-black/5 dark:border-white/10 overflow-y-auto relative flex flex-col">
+                            <Dialog.Panel className="w-[75%] max-w-[280px] h-full bg-white dark:bg-brand-black p-6 sm:p-8 shadow-2xl border-l border-black/5 dark:border-white/10 overflow-y-auto relative flex flex-col transition-colors duration-500">
                                 {/* Background Decoration */}
-                                <div className="absolute top-0 right-0 w-40 h-40 bg-brand-gold/10 blur-3xl -mr-20 -mt-20"></div>
-                                <div className="absolute bottom-0 left-0 w-32 h-32 bg-brand-red/5 blur-3xl -ml-16 -mb-16"></div>
+                                <div className="absolute top-0 right-0 w-40 h-40 bg-brand-gold/5 dark:bg-brand-gold/10 blur-3xl -mr-20 -mt-20 transition-colors duration-500"></div>
+                                <div className="absolute bottom-0 left-0 w-32 h-32 bg-brand-red/5 dark:bg-brand-red/10 blur-3xl -ml-16 -mb-16 transition-colors duration-500"></div>
 
                                 {/* Header */}
                                 <div className="relative z-10 flex flex-col items-center space-y-4 mb-8">
                                     <div className="flex flex-col items-center gap-2">
-                                        <div className="w-12 h-12 bg-gradient-to-br from-brand-red to-brand-gold rounded-full flex items-center justify-center shadow-xl shadow-brand-red/30 scale-110">
-                                            <span className="text-white font-black text-sm">AF</span>
-                                        </div>
+                                        <img
+                                            src="/images/logo.png"
+                                            alt="AF Studio Logo"
+                                            className="h-12 w-auto scale-110"
+                                        />
                                         <span className="text-[9px] font-black uppercase tracking-[0.4em] text-brand-gold">Menu</span>
                                     </div>
                                     <div className="w-12 h-0.5 bg-gradient-to-r from-transparent via-brand-gold to-transparent"></div>
