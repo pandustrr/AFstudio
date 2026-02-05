@@ -25,7 +25,7 @@ export default function Home({ categories = [], homePage, galleries = [], journe
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        
+
         // Build WhatsApp message
         const message = `*Pesan dari AFStudio Website*
 
@@ -38,13 +38,13 @@ ${data.message}`;
 
         // Encode message for URL
         const encodedMessage = encodeURIComponent(message);
-        
+
         // WhatsApp admin number from database
         const adminNumber = homePage?.admin_whatsapp || '6281230487469';
-        
+
         // Open WhatsApp
         window.open(`https://wa.me/${adminNumber}?text=${encodedMessage}`, '_blank');
-        
+
         // Clear form
         setData({
             full_name: '',
@@ -318,9 +318,9 @@ ${data.message}`;
                         {/* Display actual gallery items */}
                         {galleries.map((gallery, i) => (
                             <div key={gallery.id} className="min-w-[300px] md:min-w-[450px] aspect-3/4 rounded-4xl overflow-hidden relative group shadow-2xl">
-                                <img 
-                                    src={`/storage/${gallery.image_path}`} 
-                                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000 opacity-80 group-hover:opacity-100" 
+                                <img
+                                    src={`/storage/${gallery.image_path}`}
+                                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000 opacity-80 group-hover:opacity-100"
                                     alt={gallery.title || `Work ${i + 1}`}
                                     onError={(e) => {
                                         e.target.src = 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80';
@@ -332,13 +332,13 @@ ${data.message}`;
                                 </div>
                             </div>
                         ))}
-                        
+
                         {/* Loop galleries again for marquee effect */}
                         {galleries.length > 0 && galleries.slice(0, Math.min(3, galleries.length)).map((gallery, i) => (
                             <div key={`dup-${gallery.id}`} className="min-w-[300px] md:min-w-[450px] aspect-3/4 rounded-4xl overflow-hidden relative group shadow-2xl">
-                                <img 
-                                    src={`/storage/${gallery.image_path}`} 
-                                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000 opacity-80 group-hover:opacity-100" 
+                                <img
+                                    src={`/storage/${gallery.image_path}`}
+                                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000 opacity-80 group-hover:opacity-100"
                                     alt={gallery.title || `Work duplicate ${i + 1}`}
                                     onError={(e) => {
                                         e.target.src = 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80';
@@ -348,7 +348,7 @@ ${data.message}`;
                         ))}
                     </div>
                 ) : (
-                    <div className="flex gap-6 animate-marquee hover:pause cursor-pointer pb-10">
+                    <div className="flex gap-6 animate-marquee-fast hover:pause cursor-pointer pb-10">
                         {/* Fallback to dummy images if no galleries */}
                         {[
                             'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80',
@@ -478,7 +478,7 @@ ${data.message}`;
 
                                 <div className="space-y-2">
                                     <label className="text-[9px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-[0.2em] ml-2">Pilih Layanan</label>
-                                    <select 
+                                    <select
                                         value={data.service_category}
                                         onChange={(e) => setData('service_category', e.target.value)}
                                         className="w-full bg-black/5 dark:bg-white/5 border-none rounded-2xl px-6 py-4 text-brand-black dark:text-brand-white text-sm font-bold focus:ring-2 focus:ring-brand-gold transition-all appearance-none cursor-pointer">
@@ -500,8 +500,8 @@ ${data.message}`;
                                     ></textarea>
                                 </div>
 
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     disabled={processing}
                                     className="w-full py-5 bg-brand-black dark:bg-brand-white text-brand-white dark:text-brand-black rounded-2xl font-black uppercase tracking-[0.3em] text-[10px] hover:bg-brand-gold hover:text-brand-black transition-all duration-500 shadow-xl active:scale-95 disabled:opacity-50">
                                     {processing ? 'Mengirim...' : (homePage?.contact_button_text || 'Kirim Pesan Sekarang')}
@@ -590,14 +590,14 @@ ${data.message}`;
                     100% { transform: translateX(-50%); }
                 }
                 .animate-marquee {
-                    animation: marquee 30s linear infinite;
+                    animation: marquee 20s linear infinite;
                 }
-                @keyframes marquee-slow {
+                @keyframes marquee-fast {
                     0% { transform: translateX(0); }
                     100% { transform: translateX(-50%); }
                 }
-                .animate-marquee-slow {
-                    animation: marquee-slow 60s linear infinite;
+                .animate-marquee-fast {
+                    animation: marquee-fast 20s linear infinite;
                 }
                 .hover\\:pause:hover {
                     animation-play-state: paused;
