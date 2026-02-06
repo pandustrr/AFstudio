@@ -16,8 +16,6 @@ export default function Index({ about, moodboards }) {
         image: null,
         vision: about.vision || '',
         mission: about.mission || '',
-        story_subtitle: about.story_subtitle || 'Kisah Utama Kami',
-        story_title: about.story_title || 'MENGABADIKAN MAHAKARYA YANG TAK TERUCAP.',
         address: about.address || '',
         email: about.email || '',
         phone: about.phone || '',
@@ -132,29 +130,8 @@ export default function Index({ about, moodboards }) {
                                     />
                                     {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
                                 </div>
-
-                                <div>
-                                    <InputLabel value="Subtitle Kisah Utama (misalnya: Kisah Utama Kami)" />
-                                    <TextInput
-                                        value={data.story_subtitle}
-                                        onChange={(e) => setData('story_subtitle', e.target.value)}
-                                        className="w-full mt-1"
-                                        placeholder="Kisah Utama Kami"
-                                    />
-                                    {errors.story_subtitle && <p className="text-red-500 text-xs mt-1">{errors.story_subtitle}</p>}
-                                </div>
-
-                                <div>
-                                    <InputLabel value="Judul Kisah Utama (misalnya: MENGABADIKAN MAHAKARYA YANG TAK TERUCAP.)" />
-                                    <TextArea
-                                        value={data.story_title}
-                                        onChange={(e) => setData('story_title', e.target.value)}
-                                        className="w-full mt-1 h-24"
-                                        placeholder="MENGABADIKAN MAHAKARYA YANG TAK TERUCAP."
-                                    />
-                                    {errors.story_title && <p className="text-red-500 text-xs mt-1">{errors.story_title}</p>}
-                                </div>
                             </div>
+                        </div>
 
                         {/* Vision & Mission */}
                         <div className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-6 sm:p-8 space-y-6">
@@ -245,7 +222,6 @@ export default function Index({ about, moodboards }) {
                                 </PrimaryButton>
                             </div>
                         </div>
-                    </div>
                     </div>
                 </form>
 
