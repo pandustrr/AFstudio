@@ -241,15 +241,15 @@ export default function Pricelist({ categories, rooms, locked }) {
                                     {sub.packages.map((pkg) => (
                                         <div
                                             key={pkg.id}
-                                            className={`relative group overflow-hidden p-5 md:p-7 rounded-[40px] border transition-all duration-500 flex flex-col w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.5rem)] xl:w-[calc(25%-1.5rem)] max-w-sm ${pkg.is_popular
-                                                ? 'bg-brand-black text-white border-brand-black shadow-2xl shadow-brand-red/10 ring-4 ring-brand-red/5'
-                                                : 'bg-white dark:bg-white/5 border-black/5 dark:border-white/5 text-brand-black dark:text-brand-white'
-                                                } hover:-translate-y-2`}
+                                            className={`relative group p-5 md:p-7 rounded-[40px] border-2 transition-all duration-500 flex flex-col w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.5rem)] xl:w-[calc(25%-1.5rem)] max-w-sm ${pkg.is_popular
+                                                ? 'bg-brand-black text-white border-brand-red shadow-2xl shadow-brand-red/10 ring-4 ring-brand-red/5 hover:-translate-y-2'
+                                                : 'bg-white dark:bg-white/5 border-black/10 dark:border-white/10 text-brand-black dark:text-brand-white hover:-translate-y-2'
+                                                }`}
                                         >
-                                            <div className="absolute inset-0 bg-linear-to-r from-brand-gold/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+                                            <div className="absolute inset-0 bg-linear-to-r from-brand-gold/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none rounded-[40px]"></div>
 
                                             {pkg.is_popular && (
-                                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-brand-red text-white rounded-full text-[7px] md:text-[8px] font-black uppercase tracking-widest shadow-lg">
+                                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-brand-red text-white rounded-full text-[7px] md:text-[8px] font-black uppercase tracking-widest shadow-lg z-10">
                                                     <FireIcon className="w-2.5 h-2.5 md:w-3 md:h-3" />
                                                     Most Popular
                                                 </div>

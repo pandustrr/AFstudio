@@ -4,7 +4,7 @@ import Navbar from '@/Components/Navbar';
 import { CheckCircleIcon, QrCodeIcon, DocumentIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { PhoneIcon } from '@heroicons/react/24/solid';
 
-export default function CheckoutShow({ booking, rooms = [] }) {
+export default function CheckoutShow({ booking, rooms = [], homePage = {} }) {
     const [proofFile, setProofFile] = useState(null);
     const [proofUploaded, setProofUploaded] = useState(false);
     const [uploadedProofStatus, setUploadedProofStatus] = useState(null);
