@@ -5,21 +5,24 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class PageView extends Model
+class Interaction extends Model
 {
     protected $fillable = [
+        'event_type',
         'page_name',
         'url',
+        'item_id',
+        'item_name',
+        'payload',
         'ip_address',
         'user_agent',
-        'user_id',
-        'viewed_at',
         'device_hash',
-        'viewed_date',
+        'user_id',
+        'session_id',
     ];
 
     protected $casts = [
-        'viewed_at' => 'datetime',
+        'payload' => 'array',
     ];
 
     public function user(): BelongsTo

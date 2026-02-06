@@ -10,6 +10,7 @@ use App\Http\Controllers\Public\BookingController;
 use App\Http\Controllers\Public\ScheduleController;
 
 Route::get('/', [\App\Http\Controllers\Public\HomeController::class, 'index'])->name('home');
+Route::post('/api/track', [\App\Http\Controllers\Admin\InsightController::class, 'track']);
 
 Route::get('/selector-photo', function () {
     return Inertia::render('SelectorPhoto');
@@ -168,6 +169,10 @@ Route::prefix('admin')->group(function () {
         // Referral Codes
         Route::resource('referral-codes', \App\Http\Controllers\Admin\ReferralCodeController::class)
             ->names('admin.referral-codes');
+
+        // Insights
+        Route::get('/insights', [\App\Http\Controllers\Admin\InsightController::class, 'index'])->name('admin.insights.index');
+        Route::get('/insights/page', [\App\Http\Controllers\Admin\InsightController::class, 'pageDetails'])->name('admin.insights.page');
 
         Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('admin.profile.edit');
         Route::post('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('admin.profile.update');

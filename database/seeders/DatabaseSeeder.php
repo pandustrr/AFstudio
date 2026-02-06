@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             PhotoSessionSeeder::class,
             JourneyStepSeeder::class,
             // PricelistSeeder::class,
+            InsightsSeeder::class,
         ]);
     }
 }

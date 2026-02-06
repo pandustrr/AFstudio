@@ -109,6 +109,7 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                     {renderMenuItem({ label: 'Dashboard', href: `${prefix}/dashboard`, icon: ChartBarIcon })}
                     {user.role === 'admin' && (
                         <>
+                            {renderMenuItem({ label: 'Insights', href: `/admin/insights`, icon: ChartBarIcon })}
                             {renderMenuItem({ label: 'Home Page', href: `/admin/home`, icon: BuildingOfficeIcon })}
                             {renderMenuItem({ label: 'About Page', href: `/admin/about`, icon: BuildingOfficeIcon })}
                             {renderMenuItem({ label: 'Pricelist', href: `/admin/pricelist`, icon: BanknotesIcon })}
@@ -132,7 +133,6 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                                     {renderMenuItem({ label: 'Request Edit', href: `/admin/photo-editing`, icon: CameraIcon }, true)}
                                 </div>
                             )}
-
                         </>
                     )}
 
