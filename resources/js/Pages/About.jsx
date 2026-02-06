@@ -71,10 +71,20 @@ export default function About({ about, moodboards = [] }) {
                             <div className="w-8 h-8 bg-brand-red/10 dark:bg-brand-red/20 rounded-lg flex items-center justify-center group-hover:rotate-12 transition-all duration-500 border border-brand-red/20">
                                 <BuildingOfficeIcon className="w-4 h-4 text-brand-red" />
                             </div>
-                            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-brand-red">Kisah Utama Kami</span>
+                            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-brand-red">{about?.story_subtitle || 'Kisah Utama Kami'}</span>
                         </div>
                         <h2 className="text-2xl md:text-4xl lg:text-5xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter leading-none italic transition-colors">
-                            MENGABADIKAN <br /> <span className="text-brand-gold underline decoration-brand-red/20 underline-offset-8">MAHAKARYA</span> YANG TAK TERUCAP.
+                            {about?.story_title ? (
+                                <>
+                                    {about.story_title.split(' ').slice(0, -1).join(' ')} <br /> <span className="text-brand-gold underline decoration-brand-red/20 underline-offset-8">
+                                        {about.story_title.split(' ').pop()}
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    MENGABADIKAN <br /> <span className="text-brand-gold underline decoration-brand-red/20 underline-offset-8">MAHAKARYA</span> YANG TAK TERUCAP.
+                                </>
+                            )}
                         </h2>
                         <div className="w-16 h-px bg-brand-gold shadow-sm"></div>
                         <p className="text-brand-black/70 dark:text-brand-white/60 text-sm md:text-base leading-relaxed font-medium transition-colors max-w-2xl italic">
@@ -106,16 +116,17 @@ export default function About({ about, moodboards = [] }) {
                     <div className="mb-20 grid grid-cols-1 md:grid-cols-2 gap-10 relative items-center">
                         <div className="space-y-5 p-8 bg-brand-black rounded-3xl relative overflow-hidden group shadow-xl">
                             <div className="absolute top-0 right-0 text-5xl font-black text-white/5 italic -mr-4 -mt-4 select-none uppercase">Vision</div>
-                            <h3 className="text-[9px] font-black text-brand-red uppercase tracking-[0.4em] relative z-10">Visi / Perspektif</h3>
+                            <h3 className="text-[12px] font-black text-brand-red uppercase tracking-[0.4em] relative z-10">Visi</h3>
                             <p className="text-lg md:text-xl font-black text-white italic leading-tight relative z-10">
                                 "{about.vision}"
                             </p>
                         </div>
 
-                        <div className="space-y-5 p-4 lg:pl-8">
-                            <h3 className="text-[9px] font-black text-brand-gold uppercase tracking-[0.4em]">Misi / Eksekusi</h3>
-                            <div className="text-sm md:text-base font-bold text-brand-black/70 dark:text-brand-white/60 leading-relaxed whitespace-pre-line border-l-3 border-brand-red pl-6 transition-colors">
-                                {about.mission}
+                        <div className="space-y-5 p-8 bg-brand-black rounded-3xl relative overflow-hidden group shadow-xl">
+                            <div className="absolute top-0 right-0 text-5xl font-black text-white/5 italic -mr-4 -mt-4 select-none uppercase">Mission</div>
+                            <h3 className="text-[12px] font-black text-brand-gold uppercase tracking-[0.4em] relative z-10">Misi</h3>
+                            <div className="text-lg md:text-xl font-black text-white italic leading-tight relative z-10 whitespace-pre-line">
+                                "{about.mission}"
                             </div>
                         </div>
                     </div>
@@ -173,7 +184,7 @@ export default function About({ about, moodboards = [] }) {
                         <div className="space-y-4">
                             <div className="flex gap-4 overflow-hidden relative">
                                 <div className="flex gap-4 animate-marquee-slow hover:pause cursor-default w-max">
-                                    {[...row1, ...row1].map((mb, idx) => (
+                                    {[...row1, ...row1, ...row1].map((mb, idx) => (
                                         <div
                                             key={`${mb.id}-r1-${idx}`}
                                             className="min-w-[110px] md:min-w-[200px] aspect-4/5 rounded-3xl overflow-hidden relative group shadow-2xl border border-black/5 dark:border-white/10"
@@ -200,7 +211,7 @@ export default function About({ about, moodboards = [] }) {
 
                             <div className="flex gap-4 overflow-hidden relative">
                                 <div className="flex gap-4 animate-marquee-reverse hover:pause cursor-default w-max">
-                                    {[...row2, ...row2].map((mb, idx) => (
+                                    {[...row2, ...row2, ...row2].map((mb, idx) => (
                                         <div
                                             key={`${mb.id}-r2-${idx}`}
                                             className="min-w-[110px] md:min-w-[200px] aspect-4/5 rounded-3xl overflow-hidden relative group shadow-2xl border border-black/5 dark:border-white/10"
@@ -302,7 +313,7 @@ export default function About({ about, moodboards = [] }) {
                 </div>
             )}
 
-            <style jsx>{`
+            <style>{`
                 @keyframes slow-zoom {
                     0% { transform: scale(1.1); }
                     100% { transform: scale(1.2); }
@@ -312,10 +323,10 @@ export default function About({ about, moodboards = [] }) {
                 }
                 @keyframes marquee-slow {
                     0% { transform: translateX(0); }
-                    100% { transform: translateX(-50%); }
+                    100% { transform: translateX(calc(-100% / 3)); }
                 }
                 .animate-marquee-slow {
-                    animation: marquee-slow 40s linear infinite;
+                    animation: marquee-slow 60s linear infinite;
                     will-change: transform;
                 }
                 @keyframes marquee {
@@ -327,11 +338,11 @@ export default function About({ about, moodboards = [] }) {
                     will-change: transform;
                 }
                 @keyframes marquee-reverse {
-                    0% { transform: translateX(-50%); }
+                    0% { transform: translateX(calc(-100% / 3)); }
                     100% { transform: translateX(0); }
                 }
                 .animate-marquee-reverse {
-                    animation: marquee-reverse 40s linear infinite;
+                    animation: marquee-reverse 60s linear infinite;
                     will-change: transform;
                 }
                 .hover\\:pause:hover {

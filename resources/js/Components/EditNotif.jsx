@@ -38,12 +38,12 @@ export default function EditNotif({
 
     return (
         <div
-            className="fixed top-4 right-4 z-[9999] transition-all duration-300 ease-out"
+            className="fixed top-4 right-4 z-[9999]"
             style={{
                 animation: 'slideInRight 0.3s ease-out',
             }}
         >
-            <style jsx>{`
+            <style>{`
                 @keyframes slideInRight {
                     from {
                         transform: translateX(100%);

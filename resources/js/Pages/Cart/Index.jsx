@@ -3,12 +3,14 @@ import { Head, Link, router } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
 import { TrashIcon, MinusIcon, PlusIcon, ShoppingBagIcon, XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import ConfirmModal from '@/Components/ConfirmModal';
+import EditNotif from '@/Components/EditNotif';
 
 export default function CartIndex({ carts, transactionHistory, uid }) {
     const [selectedItems, setSelectedItems] = useState([]);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState(null);
     const [processingDelete, setProcessingDelete] = useState(false);
+    const [showSuccessNotif, setShowSuccessNotif] = useState(false);
 
     // Toggle check for a single item
     const toggleItem = (id) => {
@@ -51,6 +53,9 @@ export default function CartIndex({ carts, transactionHistory, uid }) {
             headers: { 'X-Cart-UID': uid },
             data: { cart_uid: uid },
             preserveScroll: true,
+            onSuccess: () => {
+                setShowSuccessNotif(true);
+            },
             onFinish: () => {
                 setIsDeleteModalOpen(false);
                 setItemToDelete(null);
@@ -274,6 +279,14 @@ export default function CartIndex({ carts, transactionHistory, uid }) {
                 message="Yakin ingin menghapus paket ini dari keranjang belanja?"
                 processing={processingDelete}
                 variant="danger"
+            />
+
+            <EditNotif
+                show={showSuccessNotif}
+                onClose={() => setShowSuccessNotif(false)}
+                message="Item berhasil dihapus dari keranjang"
+                type="success"
+                duration={2000}
             />
         </div>
     );

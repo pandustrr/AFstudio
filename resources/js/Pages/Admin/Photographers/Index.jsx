@@ -3,6 +3,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Link, Head, router } from '@inertiajs/react';
 import { PlusIcon, PencilSquareIcon, TrashIcon, CalendarDaysIcon, UserIcon } from '@heroicons/react/24/outline';
 import ConfirmModal from '@/Components/ConfirmModal';
+import EditNotif from '@/Components/EditNotif';
 import Edit from './Edit';
 
 export default function Index({ photographers }) {
@@ -10,6 +11,7 @@ export default function Index({ photographers }) {
     const [editingFG, setEditingFG] = useState(null);
     const [deleteFG, setDeleteFG] = useState(null);
     const [processing, setProcessing] = useState(false);
+    const [showSuccessNotif, setShowSuccessNotif] = useState(false);
 
     const openModal = (fg = null) => {
         setEditingFG(fg);
@@ -25,7 +27,10 @@ export default function Index({ photographers }) {
         if (!deleteFG) return;
         setProcessing(true);
         router.delete(`/admin/photographers/${deleteFG.id}`, {
-            onSuccess: () => setDeleteFG(null),
+            onSuccess: () => {
+                setDeleteFG(null);
+                setShowSuccessNotif(true);
+            },
             onFinish: () => setProcessing(false)
         });
     };
@@ -128,6 +133,12 @@ export default function Index({ photographers }) {
                 message={`Apakah Anda yakin ingin menghapus akun ${deleteFG?.name}? Semua data sesi mereka akan tetap tersimpan namun akun tidak bisa digunakan.`}
                 variant="danger"
             />
-        </AdminLayout>
+            <EditNotif
+                show={showSuccessNotif}
+                onClose={() => setShowSuccessNotif(false)}
+                message="Fotografer berhasil dihapus"
+                type="success"
+                duration={2000}
+            />        </AdminLayout>
     );
 }
