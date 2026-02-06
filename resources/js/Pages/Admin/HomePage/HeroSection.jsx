@@ -15,8 +15,10 @@ export default function HeroSection({
     handleImageChange,
     handleRunningTextChange,
     addRunningTextItem,
-    removeRunningTextItem
+    removeRunningTextItem,
+    currentSubmitting
 }) {
+    const isSubmitting = currentSubmitting === 'hero_submit';
     return (
         <div className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-5 sm:p-6 space-y-5">
             <div className="flex items-center gap-3 border-b border-black/5 dark:border-white/5 pb-4 mb-4">
@@ -119,6 +121,17 @@ export default function HeroSection({
                     <p className="mt-3 text-[9px] uppercase font-bold text-brand-black/40 dark:text-brand-white/40">Teks ini akan muncul di banner berjalan halaman utama.</p>
                     {errors.running_text && <p className="text-red-500 text-[10px] mt-1">{errors.running_text}</p>}
                 </div>
+            </div>
+
+            <div className="pt-4 border-t border-black/5 dark:border-white/5">
+                <button
+                    type="submit"
+                    name="hero_submit"
+                    disabled={isSubmitting}
+                    className="w-full py-3 px-4 bg-brand-gold text-black rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-brand-gold/90 transition-colors disabled:opacity-50"
+                >
+                    {isSubmitting ? 'Menyimpan...' : 'Simpan Hero Section'}
+                </button>
             </div>
         </div>
     );

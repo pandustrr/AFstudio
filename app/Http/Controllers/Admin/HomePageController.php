@@ -39,8 +39,6 @@ class HomePageController extends Controller
             'hero_subtitle' => 'nullable|string|max:255',
             'hero_description' => 'nullable|string',
             'hero_image' => 'nullable|image|max:5120',
-            'cta_button_text' => 'nullable|string|max:255',
-            'about_button_text' => 'nullable|string|max:255',
             'running_text' => 'nullable|string',
             'gallery_title' => 'nullable|string|max:255',
             'gallery_subtitle' => 'nullable|string',
@@ -85,13 +83,35 @@ class HomePageController extends Controller
         $path = $request->file('image')->store('home-gallery', 'public');
         $maxOrder = HomePageGallery::max('order') ?? 0;
 
-        HomePageGallery::create([
+        $gallery = HomePageGallery::create([
             'image_path' => $path,
             'title' => $request->title,
             'order' => $maxOrder + 1,
         ]);
 
-        return back()->with('success', 'Gambar berhasil ditambahkan.');
+        return response()->json(['success' => true, 'message' => 'Gambar berhasil ditambahkan.', 'gallery' => $gallery]);
+    }
+
+    public function updateGallery(Request $request, HomePageGallery $gallery)
+    {
+        $validated = $request->validate([
+            'image' => 'nullable|image|max:5120',
+            'title' => 'nullable|string|max:255',
+            'order' => 'nullable|integer|min:1',
+        ]);
+
+        // Handle image update
+        if ($request->hasFile('image')) {
+            if ($gallery->image_path) {
+                Storage::disk('public')->delete($gallery->image_path);
+            }
+            $path = $request->file('image')->store('home-gallery', 'public');
+            $validated['image_path'] = $path;
+        }
+
+        $gallery->update($validated);
+
+        return response()->json(['success' => true, 'message' => 'Gambar berhasil diperbarui.', 'gallery' => $gallery]);
     }
 
     public function destroyGallery(HomePageGallery $gallery)
@@ -115,7 +135,21 @@ class HomePageController extends Controller
 
         $journey->update($validated);
 
-        return back()->with('success', 'Langkah perjalanan berhasil diperbarui.');
+        return response()->json(['success' => true, 'message' => 'Langkah perjalanan berhasil diperbarui.']);
+    }
+
+    public function storeJourney(Request $request)
+    {
+        $validated = $request->validate([
+            'step_number' => 'required|string|max:10',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'order' => 'nullable|integer|min:1',
+        ]);
+
+        JourneyStep::create($validated);
+
+        return response()->json(['success' => true, 'message' => 'Langkah perjalanan berhasil ditambahkan.']);
     }
 
     public function destroyJourney(JourneyStep $journey)
