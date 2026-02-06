@@ -5,12 +5,15 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
     plugins: [
-        react({
-            fastRefresh: true,
-        }),
         laravel({
             input: "resources/js/app.jsx",
             refresh: true,
+        }),
+        react({
+            fastRefresh: true,
+            babel: {
+                configFile: false,
+            },
         }),
         tailwindcss(),
     ],
