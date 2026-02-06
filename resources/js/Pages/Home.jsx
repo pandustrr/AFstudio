@@ -88,7 +88,7 @@ ${data.message}`;
                 <div className="relative z-10 text-center px-6 max-w-5xl w-full">
                     <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-brand-black/5 dark:bg-white/5 backdrop-blur-md rounded-full border border-black/5 dark:border-white/10 mb-6 lg:mb-8 animate-fade-in group hover:border-brand-gold/30 transition-all cursor-default shadow-sm">
                         <SparklesIcon className="w-3.5 h-3.5 text-brand-gold animate-soft-pulse" />
-                        <span className="text-[8px] lg:text-[9px] font-black text-brand-black/60 dark:text-brand-white/60 uppercase tracking-[0.3em]">Mengabadikan Warisan Visual</span>
+                        <span className="text-[8px] lg:text-[9px] font-black text-brand-black/60 dark:text-brand-white/60 uppercase tracking-[0.3em]">Mengabadikan Momen Berharga</span>
                     </div>
 
                     <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-[100px] font-black text-brand-black dark:text-brand-white mb-6 lg:mb-8 tracking-[-0.05em] uppercase leading-[0.9] animate-fade-in-up">

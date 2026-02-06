@@ -5,6 +5,7 @@ import { EyeIcon, PencilSquareIcon, TrashIcon, XMarkIcon, ChevronDownIcon } from
 import EditModal from './EditModal';
 import ViewModal from './ViewModal';
 import ConfirmModal from '@/Components/ConfirmModal';
+import EditNotif from '@/Components/EditNotif';
 
 
 export default function Index({ sessions, filters, options }) {
@@ -12,6 +13,7 @@ export default function Index({ sessions, filters, options }) {
     const [editSession, setEditSession] = useState(null);
     const [deleteSession, setDeleteSession] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [showSuccessNotif, setShowSuccessNotif] = useState(false);
 
     const statuses = [
         { id: 'all', label: 'Semua', color: 'bg-black/5' },
@@ -73,6 +75,7 @@ export default function Index({ sessions, filters, options }) {
             onSuccess: () => {
                 setDeleteSession(null);
                 setIsDeleting(false);
+                setShowSuccessNotif(true);
             },
             onError: () => setIsDeleting(false)
         });
@@ -310,6 +313,15 @@ export default function Index({ sessions, filters, options }) {
                     title="Hapus Request"
                     message={`Apakah Anda yakin ingin menghapus request dari ${deleteSession?.customer_name}? Data foto dan seleksi akan ikut terhapus.`}
                     variant="danger"
+                />
+
+                {/* Success Notification */}
+                <EditNotif
+                    show={showSuccessNotif}
+                    onClose={() => setShowSuccessNotif(false)}
+                    message="Request berhasil dihapus"
+                    type="success"
+                    duration={2000}
                 />
             </div>
         </AdminLayout>

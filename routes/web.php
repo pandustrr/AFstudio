@@ -114,7 +114,9 @@ Route::prefix('admin')->group(function () {
         Route::get('/home', [\App\Http\Controllers\Admin\HomePageController::class, 'index'])->name('admin.home.index');
         Route::post('/home', [\App\Http\Controllers\Admin\HomePageController::class, 'update'])->name('admin.home.update');
         Route::post('/home/gallery', [\App\Http\Controllers\Admin\HomePageController::class, 'storeGallery'])->name('admin.home.gallery.store');
+        Route::patch('/home/gallery/{gallery}', [\App\Http\Controllers\Admin\HomePageController::class, 'updateGallery'])->name('admin.home.gallery.update');
         Route::delete('/home/gallery/{gallery}', [\App\Http\Controllers\Admin\HomePageController::class, 'destroyGallery'])->name('admin.home.gallery.destroy');
+        Route::post('/home/journey', [\App\Http\Controllers\Admin\HomePageController::class, 'storeJourney'])->name('admin.home.journey.store');
         Route::patch('/home/journey/{journey}', [\App\Http\Controllers\Admin\HomePageController::class, 'updateJourney'])->name('admin.home.journey.update');
         Route::delete('/home/journey/{journey}', [\App\Http\Controllers\Admin\HomePageController::class, 'destroyJourney'])->name('admin.home.journey.destroy');
 

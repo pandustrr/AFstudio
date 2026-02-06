@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RoomSeeder::class,
             RoomScheduleSeeder::class,
             PhotoSessionSeeder::class,
+            JourneyStepSeeder::class,
             // PricelistSeeder::class,
         ]);
     }

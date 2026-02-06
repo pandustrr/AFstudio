@@ -43,6 +43,12 @@ class AboutController extends Controller
             'instagram' => 'nullable|string',
             'address' => 'nullable|string',
             'maps_link' => 'nullable|string',
+            'story_subtitle' => 'nullable|string|max:255',
+            'story_title' => 'nullable|string|max:255',
+            'stats' => 'nullable|array',
+            'dna' => 'nullable|array',
+            'cta_title' => 'nullable|string|max:255',
+            'cta_subtitle' => 'nullable|string|max:255',
         ]);
 
         if ($request->hasFile('image')) {
