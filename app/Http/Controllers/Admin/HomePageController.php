@@ -34,8 +34,9 @@ class HomePageController extends Controller
     {
         $homePage = HomePage::firstOrFail();
 
-        $validated = $request->validate([
-            'hero_title' => 'required|string|max:255',
+        // Build validation rules based on what's being submitted
+        $rules = [
+            'hero_title' => 'nullable|string|max:255',
             'hero_subtitle' => 'nullable|string|max:255',
             'hero_description' => 'nullable|string',
             'hero_image' => 'nullable|image|max:5120',
@@ -58,7 +59,9 @@ class HomePageController extends Controller
             'contact_form_placeholder' => 'nullable|string|max:255',
             'contact_button_text' => 'nullable|string|max:255',
             'admin_whatsapp' => 'nullable|string|max:20',
-        ]);
+        ];
+
+        $validated = $request->validate($rules);
 
         if ($request->hasFile('hero_image')) {
             if ($homePage->hero_image_path) {
@@ -70,91 +73,169 @@ class HomePageController extends Controller
 
         $homePage->update($validated);
 
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Halaman Home berhasil diperbarui.']);
+        }
+
         return back()->with('success', 'Halaman Home berhasil diperbarui.');
     }
 
     public function storeGallery(Request $request)
     {
-        $request->validate([
-            'image' => 'required|image|max:5120',
-            'title' => 'nullable|string|max:255',
-        ]);
+        try {
+            $request->validate([
+                'image' => 'required|image|max:5120',
+                'title' => 'nullable|string|max:255',
+            ]);
 
-        $path = $request->file('image')->store('home-gallery', 'public');
-        $maxOrder = HomePageGallery::max('order') ?? 0;
+            $path = $request->file('image')->store('home-gallery', 'public');
+            $maxOrder = HomePageGallery::max('order') ?? 0;
 
-        $gallery = HomePageGallery::create([
-            'image_path' => $path,
-            'title' => $request->title,
-            'order' => $maxOrder + 1,
-        ]);
+            $gallery = HomePageGallery::create([
+                'image_path' => $path,
+                'title' => $request->title,
+                'order' => $maxOrder + 1,
+            ]);
 
-        return response()->json(['success' => true, 'message' => 'Gambar berhasil ditambahkan.', 'gallery' => $gallery]);
+            if ($request->expectsJson()) {
+                return response()->json(['success' => true, 'message' => 'Gambar berhasil ditambahkan.', 'gallery' => $gallery]);
+            }
+
+            return back()->with('success', 'Gambar berhasil ditambahkan.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            throw $e;
+        }
     }
 
     public function updateGallery(Request $request, HomePageGallery $gallery)
     {
-        $validated = $request->validate([
-            'image' => 'nullable|image|max:5120',
-            'title' => 'nullable|string|max:255',
-            'order' => 'nullable|integer|min:1',
-        ]);
+        try {
+            $validated = $request->validate([
+                'image' => 'nullable|image|max:5120',
+                'title' => 'nullable|string|max:255',
+                'order' => 'nullable|integer|min:1',
+            ]);
 
-        // Handle image update
-        if ($request->hasFile('image')) {
-            if ($gallery->image_path) {
-                Storage::disk('public')->delete($gallery->image_path);
+            // Handle image update
+            if ($request->hasFile('image')) {
+                if ($gallery->image_path) {
+                    Storage::disk('public')->delete($gallery->image_path);
+                }
+                $path = $request->file('image')->store('home-gallery', 'public');
+                $validated['image_path'] = $path;
             }
-            $path = $request->file('image')->store('home-gallery', 'public');
-            $validated['image_path'] = $path;
+
+            $gallery->update($validated);
+
+            if ($request->expectsJson()) {
+                return response()->json(['success' => true, 'message' => 'Gambar berhasil diperbarui.', 'gallery' => $gallery]);
+            }
+
+            return back()->with('success', 'Gambar berhasil diperbarui.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            throw $e;
         }
-
-        $gallery->update($validated);
-
-        return response()->json(['success' => true, 'message' => 'Gambar berhasil diperbarui.', 'gallery' => $gallery]);
     }
 
-    public function destroyGallery(HomePageGallery $gallery)
+    public function destroyGallery(Request $request, HomePageGallery $gallery)
     {
         if ($gallery->image_path) {
             Storage::disk('public')->delete($gallery->image_path);
         }
         $gallery->delete();
 
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Gambar berhasil dihapus.']);
+        }
+
         return back()->with('success', 'Gambar berhasil dihapus.');
     }
 
     public function updateJourney(Request $request, JourneyStep $journey)
     {
-        $validated = $request->validate([
-            'step_number' => 'required|string|max:10',
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'order' => 'nullable|integer|min:1',
-        ]);
+        try {
+            $validated = $request->validate([
+                'step_number' => 'required|string|max:10',
+                'title' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'order' => 'nullable|integer|min:1',
+            ]);
 
-        $journey->update($validated);
+            $journey->update($validated);
 
-        return response()->json(['success' => true, 'message' => 'Langkah perjalanan berhasil diperbarui.']);
+            if ($request->expectsJson()) {
+                return response()->json(['success' => true, 'message' => 'Langkah perjalanan berhasil diperbarui.']);
+            }
+
+            return back()->with('success', 'Langkah perjalanan berhasil diperbarui.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            throw $e;
+        }
     }
 
     public function storeJourney(Request $request)
     {
-        $validated = $request->validate([
-            'step_number' => 'required|string|max:10',
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'order' => 'nullable|integer|min:1',
-        ]);
+        try {
+            $validated = $request->validate([
+                'step_number' => 'required|string|max:10',
+                'title' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'order' => 'nullable|integer|min:1',
+            ]);
 
-        JourneyStep::create($validated);
+            // Auto-generate order if not provided
+            if (empty($validated['order'])) {
+                $maxOrder = JourneyStep::max('order') ?? 0;
+                $validated['order'] = $maxOrder + 1;
+            }
 
-        return response()->json(['success' => true, 'message' => 'Langkah perjalanan berhasil ditambahkan.']);
+            $journey = JourneyStep::create($validated);
+
+            if ($request->expectsJson()) {
+                return response()->json(['success' => true, 'message' => 'Langkah perjalanan berhasil ditambahkan.', 'journey' => $journey]);
+            }
+
+            return back()->with('success', 'Langkah perjalanan berhasil ditambahkan.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            throw $e;
+        }
     }
 
-    public function destroyJourney(JourneyStep $journey)
+    public function destroyJourney(Request $request, JourneyStep $journey)
     {
         $journey->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Langkah perjalanan berhasil dihapus.']);
+        }
 
         return back()->with('success', 'Langkah perjalanan berhasil dihapus.');
     }
