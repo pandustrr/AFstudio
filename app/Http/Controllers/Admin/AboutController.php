@@ -36,6 +36,8 @@ class AboutController extends Controller
             'image' => 'nullable|image|max:2048',
             'vision' => 'nullable|string',
             'mission' => 'nullable|string',
+            'story_subtitle' => 'nullable|string|max:255',
+            'story_title' => 'nullable|string',
             'email' => 'nullable|string',
             'phone' => 'nullable|string',
             'instagram' => 'nullable|string',
