@@ -1,6 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import ConfirmModal from '@/Components/ConfirmModal';
+import EditNotif from '@/Components/EditNotif';
 import {
     MagnifyingGlassIcon,
     EyeIcon,
@@ -9,13 +11,35 @@ import {
     CalendarDaysIcon,
     XMarkIcon,
     ChevronDownIcon,
-    DocumentArrowDownIcon
+    DocumentArrowDownIcon,
+    TrashIcon,
+    PhotoIcon
 } from '@heroicons/react/24/outline';
 
 export default function BookingIndex({ bookingItems, filters, options, photographers = [] }) {
+    const { flash } = usePage().props;
     const [search, setSearch] = useState(filters?.search || '');
 
+    // Modal State
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        variant: 'danger'
+    });
 
+    // Notification State
+    const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
+
+    // Handle Flash Messages
+    useEffect(() => {
+        if (flash?.success) {
+            setNotif({ show: true, message: flash.success, type: 'success' });
+        } else if (flash?.error) {
+            setNotif({ show: true, message: flash.error, type: 'error' });
+        }
+    }, [flash]);
 
     const monthNames = [
         "", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -48,16 +72,85 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
     };
 
     const updateStatus = (id, newStatus) => {
-        if (confirm(`Are you sure you want to change status to ${newStatus}?`)) {
-            router.patch(`/admin/bookings/${id}`, {
-                status: newStatus
-            }, {
-                preserveScroll: true
-            });
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'Update Status',
+            message: `Apakah Anda yakin ingin mengubah status ke ${newStatus}?`,
+            variant: 'warning',
+            onConfirm: () => {
+                router.patch(`/admin/bookings/${id}`, { status: newStatus }, {
+                    preserveScroll: true,
+                    onSuccess: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+                });
+            }
+        });
     };
 
+    const deleteBooking = (id) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Hapus Booking',
+            message: 'Apakah Anda yakin ingin menghapus data booking ini secara permanen? Sesi fotografer akan dilepas.',
+            variant: 'danger',
+            onConfirm: () => {
+                router.delete(`/admin/bookings/${id}`, {
+                    preserveScroll: true,
+                    onSuccess: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+                });
+            }
+        });
+    };
 
+    const deleteProof = (id) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Hapus Bukti',
+            message: 'Apakah Anda yakin ingin menghapus gambar bukti pembayaran ini?',
+            variant: 'danger',
+            onConfirm: () => {
+                router.delete(`/admin/bookings/${id}/payment-proof`, {
+                    preserveScroll: true,
+                    onSuccess: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+                });
+            }
+        });
+    };
+
+    const bulkDeleteAll = () => {
+        const currentStatus = filters.status || 'all';
+        setConfirmModal({
+            isOpen: true,
+            title: 'Bulk Delete Booking',
+            message: `PERINGATAN! Anda akan menghapus SEMUA booking dengan status [${currentStatus}] sesuai filter. Lanjutkan?`,
+            variant: 'danger',
+            onConfirm: () => {
+                router.post('/admin/bookings-bulk-delete', {
+                    status: currentStatus, search: filters.search
+                }, {
+                    preserveScroll: true,
+                    onSuccess: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+                });
+            }
+        });
+    };
+
+    const bulkDeleteAllProofs = () => {
+        const currentStatus = filters.status || 'all';
+        setConfirmModal({
+            isOpen: true,
+            title: 'Bulk Delete Proofs',
+            message: `Anda akan menghapus SEMUA gambar bukti pembayaran pada list [${currentStatus}]. Lanjutkan?`,
+            variant: 'danger',
+            onConfirm: () => {
+                router.post('/admin/bookings-bulk-delete-proofs', {
+                    status: currentStatus
+                }, {
+                    preserveScroll: true,
+                    onSuccess: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
+                });
+            }
+        });
+    };
 
     const setToday = () => {
         const today = new Date();
@@ -128,6 +221,22 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
+                            {(filters.status === 'completed' || filters.status === 'cancelled') && (
+                                <>
+                                    <button
+                                        onClick={bulkDeleteAllProofs}
+                                        className="px-4 py-2 border border-red-200 text-red-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-red-50 transition-all flex items-center gap-2"
+                                    >
+                                        <PhotoIcon className="w-3.5 h-3.5" /> Hapus Semua Bukti
+                                    </button>
+                                    <button
+                                        onClick={bulkDeleteAll}
+                                        className="px-4 py-2 bg-red-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-red-700 transition-all flex items-center gap-2 shadow-lg shadow-red-500/20"
+                                    >
+                                        <TrashIcon className="w-3.5 h-3.5" /> Hapus Semua Booking
+                                    </button>
+                                </>
+                            )}
                             <button
                                 onClick={resetFilters}
                                 className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-red-100 transition-all flex items-center gap-2"
@@ -328,6 +437,20 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
                                                             <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-colors flex items-center justify-center">
                                                                 <MagnifyingGlassIcon className="w-6 h-6 text-white opacity-0 group-hover/img:opacity-100 transition-opacity" />
                                                             </div>
+
+                                                            {/* Delete Proof Button */}
+                                                            {(filters.status === 'completed' || filters.status === 'cancelled') && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        deleteProof(item.booking.id);
+                                                                    }}
+                                                                    className="absolute top-2 right-2 p-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-lg backdrop-blur-sm opacity-0 group-hover/img:opacity-100 transition-all z-20"
+                                                                    title="Hapus Bukti Pembayaran"
+                                                                >
+                                                                    <TrashIcon className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            )}
                                                         </div>
                                                         <div className="mt-2 flex flex-col gap-2">
                                                             {item.booking.status === 'pending' ? (
@@ -368,20 +491,6 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
                                                         <p className="font-bold text-[11px] text-brand-black dark:text-brand-white truncate uppercase tracking-tighter mb-1">
                                                             <span className="font-mono text-brand-red">{item.booking?.booking_code || '---'}</span> • {item.booking?.name || 'Unknown'}
                                                         </p>
-                                                        {item.booking?.payment_proof && item.booking.payment_proof.length > 0 ? (
-                                                            <span className={`inline-block px-2 py-0.5 rounded text-[7px] font-black uppercase ${item.booking.payment_proof[0].status === 'verified'
-                                                                ? 'bg-green-100 text-green-700'
-                                                                : item.booking.payment_proof[0].status === 'rejected'
-                                                                    ? 'bg-red-100 text-red-700'
-                                                                    : 'bg-yellow-100 text-yellow-700'
-                                                                }`}>
-                                                                Proof: {item.booking.payment_proof[0].status}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-block px-2 py-0.5 rounded text-[7px] font-black uppercase bg-gray-100 text-gray-700">
-                                                                No Proof
-                                                            </span>
-                                                        )}
                                                     </div>
                                                     {item.booking?.id && (
                                                         <div className="flex items-center gap-1.5 shrink-0">
@@ -399,6 +508,15 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
                                                             >
                                                                 <EyeIcon className="w-4 h-4" />
                                                             </Link>
+                                                            {(filters.status === 'completed' || filters.status === 'cancelled') && (
+                                                                <button
+                                                                    onClick={() => deleteBooking(item.booking.id)}
+                                                                    className="bg-red-500 text-white p-2 rounded-xl hover:bg-red-600 hover:scale-110 active:scale-95 transition-all shadow-md"
+                                                                    title="Hapus Booking"
+                                                                >
+                                                                    <TrashIcon className="w-4 h-4" />
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
@@ -437,6 +555,23 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
                     )}
                 </div>
             </div>
+
+            {/* Modals & Notifications */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                variant={confirmModal.variant}
+            />
+
+            <EditNotif
+                show={notif.show}
+                message={notif.message}
+                type={notif.type}
+                onClose={() => setNotif(prev => ({ ...prev, show: false }))}
+            />
         </AdminLayout >
     );
 }

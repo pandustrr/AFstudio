@@ -56,9 +56,11 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn() => $request->session()->get('success'),
                 'error' => fn() => $request->session()->get('error'),
+                'booking' => fn() => $request->session()->get('booking'),
+                'last_added_id' => fn() => $request->session()->get('last_added_id'),
             ],
             'settings' => [
-                'admin_whatsapp' => \App\Models\HomePage::first()?->admin_whatsapp ?? '6285134363956',
+                'admin_whatsapp' => \App\Models\HomePage::first()?->admin_whatsapp ?? '6282232586727',
             ],
         ];
     }

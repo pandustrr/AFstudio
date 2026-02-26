@@ -130,9 +130,12 @@ Route::prefix('admin')->group(function () {
         // Bookings
         Route::get('/bookings/{booking}/invoice', [\App\Http\Controllers\Admin\BookingController::class, 'downloadInvoice'])->name('admin.bookings.invoice');
         Route::resource('bookings', \App\Http\Controllers\Admin\BookingController::class)
-            ->only(['index', 'show', 'update'])
+            ->only(['index', 'show', 'update', 'destroy'])
             ->names('admin.bookings')
             ->parameters(['bookings' => 'booking']);
+        Route::delete('/bookings/{booking}/payment-proof', [\App\Http\Controllers\Admin\BookingController::class, 'deletePaymentProof'])->name('admin.bookings.delete-payment-proof');
+        Route::post('/bookings-bulk-delete', [\App\Http\Controllers\Admin\BookingController::class, 'bulkDelete'])->name('admin.bookings.bulk-delete');
+        Route::post('/bookings-bulk-delete-proofs', [\App\Http\Controllers\Admin\BookingController::class, 'bulkDeleteProofs'])->name('admin.bookings.bulk-delete-proofs');
         Route::patch('/booking-items/{item}', [\App\Http\Controllers\Admin\BookingController::class, 'updateItem'])->name('admin.booking-items.update');
 
         Route::resource('photographers', \App\Http\Controllers\Admin\PhotographerController::class)
@@ -190,4 +193,39 @@ Route::get('/fix-storage', function () {
     } catch (\Exception $e) {
         return "Error: " . $e->getMessage();
     }
+});
+
+Route::get('/clear-everything', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('route:clear');
+        \Illuminate\Support\Facades\Artisan::call('config:clear');
+        \Illuminate\Support\Facades\Artisan::call('cache:clear');
+        \Illuminate\Support\Facades\Artisan::call('view:clear');
+
+        // Coba reset OPcache jika tersedia
+        if (function_exists('opcache_reset')) {
+            opcache_reset();
+        }
+
+        return "Semua cache (Route, Config, Cache, View) & OPcache BERHASIL dibersihkan! Silakan coba lagi fiturnya.";
+    } catch (\Exception $e) {
+        return "Gagal membersihkan cache: " . $e->getMessage();
+    }
+});
+
+Route::get('/debug-controller', function () {
+    $class = \App\Http\Controllers\Admin\BookingController::class;
+    $reflection = new \ReflectionClass($class);
+    $methods = array_map(fn($m) => $m->name, $reflection->getMethods());
+    $filePath = $reflection->getFileName();
+    $fileTime = date('Y-m-d H:i:s', filemtime($filePath));
+
+    return [
+        'class' => $class,
+        'file_path' => $filePath,
+        'last_modified' => $fileTime,
+        'has_bulkDelete' => in_array('bulkDelete', $methods),
+        'has_bulkDeleteProofs' => in_array('bulkDeleteProofs', $methods),
+        'available_methods' => $methods
+    ];
 });

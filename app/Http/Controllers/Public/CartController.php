@@ -269,14 +269,13 @@ class CartController extends Controller
             $data['end_time'] = $endTime->format('H:i');
         }
 
-        Cart::create($data);
+        $cart = Cart::create($data);
 
-        // Return proper response for Inertia
-        if ($request->wantsJson() || $request->header('X-Inertia')) {
-            return back()->with('success', 'Berhasil ditambahkan ke keranjang!');
-        }
-
-        return redirect()->back()->with('success', 'Berhasil ditambahkan ke keranjang!');
+        // Flash ID barang yang baru dibuat agar frontend bisa mengisolasinya
+        return redirect()->back()->with([
+            'success' => 'Berhasil ditambahkan ke keranjang!',
+            'last_added_id' => $cart->id
+        ]);
     }
 
     /**

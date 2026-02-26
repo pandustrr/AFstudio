@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
-import { TrashIcon, MinusIcon, PlusIcon, ShoppingBagIcon, XMarkIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { TrashIcon, MinusIcon, PlusIcon, ShoppingBagIcon, XMarkIcon, ChevronDownIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
 import ConfirmModal from '@/Components/ConfirmModal';
 import EditNotif from '@/Components/EditNotif';
 
@@ -220,12 +220,14 @@ export default function CartIndex({ carts, transactionHistory, uid }) {
                                     </div>
                                     <button
                                         disabled={selectedItems.length === 0}
-                                        className="px-3 md:px-6 py-2 md:py-3 bg-brand-red text-white text-[10px] md:text-xs font-black uppercase tracking-widest rounded-lg md:rounded-xl hover:bg-brand-gold hover:text-brand-black transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                        className="px-3 md:px-6 py-2 md:py-3 bg-brand-red text-white text-[10px] md:text-xs font-black uppercase tracking-widest rounded-lg md:rounded-xl hover:bg-brand-gold hover:text-brand-black transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2"
                                         onClick={() => {
                                             const uid = localStorage.getItem('afstudio_cart_uid');
-                                            router.visit(uid ? `/checkout?uid=${uid}` : '/checkout');
+                                            const itemIds = selectedItems.join(',');
+                                            router.visit(uid ? `/checkout?uid=${uid}&cart_item_ids=${itemIds}` : `/checkout?cart_item_ids=${itemIds}`);
                                         }}
                                     >
+                                        <ShoppingCartIcon className="w-4 h-4" />
                                         Checkout
                                     </button>
                                 </div>
@@ -255,13 +257,15 @@ export default function CartIndex({ carts, transactionHistory, uid }) {
                                         </div>
                                         <button
                                             disabled={selectedItems.length === 0}
-                                            className="px-8 py-3 bg-brand-red text-white text-xs md:text-sm font-black uppercase tracking-widest rounded-xl hover:bg-brand-gold hover:text-brand-black transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="px-8 py-3 bg-brand-red text-white text-xs md:text-sm font-black uppercase tracking-widest rounded-xl hover:bg-brand-gold hover:text-brand-black transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                             onClick={() => {
                                                 const uid = localStorage.getItem('afstudio_cart_uid');
-                                                router.visit(uid ? `/checkout?uid=${uid}` : '/checkout');
+                                                const itemIds = selectedItems.join(',');
+                                                router.visit(uid ? `/checkout?uid=${uid}&cart_item_ids=${itemIds}` : `/checkout?cart_item_ids=${itemIds}`);
                                             }}
                                         >
-                                            Checkout
+                                            <ShoppingCartIcon className="w-5 h-5" />
+                                            Checkout Selected ({selectedItems.length})
                                         </button>
                                     </div>
                                 </div>
