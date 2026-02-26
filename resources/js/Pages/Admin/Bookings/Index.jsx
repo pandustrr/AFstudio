@@ -124,8 +124,9 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
             message: `PERINGATAN! Anda akan menghapus SEMUA booking dengan status [${currentStatus}] sesuai filter. Lanjutkan?`,
             variant: 'danger',
             onConfirm: () => {
-                router.delete('/admin/bookings-bulk-delete', {
-                    data: { status: currentStatus, search: filters.search },
+                router.post('/admin/bookings-bulk-delete', {
+                    status: currentStatus, search: filters.search
+                }, {
                     preserveScroll: true,
                     onSuccess: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
                 });
@@ -141,8 +142,9 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
             message: `Anda akan menghapus SEMUA gambar bukti pembayaran pada list [${currentStatus}]. Lanjutkan?`,
             variant: 'danger',
             onConfirm: () => {
-                router.delete('/admin/bookings-bulk-delete-proofs', {
-                    data: { status: currentStatus },
+                router.post('/admin/bookings-bulk-delete-proofs', {
+                    status: currentStatus
+                }, {
                     preserveScroll: true,
                     onSuccess: () => setConfirmModal(prev => ({ ...prev, isOpen: false }))
                 });
@@ -489,20 +491,6 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
                                                         <p className="font-bold text-[11px] text-brand-black dark:text-brand-white truncate uppercase tracking-tighter mb-1">
                                                             <span className="font-mono text-brand-red">{item.booking?.booking_code || '---'}</span> • {item.booking?.name || 'Unknown'}
                                                         </p>
-                                                        {item.booking?.payment_proof && item.booking.payment_proof.length > 0 ? (
-                                                            <span className={`inline-block px-2 py-0.5 rounded text-[7px] font-black uppercase ${item.booking.payment_proof[0].status === 'verified'
-                                                                ? 'bg-green-100 text-green-700'
-                                                                : item.booking.payment_proof[0].status === 'rejected'
-                                                                    ? 'bg-red-100 text-red-700'
-                                                                    : 'bg-yellow-100 text-yellow-700'
-                                                                }`}>
-                                                                Proof: {item.booking.payment_proof[0].status}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-block px-2 py-0.5 rounded text-[7px] font-black uppercase bg-gray-100 text-gray-700">
-                                                                No Proof
-                                                            </span>
-                                                        )}
                                                     </div>
                                                     {item.booking?.id && (
                                                         <div className="flex items-center gap-1.5 shrink-0">

@@ -10,6 +10,10 @@ use Inertia\Inertia;
 use App\Models\PhotoEditing;
 use App\Models\BookingItem;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use App\Models\PaymentProof;
+use Illuminate\Support\Facades\Log;
 
 class BookingController extends Controller
 {
@@ -29,8 +33,6 @@ class BookingController extends Controller
         if ($photographerId) {
             $query->where('photographer_id', $photographerId);
         }
-
-
 
         // Search in Booking metadata
         if ($search) {
@@ -77,12 +79,6 @@ class BookingController extends Controller
             ->pluck('year')
             ->toArray();
 
-        // Ensure current filtered year is in options
-        if ($year && !in_array((int)$year, $availableYears)) {
-            $availableYears[] = (int)$year;
-            rsort($availableYears);
-        }
-
         $availableMonths = [];
         if ($year) {
             $availableMonths = \App\Models\BookingItem::whereYear('scheduled_date', $year)
@@ -91,12 +87,6 @@ class BookingController extends Controller
                 ->orderBy('month', 'desc')
                 ->pluck('month')
                 ->toArray();
-
-            // Ensure current filtered month is in options
-            if ($month && !in_array((int)$month, $availableMonths)) {
-                $availableMonths[] = (int)$month;
-                rsort($availableMonths);
-            }
         }
 
         $availableDays = [];
@@ -108,12 +98,6 @@ class BookingController extends Controller
                 ->orderBy('day', 'desc')
                 ->pluck('day')
                 ->toArray();
-
-            // Ensure current filtered day is in options
-            if ($day && !in_array((int)$day, $availableDays)) {
-                $availableDays[] = (int)$day;
-                rsort($availableDays);
-            }
         }
 
         return Inertia::render('Admin/Bookings/Index', [
@@ -152,7 +136,7 @@ class BookingController extends Controller
         ]);
 
         try {
-            \Illuminate\Support\Facades\DB::transaction(function () use ($request, $booking) {
+            DB::transaction(function () use ($request, $booking) {
                 $oldStatus = $booking->status;
                 $newStatus = $request->status;
 
@@ -160,17 +144,16 @@ class BookingController extends Controller
                     'status' => $newStatus,
                 ]);
 
-                // Release photographer slots if the new status is cancelled
+                // Handle photographer slots
                 if ($newStatus === 'cancelled') {
-                    // Get ALL items associated with this booking
-                    $itemIds = \Illuminate\Support\Facades\DB::table('booking_items')
+                    // Release photographer slots if the new status is cancelled
+                    $itemIds = DB::table('booking_items')
                         ->where('booking_id', $booking->id)
                         ->pluck('id')
                         ->toArray();
 
                     if (!empty($itemIds)) {
-                        // Use DB::table for maximum reliability and to bypass any Eloquent event issues
-                        \Illuminate\Support\Facades\DB::table('photographer_sessions')
+                        DB::table('photographer_sessions')
                             ->whereIn('booking_item_id', $itemIds)
                             ->update([
                                 'booking_item_id' => null,
@@ -179,58 +162,37 @@ class BookingController extends Controller
                                 'updated_at' => now()
                             ]);
                     }
+                } elseif ($oldStatus === 'cancelled' && $newStatus !== 'cancelled') {
+                    // Re-claim photographer slots if moving away from cancelled
+                    foreach ($booking->items as $item) {
+                        if ($item->photographer_id && $item->scheduled_date && $item->start_time && $item->end_time) {
+                            $startTime = \Carbon\Carbon::parse($item->start_time);
+                            $endTime = \Carbon\Carbon::parse($item->end_time);
+                            $date = $item->scheduled_date;
 
-                    // Additional safety: Release any session with this guest UID
-                    if ($booking->guest_uid) {
-                        \Illuminate\Support\Facades\DB::table('photographer_sessions')
-                            ->where('cart_uid', $booking->guest_uid)
-                            ->where('status', 'booked')
-                            ->update([
-                                'booking_item_id' => null,
-                                'status' => 'open',
-                                'cart_uid' => null,
-                                'updated_at' => now()
-                            ]);
-                    }
-                }
+                            $slots = [];
+                            $tempTime = clone $startTime;
+                            // Generate 30-min intervals between start and end time
+                            while ($tempTime->lt($endTime)) {
+                                $slots[] = $tempTime->format('H:i:s');
+                                $tempTime->addMinutes(30);
+                            }
 
-                // Handle Reset: Cancelled -> Pending
-                // We need to re-book the photographer slots if they are still available.
-                if ($oldStatus === 'cancelled' && $newStatus === 'pending') {
-                    $items = \App\Models\BookingItem::with('package')->where('booking_id', $booking->id)->get();
-                    $bookingUid = $booking->guest_uid ?? $booking->booking_code;
-
-                    foreach ($items as $item) {
-                        // Calculate required sessions based on package duration
-                        $durationMinutes = $item->package->duration ?? 60;
-                        $sessionsNeeded = ceil($durationMinutes / 30);
-
-                        // Generate required time slots
-                        $slots = [];
-                        $time = \Carbon\Carbon::createFromTimeString($item->start_time);
-                        for ($i = 0; $i < $sessionsNeeded; $i++) {
-                            $slots[] = $time->format('H:i:s');
-                            $time->addMinutes(30);
+                            if (!empty($slots)) {
+                                \App\Models\PhotographerSession::where('photographer_id', $item->photographer_id)
+                                    ->where('date', $date)
+                                    ->whereIn('start_time', $slots)
+                                    ->where(function ($q) use ($item) {
+                                        $q->where('status', 'open')
+                                            ->orWhere('booking_item_id', $item->id);
+                                    })
+                                    ->update([
+                                        'status' => 'booked',
+                                        'booking_item_id' => $item->id,
+                                        'updated_at' => now()
+                                    ]);
+                            }
                         }
-
-                        // Check availability
-                        $availableSessions = \App\Models\PhotographerSession::where('photographer_id', $item->photographer_id)
-                            ->where('date', $item->scheduled_date)
-                            ->whereIn('start_time', $slots)
-                            ->where('status', 'open')
-                            ->get();
-
-                        if ($availableSessions->count() !== count($slots)) {
-                            throw new \Exception("Gagal mereset booking: Slot waktu untuk fotografer sudah terisi oleh orang lain.");
-                        }
-
-                        // Re-book the sessions
-                        \App\Models\PhotographerSession::whereIn('id', $availableSessions->pluck('id'))
-                            ->update([
-                                'status' => 'booked',
-                                'booking_item_id' => $item->id,
-                                'cart_uid' => $bookingUid
-                            ]);
                     }
                 }
 
@@ -276,9 +238,7 @@ class BookingController extends Controller
             ->setOptions([
                 'isHtml5ParserEnabled' => true,
                 'isRemoteEnabled' => false,
-                'isFontSubsettingEnabled' => false,
-            ])
-            ->setWarnings(false);
+            ]);
 
         return $pdf->stream('Invoice-' . $booking->booking_code . '.pdf');
     }
@@ -286,15 +246,14 @@ class BookingController extends Controller
     public function destroy(Booking $booking)
     {
         try {
-            \Illuminate\Support\Facades\DB::transaction(function () use ($booking) {
-                // Release photographer slots
-                $itemIds = \Illuminate\Support\Facades\DB::table('booking_items')
+            DB::transaction(function () use ($booking) {
+                $itemIds = DB::table('booking_items')
                     ->where('booking_id', $booking->id)
                     ->pluck('id')
                     ->toArray();
 
                 if (!empty($itemIds)) {
-                    \Illuminate\Support\Facades\DB::table('photographer_sessions')
+                    DB::table('photographer_sessions')
                         ->whereIn('booking_item_id', $itemIds)
                         ->update([
                             'booking_item_id' => null,
@@ -304,10 +263,9 @@ class BookingController extends Controller
                         ]);
                 }
 
-                // Delete Payment Proof Files
                 foreach ($booking->paymentProof as $proof) {
-                    if ($proof->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($proof->file_path)) {
-                        \Illuminate\Support\Facades\Storage::disk('public')->delete($proof->file_path);
+                    if ($proof->file_path && Storage::disk('public')->exists($proof->file_path)) {
+                        Storage::disk('public')->delete($proof->file_path);
                     }
                     $proof->delete();
                 }
@@ -325,8 +283,8 @@ class BookingController extends Controller
     {
         try {
             foreach ($booking->paymentProof as $proof) {
-                if ($proof->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($proof->file_path)) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($proof->file_path);
+                if ($proof->file_path && Storage::disk('public')->exists($proof->file_path)) {
+                    Storage::disk('public')->delete($proof->file_path);
                 }
                 $proof->delete();
             }
@@ -340,32 +298,20 @@ class BookingController extends Controller
     public function bulkDelete(Request $request)
     {
         try {
-            $query = Booking::query();
-
-            // Apply same filters as in index() to determine what to delete
-            if ($request->status && $request->status !== 'all') {
-                $query->where('status', $request->status);
+            $status = $request->status;
+            if (!$status || $status === 'all') {
+                return redirect()->back()->with('error', 'Pilih filter status terlebih dahulu (Done atau Cancelled).');
             }
 
-            if ($request->search) {
-                $query->where(function ($q) use ($request) {
-                    $q->where('booking_code', 'like', "%{$request->search}%")
-                        ->orWhere('name', 'like', "%{$request->search}%");
-                });
-            }
+            $bookings = Booking::where('status', $status)
+                ->with(['paymentProof', 'items'])->limit(500)->get();
 
-            $bookings = $query->get();
-
-            \Illuminate\Support\Facades\DB::transaction(function () use ($bookings) {
-                foreach ($bookings as $booking) {
-                    // Release photographer slots
-                    $itemIds = \Illuminate\Support\Facades\DB::table('booking_items')
-                        ->where('booking_id', $booking->id)
-                        ->pluck('id')
-                        ->toArray();
-
+            $count = 0;
+            foreach ($bookings as $booking) {
+                DB::transaction(function () use ($booking, &$count) {
+                    $itemIds = $booking->items->pluck('id')->toArray();
                     if (!empty($itemIds)) {
-                        \Illuminate\Support\Facades\DB::table('photographer_sessions')
+                        DB::table('photographer_sessions')
                             ->whereIn('booking_item_id', $itemIds)
                             ->update([
                                 'booking_item_id' => null,
@@ -375,47 +321,53 @@ class BookingController extends Controller
                             ]);
                     }
 
-                    // Delete Payment Proof Files
                     foreach ($booking->paymentProof as $proof) {
-                        if ($proof->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($proof->file_path)) {
-                            \Illuminate\Support\Facades\Storage::disk('public')->delete($proof->file_path);
+                        if ($proof->file_path && Storage::disk('public')->exists($proof->file_path)) {
+                            Storage::disk('public')->delete($proof->file_path);
                         }
                         $proof->delete();
                     }
 
                     $booking->delete();
-                }
-            });
+                    $count++;
+                });
+            }
 
-            return redirect()->back()->with('success', 'Bulk delete successful.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Bulk delete failed: ' . $e->getMessage());
+            return redirect()->back()->with('success', "Berhasil menghapus $count data booking.");
+        } catch (\Throwable $e) {
+            Log::error('Bulk Delete Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal menghapus masal: ' . $e->getMessage());
         }
     }
 
     public function bulkDeleteProofs(Request $request)
     {
         try {
-            $query = \App\Models\PaymentProof::query();
-
-            if ($request->status && $request->status !== 'all') {
-                $query->whereHas('booking', function ($q) use ($request) {
-                    $q->where('status', $request->status);
-                });
+            $status = $request->status;
+            if (!$status || $status === 'all') {
+                return redirect()->back()->with('error', 'Pilih filter status terlebih dahulu (Done atau Cancelled).');
             }
 
-            $proofs = $query->get();
+            $query = PaymentProof::query();
+            $query->whereHas('booking', function ($q) use ($status) {
+                $q->where('status', $status);
+            });
+
+            $proofs = $query->limit(500)->get();
+            $count = 0;
 
             foreach ($proofs as $proof) {
-                if ($proof->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($proof->file_path)) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($proof->file_path);
+                if ($proof->file_path && Storage::disk('public')->exists($proof->file_path)) {
+                    Storage::disk('public')->delete($proof->file_path);
                 }
                 $proof->delete();
+                $count++;
             }
 
-            return redirect()->back()->with('success', 'Bulk proof deletion successful.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Bulk proof deletion failed: ' . $e->getMessage());
+            return redirect()->back()->with('success', "Berhasil menghapus $count gambar bukti pembayaran.");
+        } catch (\Throwable $e) {
+            Log::error('Bulk Delete Proofs Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal menghapus bukti masal: ' . $e->getMessage());
         }
     }
 }

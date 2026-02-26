@@ -24,15 +24,26 @@ class BookingController extends Controller
         }
 
         $uid = $request->header('X-Cart-UID') ?? $request->query('uid');
+        $cartItemId = $request->query('cart_item_id');
+        $cartItemIdsStr = $request->query('cart_item_ids');
 
         $query = Cart::with(['package.subCategory.category']);
 
-        if (Auth::check()) {
-            $query->where('user_id', Auth::id());
-        } elseif ($uid) {
+        // Jika ada UID, filter berdasarkan UID
+        if ($uid) {
             $query->where('cart_uid', $uid);
-        } else {
-            return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
+        } elseif (Auth::check()) {
+            $query->where('user_id', Auth::id());
+        }
+
+        // ISOLASI: Jika ada instruksi cart_item_id tunggal (dari Langsung Beli)
+        if ($cartItemId) {
+            $query->where('id', $cartItemId);
+        }
+        // ISOLASI: Jika ada instruksi banyak item (dari Halaman Keranjang)
+        elseif ($cartItemIdsStr) {
+            $itemIds = is_array($cartItemIdsStr) ? $cartItemIdsStr : explode(',', $cartItemIdsStr);
+            $query->whereIn('id', $itemIds);
         }
 
         // Check if we are redirected back from a successful store (with booking in flash)

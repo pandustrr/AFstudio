@@ -21,6 +21,15 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
 
     const user = auth?.user || {};
 
+    // Get UID from URL first (for Direct Buy), fallback to localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const uidFromUrl = urlParams.get('uid');
+
+    // Jika ada UID di URL, pastikan tersimpan di localStorage agar sinkron
+    if (uidFromUrl && uidFromUrl.includes('-')) {
+        localStorage.setItem('afstudio_cart_uid', uidFromUrl);
+    }
+
     const { data, setData, post, processing, errors } = useForm({
         name: user.name || localStorage.getItem('afstudio_customer_name') || '',
         university: '',
@@ -29,7 +38,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
         location: '',
         notes: '',
         referral_code: '',
-        cart_uid: localStorage.getItem('afstudio_cart_uid') || '',
+        cart_uid: uidFromUrl || localStorage.getItem('afstudio_cart_uid') || '',
         proof_file: null,
     });
 
@@ -474,8 +483,6 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                                             Scan QRIS to Pay DP
                                         </h2>
                                     </div>
-
-                                    <p className="text-center font-black text-brand-red mb-4 text-xl italic tracking-tighter">kiw</p>
 
                                     <div className="bg-white p-4 rounded-xl mb-6 mx-auto w-full flex items-center justify-center border border-black/10 shadow-inner">
                                         <img src="/images/qris-afstudio.jpeg" alt="QRIS AF Studio" className="w-full h-auto object-contain rounded-lg shadow-sm" />

@@ -141,8 +141,20 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     }, [date, photographerId]);
 
     // Hoisted function to avoid ReferenceError
-    function generateAndStoreUID() {
-        // Generate a random 5-digit number
+    function getOrCreateUID() {
+        // 1. Check current localStorage
+        let uid = localStorage.getItem('afstudio_cart_uid');
+        if (uid && uid.includes('-')) return uid;
+
+        // 2. Check URL (in case someone shared a checkout link)
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlUid = urlParams.get('uid');
+        if (urlUid && urlUid.includes('-')) {
+            localStorage.setItem('afstudio_cart_uid', urlUid);
+            return urlUid;
+        }
+
+        // 3. Generate new
         const randomNumber = Math.floor(10000 + Math.random() * 90000);
         const newUid = `AF-${randomNumber}`;
         localStorage.setItem('afstudio_cart_uid', newUid);
@@ -258,27 +270,34 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
 
         setError(null);
 
+        // Kembali pakai UID yang sama agar tidak duplikat di database
+        const uid = getOrCreateUID();
+
+        const payload = {
+            pricelist_package_id: packageData.id,
+            quantity: 1,
+            scheduled_date: date,
+            start_time: startTime,
+            sessions_needed: selectedSessions > 0 ? selectedSessions : maxSessions,
+            photographer_id: photographerId,
+            cart_uid: uid
+        };
+
         if (mode === 'direct') {
-            // Direct booking: add to cart first then redirect to checkout
-            let uid = localStorage.getItem('afstudio_cart_uid');
-            if (!uid || !uid.includes('-')) {
-                uid = generateAndStoreUID();
-            }
-
-            const payload = {
-                pricelist_package_id: packageData.id,
-                quantity: 1,
-                scheduled_date: date,
-                start_time: startTime,
-                sessions_needed: selectedSessions > 0 ? selectedSessions : maxSessions,
-                photographer_id: photographerId,
-                cart_uid: uid
-            };
-
             router.post('/cart', payload, {
                 headers: { 'X-Cart-UID': uid },
-                onSuccess: () => {
-                    router.visit('/checkout');
+                onSuccess: (page) => {
+                    // Ambil ID barang yang baru saja disimpan dari flash message
+                    const itemId = page.props.flash?.last_added_id;
+                    console.log('Direct Buy Debug:', { uid, itemId });
+
+                    if (itemId) {
+                        // Redirect dengan instruksi: "Tampilkan barang ID ini saja"
+                        router.visit(`/checkout?uid=${uid}&cart_item_id=${itemId}`);
+                    } else {
+                        // Fallback jika ID gagal didapat
+                        router.visit(`/checkout?uid=${uid}`);
+                    }
                     onClose();
                 },
                 onError: (errors) => {
@@ -287,11 +306,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                 }
             });
         } else {
-            // Cart mode: add to cart as usual
-            let uid = localStorage.getItem('afstudio_cart_uid');
-            if (!uid || !uid.includes('-')) {
-                uid = generateAndStoreUID();
-            }
+            // Cart mode
             processCart(uid);
         }
     };
