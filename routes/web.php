@@ -178,3 +178,16 @@ Route::prefix('admin')->group(function () {
         Route::post('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('admin.profile.update');
     });
 });
+
+Route::get('/fix-storage', function () {
+    try {
+        if (file_exists(public_path('storage'))) {
+            return "Folder 'public/storage' sudah ada. Jika gambar tetap tidak muncul, hapus folder 'storage' yang ada di dalam folder 'public' terlebih dahulu di cPanel.";
+        }
+
+        \Illuminate\Support\Facades\Artisan::call('storage:link');
+        return "Storage Link Berhasil Dibuat!";
+    } catch (\Exception $e) {
+        return "Error: " . $e->getMessage();
+    }
+});

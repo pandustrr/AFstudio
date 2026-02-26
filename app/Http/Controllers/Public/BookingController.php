@@ -206,7 +206,7 @@ class BookingController extends Controller
 
                     // Find photographer who has ALL slots open
                     $photographer = \App\Models\User::where('role', 'photographer')
-                        ->whereHas('sessions', function($query) use ($date, $slots) {
+                        ->whereHas('sessions', function ($query) use ($date, $slots) {
                             $query->where('date', $date)
                                 ->whereIn('start_time', $slots)
                                 ->where('status', 'open');
@@ -258,7 +258,7 @@ class BookingController extends Controller
 
     public function show($code)
     {
-        $booking = Booking::with(['items.package.subCategory'])->where('booking_code', $code)->firstOrFail();
+        $booking = Booking::with(['items.package.subCategory', 'paymentProof'])->where('booking_code', $code)->firstOrFail();
 
         $uid = request()->header('X-Cart-UID') ?? request()->query('uid');
 

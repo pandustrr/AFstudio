@@ -216,6 +216,17 @@ Mohon konfirmasinya. Terima kasih!`;
                                                 <>
                                                     <CheckIcon className="w-8 h-8 text-green-500 mx-auto mb-2" />
                                                     <p className="text-sm font-bold text-green-600 dark:text-green-400">Bukti Pembayaran Terverifikasi</p>
+
+                                                    {booking.payment_proof && booking.payment_proof.length > 0 && (
+                                                        <div className="mt-4 rounded-xl overflow-hidden border border-green-200 dark:border-green-800">
+                                                            <img
+                                                                src={`/storage/${booking.payment_proof[0].file_path}`}
+                                                                alt="Payment Proof"
+                                                                className="w-full h-auto object-contain max-h-48"
+                                                            />
+                                                        </div>
+                                                    )}
+
                                                     <p className="text-[10px] text-green-600/60 dark:text-green-400/60 mt-1">
                                                         Status: <span className="font-bold capitalize">{uploadedProofStatus}</span>
                                                     </p>
