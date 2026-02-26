@@ -89,14 +89,24 @@ class BookingController extends Controller
             DB::beginTransaction();
 
             $uid = $request->header('X-Cart-UID') ?? $request->input('cart_uid');
+            $cartItemId = $request->input('cart_item_id');
+            $cartItemIdsStr = $request->input('cart_item_ids');
 
             $query = Cart::with('package');
-            if (Auth::check()) {
-                $query->where('user_id', Auth::id());
-            } elseif ($uid) {
+            if ($uid) {
                 $query->where('cart_uid', $uid);
+            } elseif (Auth::check()) {
+                $query->where('user_id', Auth::id());
             } else {
-                throw new \Exception('Identity not found (UID or Login required).');
+                throw new \Exception('Identity not found (UID atau Login diperlukan).');
+            }
+
+            // ISOLASI: Patuhi filter jika user hanya checkout paket tertentu
+            if ($cartItemId) {
+                $query->where('id', $cartItemId);
+            } elseif ($cartItemIdsStr) {
+                $itemIds = is_array($cartItemIdsStr) ? $cartItemIdsStr : explode(',', $cartItemIdsStr);
+                $query->whereIn('id', $itemIds);
             }
 
             $carts = $query->get();

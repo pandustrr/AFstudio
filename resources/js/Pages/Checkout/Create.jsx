@@ -30,6 +30,9 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
         localStorage.setItem('afstudio_cart_uid', uidFromUrl);
     }
 
+    const cartItemIdFromUrl = urlParams.get('cart_item_id');
+    const cartItemIdsFromUrl = urlParams.get('cart_item_ids');
+
     const { data, setData, post, processing, errors } = useForm({
         name: user.name || localStorage.getItem('afstudio_customer_name') || '',
         university: '',
@@ -39,6 +42,8 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
         notes: '',
         referral_code: '',
         cart_uid: uidFromUrl || localStorage.getItem('afstudio_cart_uid') || '',
+        cart_item_id: cartItemIdFromUrl || '',
+        cart_item_ids: cartItemIdsFromUrl || '',
         proof_file: null,
     });
 
