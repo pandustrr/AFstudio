@@ -1,15 +1,17 @@
 import React, { useState, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon, PaperAirplaneIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
+import { usePage } from '@inertiajs/react';
 
 export default function WhatsAppButton() {
+    const { settings } = usePage().props;
     const [isOpen, setIsOpen] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         message: ''
     });
 
-    const phoneNumber = "6285134363956";
+    const phoneNumber = settings?.admin_whatsapp || "6285134363956";
 
     const handleSubmit = (e) => {
         e.preventDefault();

@@ -8,6 +8,7 @@ import ScheduleModal from '@/Components/Pricelist/ScheduleModal'; // Import Moda
 
 export default function Pricelist({ categories, rooms, locked }) {
     const { props } = usePage();
+    const { settings } = props;
     const homePage = props?.homePage;
     const [activeCategoryId, setActiveCategoryId] = useState(categories[0]?.id || null);
     const activeCategory = categories.find(c => c.id === activeCategoryId);
@@ -84,7 +85,7 @@ export default function Pricelist({ categories, rooms, locked }) {
                 rooms={rooms}
                 canBook={!!locked}
                 mode={bookingMode}
-                 onLanjutBooking={handleLanjutBooking}
+                onLanjutBooking={handleLanjutBooking}
             />
 
             {/* Header Section */}
@@ -214,7 +215,7 @@ export default function Pricelist({ categories, rooms, locked }) {
                                 Hubungi admin kami melalui WhatsApp untuk berkonsultasi dan mendapatkan detail harga paket lengkap sesuai kebutuhanmu.
                             </p>
                             <a
-                                href={`https://wa.me/${homePage?.admin_whatsapp || '6281230487469'}?text=Halo%20Admin%2C%20saya%20ingin%20melihat%20pricelist%20lengkap%20AF%20Studio`}
+                                href={`https://wa.me/${settings?.admin_whatsapp || homePage?.admin_whatsapp || '6285134363956'}?text=Halo%20Admin%2C%20saya%20ingin%20melihat%20pricelist%20lengkap%20AF%20Studio`}
                                 className="inline-flex items-center gap-3 px-8 py-4 bg-brand-black dark:bg-brand-gold text-white dark:text-brand-black rounded-2xl text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl"
                             >
                                 <span className="flex-1">Hubungi Admin</span>
@@ -350,7 +351,7 @@ export default function Pricelist({ categories, rooms, locked }) {
                             </div>
 
                             <a
-                                href={`https://wa.me/${homePage?.admin_whatsapp || '6281230487469'}?text=Halo%20Admin%2C%20saya%20ingin%20konsultasi%20paket%20custom`}
+                                href={`https://wa.me/${settings?.admin_whatsapp || homePage?.admin_whatsapp || '6285134363956'}?text=Halo%20Admin%2C%20saya%20ingin%20konsultasi%20paket%20custom`}
                                 className="shrink-0 inline-flex items-center gap-3 px-8 py-5 bg-brand-gold text-brand-black rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-widest hover:bg-white hover:scale-105 active:scale-95 transition-all shadow-xl shadow-brand-gold/10"
                             >
                                 <span>Konsultasi Sekarang</span>

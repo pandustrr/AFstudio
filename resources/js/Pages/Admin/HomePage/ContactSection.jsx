@@ -1,10 +1,12 @@
 import React from 'react';
-import { EnvelopeIcon } from '@heroicons/react/24/outline';
+import { EnvelopeIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import TextArea from '@/Components/TextArea';
+import { usePage, Link } from '@inertiajs/react';
 
 export default function ContactSection({ data, setData, errors, currentSubmitting }) {
+    const { settings } = usePage().props;
     const isSubmitting = currentSubmitting === 'contact_submit';
     return (
         <div className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 sm:p-5 space-y-6">
@@ -105,16 +107,16 @@ export default function ContactSection({ data, setData, errors, currentSubmittin
 
                 <div className="md:col-span-12 xl:col-span-4 space-y-4">
                     <div className="p-5 bg-black/2 dark:bg-white/5 rounded-2xl border border-black/5 dark:border-white/5 space-y-4">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Integrasi WhatsApp</h3>
-                        <div>
-                            <InputLabel value="Nomor WhatsApp Admin" />
-                            <TextInput
-                                value={data.admin_whatsapp}
-                                onChange={(e) => setData('admin_whatsapp', e.target.value)}
-                                className="w-full mt-1.5 py-2 text-xs"
-                                placeholder="6281230487469"
-                            />
-                            <p className="text-[8px] text-gray-500 mt-2 italic">Format: 62xxxx (Tanpa + atau spasi)</p>
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Integrasi WhatsApp</h3>
+                            <Link href="/admin/settings" className="text-[8px] font-black text-brand-gold uppercase flex items-center gap-1 hover:underline">
+                                Atur Global <ArrowTopRightOnSquareIcon className="w-2.5 h-2.5" />
+                            </Link>
+                        </div>
+                        <div className="bg-black/5 dark:bg-white/10 rounded-xl p-3 border border-black/5 dark:border-white/5">
+                            <p className="text-[10px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-widest mb-1">Nomor Aktif</p>
+                            <p className="text-sm font-black text-brand-black dark:text-brand-white tracking-widest">+{settings?.admin_whatsapp}</p>
+                            <p className="text-[8px] text-gray-500 mt-2 italic">* Diatur melalui menu Pengaturan Global</p>
                         </div>
                     </div>
 
