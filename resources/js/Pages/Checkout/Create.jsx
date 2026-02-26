@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
-import { ShieldCheckIcon, CalendarIcon, MapPinIcon, PhoneIcon, UserIcon, ChatBubbleBottomCenterTextIcon, ClockIcon, HomeIcon, ShoppingCartIcon, TicketIcon } from '@heroicons/react/24/outline';
+import { ShieldCheckIcon, CalendarIcon, MapPinIcon, PhoneIcon, UserIcon, ChatBubbleBottomCenterTextIcon, ClockIcon, HomeIcon, ShoppingCartIcon, TicketIcon, QrCodeIcon, DocumentIcon, CheckIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 
 export default function CheckoutCreate({ carts = [], rooms = [], photographers = [] }) {
-    const { auth } = usePage().props;
+    const { auth, settings, homePage } = usePage().props;
     const [appliedDiscount, setAppliedDiscount] = useState(null);
     const [validatingCode, setValidatingCode] = useState(false);
     const [voucherError, setVoucherError] = useState(null);
@@ -30,6 +30,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
         notes: '',
         referral_code: '',
         cart_uid: localStorage.getItem('afstudio_cart_uid') || '',
+        proof_file: null,
     });
 
     const total = Array.isArray(carts)
@@ -107,12 +108,43 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
     const discount = calculateDiscount();
     const finalTotal = total - discount;
 
+    // DP Calculation logic (match backend)
+    const calculateDP = () => {
+        let dp;
+        if (finalTotal > 500000) {
+            dp = Math.ceil((finalTotal * 0.25) / 1000) * 1000;
+        } else {
+            dp = 100000;
+        }
+        if (dp > finalTotal) dp = finalTotal;
+        return dp;
+    };
+    const downPayment = calculateDP();
+
+    // Helper to get DP label based on total
+    const getDPLabel = () => {
+        if (finalTotal > 500000) return "(25% of Total)";
+        return "(Min. 100k)";
+    };
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File terlalu besar. Maksimal 5MB.');
+                return;
+            }
+            setData('proof_file', file);
+        }
+    };
+
     const submit = (e) => {
         e.preventDefault();
         console.log('Submitting form with data:', data);
 
         post('/checkout', {
             preserveScroll: true,
+            forceFormData: true,
             headers: {
                 'X-Cart-UID': data.cart_uid
             },
@@ -120,8 +152,19 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                 console.error('Checkout error:', errors);
                 window.scrollTo(0, 0);
             },
-            onSuccess: () => {
-                console.log('Checkout successful!');
+            onSuccess: (page) => {
+                const b = page.props.flash?.booking;
+                if (b) {
+                    const waNumber = settings?.admin_whatsapp || homePage?.admin_whatsapp || "6282232586727";
+                    let itemsMessage = "";
+                    b.items?.forEach((item, index) => {
+                        itemsMessage += `${index + 1}. ${item.package?.name} - ${item.scheduled_date} (${item.start_time?.substring(0, 5)}-${item.end_time?.substring(0, 5)})\n`;
+                    });
+
+                    const message = `Halo Admin AF Studio, saya sudah melakukan booking dan pembayaran DP.\n\nNo. Booking: *${b.booking_code}*\nUID: ${b.guest_uid || '-'}\nNama: ${b.name}\n\nDetail Paket:\n${itemsMessage}\nTotal Biaya: ${formatPrice(b.total_price)}\nDP yang ditransfer: *${formatPrice(b.down_payment)}*\n\nMohon konfirmasinya. Terima kasih!`;
+
+                    window.location.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+                }
             },
             onFinish: () => {
                 console.log('Checkout finished');
@@ -331,10 +374,13 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
 
                             <button
                                 type="submit"
-                                disabled={processing}
-                                className="w-full py-4 bg-brand-red text-white font-black uppercase tracking-[0.2em] rounded-xl hover:bg-brand-gold hover:text-brand-black transition-all shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
+                                disabled={processing || !data.proof_file}
+                                className={`w-full py-4 font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-lg ${(processing || !data.proof_file)
+                                    ? 'bg-gray-300 dark:bg-white/10 text-black/20 dark:text-white/20 cursor-not-allowed grayscale'
+                                    : 'bg-brand-red text-white hover:bg-brand-gold hover:text-brand-black hover:scale-[1.02]'
+                                    }`}
                             >
-                                {processing ? 'Processing...' : 'Proceed to Payment'}
+                                {processing ? 'Processing...' : !data.proof_file ? 'Upload Bukti Dulu' : 'Konfirmasi ke Admin via WhatsApp'}
                             </button>
                         </form>
                     </div>
@@ -415,6 +461,76 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                                 <div className="flex justify-between items-center text-xl font-black text-brand-red italic uppercase tracking-tighter">
                                     <span>Total</span>
                                     <span>{formatPrice(finalTotal || total)}</span>
+                                </div>
+                            </div>
+
+                            {/* Payment Section (Added as per user request) */}
+                            <div className="mt-8 bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-3xl p-6 md:p-8 space-y-6 shadow-xl relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-brand-gold/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                                <div className="relative">
+                                    <div className="flex items-center justify-center gap-2 mb-4">
+                                        <QrCodeIcon className="w-5 h-5 text-brand-black dark:text-brand-white" />
+                                        <h2 className="text-sm font-black uppercase tracking-widest text-brand-black dark:text-brand-white">
+                                            Scan QRIS to Pay DP
+                                        </h2>
+                                    </div>
+
+                                    <p className="text-center font-black text-brand-red mb-4 text-xl italic tracking-tighter">kiw</p>
+
+                                    <div className="bg-white p-4 rounded-xl mb-6 mx-auto w-full flex items-center justify-center border border-black/10 shadow-inner">
+                                        <img src="/images/qris-afstudio.jpeg" alt="QRIS AF Studio" className="w-full h-auto object-contain rounded-lg shadow-sm" />
+                                    </div>
+
+                                    <div className="p-4 bg-brand-red/5 rounded-2xl border border-brand-red/20 text-center mb-6">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-1">Down Payment (Transfer Amount)</p>
+                                        <p className="text-3xl font-black text-brand-red italic tracking-tighter">
+                                            {formatPrice(downPayment)}
+                                        </p>
+                                        <p className="text-[10px] font-bold text-brand-black/40 dark:text-brand-white/40 mt-1 uppercase italic pointer-events-none">
+                                            {getDPLabel()}
+                                        </p>
+                                    </div>
+
+                                    {/* Upload Proof Form Field Integrated */}
+                                    <div className="space-y-4">
+                                        <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-red">
+                                            <DocumentIcon className="w-4 h-4" /> ★ Upload Bukti Pembayaran Terlebih Dahulu (Wajib)
+                                        </label>
+
+                                        <label htmlFor="proof_file_field" className="block relative">
+                                            <input
+                                                type="file"
+                                                id="proof_file_field"
+                                                className="hidden"
+                                                accept="image/*,.pdf"
+                                                onChange={handleFileChange}
+                                            />
+                                            <div className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${data.proof_file
+                                                ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
+                                                : 'border-black/10 dark:border-white/10 hover:border-brand-gold'
+                                                }`}>
+                                                {data.proof_file ? (
+                                                    <div className="space-y-2">
+                                                        <CheckIcon className="w-8 h-8 text-green-500 mx-auto" />
+                                                        <p className="text-xs font-bold text-green-600 truncate">{data.proof_file.name}</p>
+                                                        <p className="text-[10px] text-green-600/60 uppercase">Ter-pilih!</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-1">
+                                                        <div className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 flex items-center justify-center mx-auto mb-2">
+                                                            <DocumentIcon className="w-4 h-4 text-black/40 dark:text-white/40" />
+                                                        </div>
+                                                        <p className="text-xs font-bold text-black/60 dark:text-white/60">Click / Drag file</p>
+                                                        <p className="text-[8px] text-black/40 dark:text-white/40 uppercase">Max 5MB (JPG, PNG, PDF)</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </label>
+
+                                        <p className="text-[10px] text-brand-black/40 dark:text-brand-white/40 leading-tight text-center italic">
+                                            Upload screenshot/foto bukti transfer anda. Admin akan memverifikasi dalam beberapa menit.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -11,7 +11,7 @@ export default function WhatsAppButton() {
         message: ''
     });
 
-    const phoneNumber = settings?.admin_whatsapp || "6285134363956";
+    const phoneNumber = settings?.admin_whatsapp || "6282232586727";
 
     const handleSubmit = (e) => {
         e.preventDefault();

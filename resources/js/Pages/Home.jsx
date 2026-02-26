@@ -41,7 +41,7 @@ ${data.message}`;
         const encodedMessage = encodeURIComponent(message);
 
         // WhatsApp admin number from settings or database fallback
-        const adminNumber = settings?.admin_whatsapp || homePage?.admin_whatsapp || '6285134363956';
+        const adminNumber = settings?.admin_whatsapp || homePage?.admin_whatsapp || '6282232586727';
 
         // Open WhatsApp
         window.open(`https://wa.me/${adminNumber}?text=${encodedMessage}`, '_blank');
