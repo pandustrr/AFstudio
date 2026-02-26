@@ -282,4 +282,140 @@ class BookingController extends Controller
 
         return $pdf->stream('Invoice-' . $booking->booking_code . '.pdf');
     }
+
+    public function destroy(Booking $booking)
+    {
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($booking) {
+                // Release photographer slots
+                $itemIds = \Illuminate\Support\Facades\DB::table('booking_items')
+                    ->where('booking_id', $booking->id)
+                    ->pluck('id')
+                    ->toArray();
+
+                if (!empty($itemIds)) {
+                    \Illuminate\Support\Facades\DB::table('photographer_sessions')
+                        ->whereIn('booking_item_id', $itemIds)
+                        ->update([
+                            'booking_item_id' => null,
+                            'status' => 'open',
+                            'cart_uid' => null,
+                            'updated_at' => now()
+                        ]);
+                }
+
+                // Delete Payment Proof Files
+                foreach ($booking->paymentProof as $proof) {
+                    if ($proof->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($proof->file_path)) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($proof->file_path);
+                    }
+                    $proof->delete();
+                }
+
+                $booking->delete();
+            });
+
+            return redirect()->back()->with('success', 'Booking has been deleted successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to delete booking: ' . $e->getMessage());
+        }
+    }
+
+    public function deletePaymentProof(Booking $booking)
+    {
+        try {
+            foreach ($booking->paymentProof as $proof) {
+                if ($proof->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($proof->file_path)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($proof->file_path);
+                }
+                $proof->delete();
+            }
+
+            return redirect()->back()->with('success', 'Payment proof(s) deleted successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to delete payment proof: ' . $e->getMessage());
+        }
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        try {
+            $query = Booking::query();
+
+            // Apply same filters as in index() to determine what to delete
+            if ($request->status && $request->status !== 'all') {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->search) {
+                $query->where(function ($q) use ($request) {
+                    $q->where('booking_code', 'like', "%{$request->search}%")
+                        ->orWhere('name', 'like', "%{$request->search}%");
+                });
+            }
+
+            $bookings = $query->get();
+
+            \Illuminate\Support\Facades\DB::transaction(function () use ($bookings) {
+                foreach ($bookings as $booking) {
+                    // Release photographer slots
+                    $itemIds = \Illuminate\Support\Facades\DB::table('booking_items')
+                        ->where('booking_id', $booking->id)
+                        ->pluck('id')
+                        ->toArray();
+
+                    if (!empty($itemIds)) {
+                        \Illuminate\Support\Facades\DB::table('photographer_sessions')
+                            ->whereIn('booking_item_id', $itemIds)
+                            ->update([
+                                'booking_item_id' => null,
+                                'status' => 'open',
+                                'cart_uid' => null,
+                                'updated_at' => now()
+                            ]);
+                    }
+
+                    // Delete Payment Proof Files
+                    foreach ($booking->paymentProof as $proof) {
+                        if ($proof->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($proof->file_path)) {
+                            \Illuminate\Support\Facades\Storage::disk('public')->delete($proof->file_path);
+                        }
+                        $proof->delete();
+                    }
+
+                    $booking->delete();
+                }
+            });
+
+            return redirect()->back()->with('success', 'Bulk delete successful.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Bulk delete failed: ' . $e->getMessage());
+        }
+    }
+
+    public function bulkDeleteProofs(Request $request)
+    {
+        try {
+            $query = \App\Models\PaymentProof::query();
+
+            if ($request->status && $request->status !== 'all') {
+                $query->whereHas('booking', function ($q) use ($request) {
+                    $q->where('status', $request->status);
+                });
+            }
+
+            $proofs = $query->get();
+
+            foreach ($proofs as $proof) {
+                if ($proof->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($proof->file_path)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($proof->file_path);
+                }
+                $proof->delete();
+            }
+
+            return redirect()->back()->with('success', 'Bulk proof deletion successful.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Bulk proof deletion failed: ' . $e->getMessage());
+        }
+    }
 }

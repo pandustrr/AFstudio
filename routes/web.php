@@ -130,9 +130,12 @@ Route::prefix('admin')->group(function () {
         // Bookings
         Route::get('/bookings/{booking}/invoice', [\App\Http\Controllers\Admin\BookingController::class, 'downloadInvoice'])->name('admin.bookings.invoice');
         Route::resource('bookings', \App\Http\Controllers\Admin\BookingController::class)
-            ->only(['index', 'show', 'update'])
+            ->only(['index', 'show', 'update', 'destroy'])
             ->names('admin.bookings')
             ->parameters(['bookings' => 'booking']);
+        Route::delete('/bookings/{booking}/payment-proof', [\App\Http\Controllers\Admin\BookingController::class, 'deletePaymentProof'])->name('admin.bookings.delete-payment-proof');
+        Route::delete('/bookings-bulk-delete', [\App\Http\Controllers\Admin\BookingController::class, 'bulkDelete'])->name('admin.bookings.bulk-delete');
+        Route::delete('/bookings-bulk-delete-proofs', [\App\Http\Controllers\Admin\BookingController::class, 'bulkDeleteProofs'])->name('admin.bookings.bulk-delete-proofs');
         Route::patch('/booking-items/{item}', [\App\Http\Controllers\Admin\BookingController::class, 'updateItem'])->name('admin.booking-items.update');
 
         Route::resource('photographers', \App\Http\Controllers\Admin\PhotographerController::class)
