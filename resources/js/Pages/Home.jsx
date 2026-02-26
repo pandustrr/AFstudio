@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import GuestLayout from '../Layouts/GuestLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import {
     SparklesIcon,
     ArrowRightIcon,
@@ -16,6 +16,7 @@ import {
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
 export default function Home({ categories = [], homePage, galleries = [], journeySteps = [], stats }) {
+    const { settings } = usePage().props;
     const { data, setData, processing } = useForm({
         full_name: '',
         email_whatsapp: '',
@@ -39,8 +40,8 @@ ${data.message}`;
         // Encode message for URL
         const encodedMessage = encodeURIComponent(message);
 
-        // WhatsApp admin number from database
-        const adminNumber = homePage?.admin_whatsapp || '6281230487469';
+        // WhatsApp admin number from settings or database fallback
+        const adminNumber = settings?.admin_whatsapp || homePage?.admin_whatsapp || '6285134363956';
 
         // Open WhatsApp
         window.open(`https://wa.me/${adminNumber}?text=${encodedMessage}`, '_blank');

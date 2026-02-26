@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Head, Link, useForm, router } from '@inertiajs/react';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
 import { CheckCircleIcon, QrCodeIcon, DocumentIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { PhoneIcon } from '@heroicons/react/24/solid';
 
 export default function CheckoutShow({ booking, rooms = [], homePage = {} }) {
+    const { settings } = usePage().props;
     const [proofFile, setProofFile] = useState(null);
     const [proofUploaded, setProofUploaded] = useState(false);
     const [uploadedProofStatus, setUploadedProofStatus] = useState(null);
@@ -42,7 +43,7 @@ export default function CheckoutShow({ booking, rooms = [], homePage = {} }) {
     };
 
     // Prepare WhatsApp Message
-    const waNumber = homePage?.admin_whatsapp || "6281230487469"; // Admin Number
+    const waNumber = settings?.admin_whatsapp || homePage?.admin_whatsapp || "6285134363956"; // Admin Number
 
     let itemsMessage = "";
     booking.items.forEach((item, index) => {
@@ -205,13 +206,12 @@ Mohon konfirmasinya. Terima kasih!`;
                                             required
                                             disabled={proofUploaded}
                                         />
-                                        <div className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
-                                            proofUploaded
-                                                ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
-                                                : proofFile
+                                        <div className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${proofUploaded
+                                            ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
+                                            : proofFile
                                                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
                                                 : 'border-brand-black/20 dark:border-brand-white/20 hover:border-brand-black/40 dark:hover:border-brand-white/40'
-                                        }`}>
+                                            }`}>
                                             {proofUploaded ? (
                                                 <>
                                                     <CheckIcon className="w-8 h-8 text-green-500 mx-auto mb-2" />
@@ -253,11 +253,10 @@ Mohon konfirmasinya. Terima kasih!`;
                                     <button
                                         type="submit"
                                         disabled={!proofFile || processing}
-                                        className={`w-full py-4 font-black uppercase tracking-widest rounded-xl transition-all ${
-                                            proofFile && !processing
-                                                ? 'bg-blue-500 text-white hover:bg-blue-600 hover:scale-105 shadow-lg shadow-blue-500/20'
-                                                : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                                        }`}
+                                        className={`w-full py-4 font-black uppercase tracking-widest rounded-xl transition-all ${proofFile && !processing
+                                            ? 'bg-blue-500 text-white hover:bg-blue-600 hover:scale-105 shadow-lg shadow-blue-500/20'
+                                            : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                                            }`}
                                     >
                                         {processing ? 'Uploading...' : 'Upload Bukti Pembayaran'}
                                     </button>

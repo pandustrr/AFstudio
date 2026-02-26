@@ -2,9 +2,11 @@ import React from 'react';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import TextArea from '@/Components/TextArea';
-import { EnvelopeIcon } from '@heroicons/react/24/outline';
+import { EnvelopeIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
+import { usePage, Link } from '@inertiajs/react';
 
 export default function ContactDetailSection({ data, setData, errors, currentSubmitting }) {
+    const { settings } = usePage().props;
     const isSubmitting = currentSubmitting === 'contact_submit';
     return (
         <div className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 sm:p-5 space-y-6">
@@ -36,13 +38,15 @@ export default function ContactDetailSection({ data, setData, errors, currentSub
                         {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                     </div>
                     <div>
-                        <InputLabel value="Nomor Telepon / WA" />
-                        <TextInput
-                            value={data.phone}
-                            onChange={(e) => setData('phone', e.target.value)}
-                            className="w-full mt-0.5 py-1.5"
-                        />
-                        {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+                        <div className="flex items-center justify-between mb-1">
+                            <InputLabel value="Nomor WA (Global)" />
+                            <Link href="/admin/settings" className="text-[7px] font-black text-brand-gold uppercase flex items-center gap-0.5 hover:underline">
+                                Edit Global <ArrowTopRightOnSquareIcon className="w-2 h-2" />
+                            </Link>
+                        </div>
+                        <div className="w-full bg-black/5 dark:bg-white/5 rounded-lg border border-transparent px-3 py-2 text-xs font-bold text-brand-black/40 dark:text-brand-white/40 italic">
+                            +{settings?.admin_whatsapp}
+                        </div>
                     </div>
                     <div>
                         <InputLabel value="Instagram Link" />
