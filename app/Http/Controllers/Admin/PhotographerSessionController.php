@@ -273,6 +273,67 @@ class PhotographerSessionController extends Controller
         return back()->with('success', 'Sesi berhasil di-reschedule');
     }
 
+    public function moveSession(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|exists:photographer_sessions,id',
+            'target_photographer_id' => 'required|exists:users,id',
+            'target_time' => 'required',
+            'target_date' => 'required|date',
+        ]);
+
+        $session = PhotographerSession::findOrFail($request->session_id);
+
+        // Cek apakah slot tujuan tersedia
+        $targetExists = PhotographerSession::where('photographer_id', $request->target_photographer_id)
+            ->where('date', $request->target_date)
+            ->where('start_time', $request->target_time)
+            ->where('status', 'booked')
+            ->exists();
+
+        if ($targetExists) {
+            return back()->with('error', 'Slot tujuan sudah terisi oleh booking lain.');
+        }
+
+        // Cari atau buat record di slot tujuan
+        $targetSession = PhotographerSession::updateOrCreate(
+            [
+                'photographer_id' => $request->target_photographer_id,
+                'date' => $request->target_date,
+                'start_time' => $request->target_time,
+            ],
+            [
+                'status' => 'booked',
+                'booking_item_id' => $session->booking_item_id,
+                'cart_uid' => $session->cart_uid,
+                'offset_minutes' => $session->offset_minutes,
+                'offset_description' => $session->offset_description,
+            ]
+        );
+
+        // Update Booking Item agar merujuk ke fotografer yang baru
+        if ($session->bookingItem) {
+            $session->bookingItem->update([
+                'photographer_id' => $request->target_photographer_id,
+                'scheduled_date' => $request->target_date,
+                'start_time' => $request->target_time,
+                // End time juga harus diupdate (asumsi 30 menit per sesi)
+                'end_time' => Carbon::createFromTimeString($request->target_time)->addMinutes(30)->toTimeString(),
+            ]);
+        }
+
+        // Kembalikan sesi lama menjadi 'open' atau hapus jika itu record manual
+        $session->update([
+            'status' => 'open',
+            'booking_item_id' => null,
+            'cart_uid' => null,
+            'offset_minutes' => 0,
+            'offset_description' => null
+        ]);
+
+        return back()->with('success', 'Jadwal berhasil dipindahkan.');
+    }
+
     public function toggle(Request $request)
     {
         $request->validate([

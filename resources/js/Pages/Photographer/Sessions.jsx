@@ -206,7 +206,7 @@ export default function Sessions({ grid, selectedDate, filters, options, monthly
                                     <div className="mt-4 pt-4 border-t border-black/5 dark:border-white/5">
                                         <h4 className="text-[9px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                             <InformationCircleIcon className="w-3 h-3" />
-                                            Catatan Penyesuaian
+                                            Catatan Transisi
                                         </h4>
                                         <div className="space-y-1.5">
                                             {grid.filter(item => item.offset_description).map((item, idx) => (
@@ -251,91 +251,102 @@ export default function Sessions({ grid, selectedDate, filters, options, monthly
                             </div>
                         </div>
 
-                        {/* Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                            {grid.map((item, index) => (
-                                <button
-                                    key={index}
-                                    onClick={() => handleToggle(item.time_full, item.status)}
-                                    disabled={item.status === 'booked'}
-                                    className={`p-3 rounded-2xl border transition-all text-left relative overflow-hidden group flex flex-col justify-between aspect-5/4
-                                        ${item.status === 'open'
-                                            ? 'bg-brand-gold/10 border-brand-gold shadow-lg shadow-brand-gold/5'
-                                            : item.status === 'booked'
-                                                ? 'bg-green-500/10 border-green-500/30 cursor-not-allowed'
-                                                : 'bg-white dark:bg-white/3 border-black/5 dark:border-white/5 opacity-50 hover:opacity-100 hover:border-brand-gold/50'
-                                        }`}
-                                >
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className={`text-[10px] font-black uppercase tracking-widest ${item.status === 'open' ? 'text-brand-gold' :
-                                            item.status === 'booked' ? 'text-green-500' : 'text-brand-black/20 dark:text-brand-white/20'
-                                            }`}>
-                                            Sesi {index + 1}
-                                        </span>
-                                        <ClockIcon className={`w-3.5 h-3.5 ${item.status === 'open' ? 'text-brand-gold' :
-                                            item.status === 'booked' ? 'text-green-500' : 'text-brand-black/20 dark:text-brand-white/20'
-                                            }`} />
-                                    </div>
+                        {/* Sessions List (List View) */}
+                        <div className="space-y-2">
+                            {grid.map((item, index) => {
+                                // Helper untuk kalkulasi waktu dengan offset
+                                const getTimeWithOffset = (baseTime, offset) => {
+                                    const [h, m] = baseTime.split(':').map(Number);
+                                    const d = new Date();
+                                    d.setHours(h, m + (offset || 0));
+                                    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }).replace(':', '.');
+                                };
 
-                                    <div className="flex items-baseline gap-1.5 mb-0.5">
-                                        <h3 className="text-lg font-black text-brand-black dark:text-brand-white tracking-tighter">
-                                            {(() => {
-                                                if (!item.cumulative_offset) return item.time;
-                                                const [h, m] = item.time.split(':').map(Number);
-                                                const d = new Date();
-                                                d.setHours(h, m + item.cumulative_offset);
-                                                return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-                                            })()}
-                                        </h3>
-                                        {item.cumulative_offset !== 0 && (
-                                            <span className="text-[10px] font-bold text-brand-black/20 dark:text-brand-white/20 line-through">
-                                                {item.time}
-                                            </span>
-                                        )}
-                                    </div>
+                                const startTime = getTimeWithOffset(item.time, item.cumulative_offset);
+                                const endTime = getTimeWithOffset(item.time, (item.cumulative_offset || 0) + 30);
+                                const isBooked = item.status === 'booked';
+                                const isOff = item.status === 'off';
+                                const isOpen = item.status === 'open';
 
-                                    <div className="flex items-center gap-1">
-                                        {item.status === 'open' ? (
-                                            <div className="flex flex-col gap-1.5 w-full overflow-hidden">
-                                                <div className="flex items-center gap-1">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
-                                                    <span className="text-[8px] font-black uppercase text-brand-gold">Tersedia</span>
+                                return (
+                                    <button
+                                        key={index}
+                                        onClick={() => handleToggle(item.time_full, item.status)}
+                                        disabled={isBooked}
+                                        className={`w-full flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border transition-all gap-4 text-left
+                                            ${isOpen
+                                                ? 'bg-brand-gold/5 border-brand-gold/30 hover:bg-brand-gold/10'
+                                                : isBooked
+                                                    ? 'bg-green-500/5 border-green-500/20 cursor-not-allowed'
+                                                    : 'bg-white dark:bg-white/3 border-black/5 dark:border-white/5 opacity-50 hover:opacity-100 hover:border-brand-gold/50'
+                                            }`}
+                                    >
+                                        {/* Sesi & Waktu */}
+                                        <div className="flex items-center gap-4 min-w-[200px]">
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-black text-xs
+                                                ${isOpen ? 'bg-brand-gold text-brand-black' :
+                                                    isBooked ? 'bg-green-500 text-white' : 'bg-black/10 dark:bg-white/10 text-brand-black/40 dark:text-brand-white/40'}
+                                            `}>
+                                                {index + 1}
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 block">Sesi {index + 1}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <h3 className="text-sm font-black text-brand-black dark:text-brand-white tracking-widest uppercase">
+                                                        Jam {startTime} - {endTime}
+                                                    </h3>
+                                                    {item.cumulative_offset !== 0 && (
+                                                        <span className="text-[10px] font-bold text-brand-red italic">
+                                                            ({item.cumulative_offset > 0 ? '+' : ''}{item.cumulative_offset}m)
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
-                                        ) : item.status === 'booked' ? (
-                                            <div className="flex flex-col gap-1.5 w-full overflow-hidden">
-                                                <div className="flex items-center gap-1">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                                    <span className="text-[8px] font-black uppercase text-green-500">Terisi</span>
-                                                </div>
-                                                {item.booking_info && (
-                                                    <div className="mt-1 flex flex-col gap-0.5 border-t border-green-500/10 pt-1">
-                                                        <p className="text-[9px] font-black text-brand-black dark:text-brand-white uppercase truncate">
-                                                            {item.booking_info.customer_name}
-                                                        </p>
-                                                        <p className="text-[7px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase truncate">
-                                                            {item.booking_info.package_name}
-                                                        </p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <XCircleIcon className="w-3 h-3 text-brand-black/20 dark:text-brand-white/20" />
-                                                <span className="text-[8px] font-black uppercase text-brand-black/20 dark:text-brand-white/20">Kosong (Off)</span>
-                                            </>
-                                        )}
-                                    </div>
-
-                                    {/* Hover effect indicator for toggle-able slots */}
-                                    {item.status !== 'booked' && (
-                                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
                                         </div>
-                                    )}
-                                </button>
-                            ))}
+
+                                        {/* Informasi Status / Customer */}
+                                        <div className="flex-1">
+                                            {isBooked ? (
+                                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                                    <div className="flex items-center gap-1.5 px-3 py-1 bg-green-500/10 text-green-500 rounded-full w-fit">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">TERISI</span>
+                                                    </div>
+                                                    {item.booking_info && (
+                                                        <div className="flex flex-col">
+                                                            <p className="text-xs font-black text-brand-black dark:text-brand-white uppercase leading-none">
+                                                                {item.booking_info.customer_name}
+                                                            </p>
+                                                            <p className="text-[9px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase mt-0.5">
+                                                                {item.booking_info.package_name}
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : isOff ? (
+                                                <div className="flex items-center gap-1.5 px-3 py-1 bg-black/5 dark:bg-white/5 text-brand-black/30 dark:text-brand-white/30 rounded-full w-fit">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">KOSONG / OFF</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-1.5 px-3 py-1 bg-brand-gold/10 text-brand-gold rounded-full w-fit border border-brand-gold/20">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">TERSEDIA / OPEN</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Hint Aksi */}
+                                        {!isBooked && (
+                                            <div className="text-[9px] font-black uppercase tracking-widest text-brand-black/20 dark:text-brand-white/20 italic">
+                                                Klik untuk {isOpen ? 'Tutup (Off)' : 'Buka (Open)'}
+                                            </div>
+                                        )}
+                                    </button>
+                                );
+                            })}
                         </div>
+
 
                         {/* Footer Info */}
                         <div className="mt-8 flex flex-wrap gap-8 p-6 bg-black/2 dark:bg-white/2 rounded-2xl border border-dashed border-black/10 dark:border-white/10">

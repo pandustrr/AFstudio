@@ -8,6 +8,7 @@ import {
     ClockIcon,
     AdjustmentsHorizontalIcon,
     InformationCircleIcon,
+    ArrowsRightLeftIcon,
 } from '@heroicons/react/24/outline';
 import Modal from '@/Components/Modal';
 import CalendarWidget from '@/Components/CalendarWidget';
@@ -15,8 +16,14 @@ import CalendarWidget from '@/Components/CalendarWidget';
 export default function PhotographerSessions({ photographers, grid, selectedDate, selectedPhotographerId, filters, options, monthlyStats, dateMarks }) {
     const [selectedSession, setSelectedSession] = useState(null);
     const [isOffsetModalOpen, setIsOffsetModalOpen] = useState(false);
+    const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
 
     const [offsetData, setOffsetData] = useState({ minutes: 0, description: '' });
+    const [moveData, setMoveData] = useState({
+        photographer_id: '',
+        date: '',
+        time: ''
+    });
 
     const markColors = [
         { name: 'Default', value: null, class: 'bg-black/5 dark:bg-white/10' },
@@ -81,6 +88,27 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
             offset_description: offsetData.description
         }, {
             onSuccess: () => setIsOffsetModalOpen(false)
+        });
+    };
+
+    const openMoveModal = (session) => {
+        setSelectedSession(session);
+        setMoveData({
+            photographer_id: selectedPhotographerId,
+            date: selectedDate,
+            time: session.time_full
+        });
+        setIsMoveModalOpen(true);
+    };
+
+    const submitMove = () => {
+        router.post('/admin/photographer-sessions/move-session', {
+            session_id: selectedSession.session_id,
+            target_photographer_id: moveData.photographer_id,
+            target_date: moveData.date,
+            target_time: moveData.time
+        }, {
+            onSuccess: () => setIsMoveModalOpen(false)
         });
     };
 
@@ -251,7 +279,7 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                         <div className="mt-4 pt-4 border-t border-black/5 dark:border-white/5">
                                             <h4 className="text-[9px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                                 <InformationCircleIcon className="w-3 h-3" />
-                                                Catatan Penyesuaian
+                                                Catatan Transisi
                                             </h4>
                                             <div className="space-y-1.5">
                                                 {grid.filter(item => item.offset_description).map((item, idx) => (
@@ -304,94 +332,118 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                     </div>
                                 </div>
 
-                                {/* Sessions Grid */}
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                                    {grid.map((item, index) => (
-                                        <div
-                                            key={index}
-                                            className={`p-3 rounded-2xl border transition-all text-left relative overflow-hidden group flex flex-col justify-between aspect-5/4
-                                                ${item.status === 'open'
-                                                    ? 'bg-brand-gold/10 border-brand-gold shadow-lg shadow-brand-gold/5'
-                                                    : item.status === 'booked'
-                                                        ? 'bg-green-500/10 border-green-500/30'
-                                                        : 'bg-white dark:bg-white/3 border-black/5 dark:border-white/5 opacity-50'
-                                                }`}
-                                        >
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className={`text-[10px] font-black uppercase tracking-widest ${item.status === 'open' ? 'text-brand-gold' :
-                                                    item.status === 'booked' ? 'text-green-500' : 'text-brand-black/20 dark:text-brand-white/20'
-                                                    }`}>
-                                                    Sesi {index + 1}
-                                                </span>
-                                                <ClockIcon className={`w-3.5 h-3.5 ${item.status === 'open' ? 'text-brand-gold' :
-                                                    item.status === 'booked' ? 'text-green-500' : 'text-brand-black/20 dark:text-brand-white/20'
-                                                    }`} />
-                                            </div>
+                                {/* Sessions List (List View) */}
+                                <div className="space-y-2">
+                                    {grid.map((item, index) => {
+                                        // Helper untuk kalkulasi waktu dengan offset
+                                        const getTimeWithOffset = (baseTime, offset) => {
+                                            const [h, m] = baseTime.split(':').map(Number);
+                                            const d = new Date();
+                                            d.setHours(h, m + (offset || 0));
+                                            return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }).replace(':', '.');
+                                        };
 
-                                            <div className="flex items-baseline gap-1.5 mb-0.5">
-                                                <h3 className="text-lg font-black text-brand-black dark:text-brand-white tracking-tighter">
-                                                    {(() => {
-                                                        if (!item.cumulative_offset) return item.time;
-                                                        const [h, m] = item.time.split(':').map(Number);
-                                                        const d = new Date();
-                                                        d.setHours(h, m + item.cumulative_offset);
-                                                        return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-                                                    })()}
-                                                </h3>
-                                                {item.cumulative_offset !== 0 && (
-                                                    <span className="text-[10px] font-bold text-brand-black/20 dark:text-brand-white/20 line-through">
-                                                        {item.time}
-                                                    </span>
-                                                )}
-                                            </div>
+                                        const startTime = getTimeWithOffset(item.time, item.cumulative_offset);
+                                        const endTime = getTimeWithOffset(item.time, (item.cumulative_offset || 0) + 30);
+                                        const isBooked = item.status === 'booked';
+                                        const isOff = item.status === 'off';
+                                        const isOpen = item.status === 'open';
 
-                                            <div className="flex items-center gap-1">
-                                                {item.status === 'open' ? (
-                                                    <div className="flex flex-col gap-1.5 w-full overflow-hidden">
-                                                        <div className="flex items-center gap-1">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
-                                                            <span className="text-[8px] font-black uppercase text-brand-gold">Tersedia</span>
+                                        return (
+                                            <div
+                                                key={index}
+                                                className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border transition-all gap-4
+                                                    ${isOpen
+                                                        ? 'bg-brand-gold/5 border-brand-gold/20 hover:bg-brand-gold/10'
+                                                        : isBooked
+                                                            ? 'bg-green-500/5 border-green-500/20 hover:bg-green-500/10'
+                                                            : 'bg-white dark:bg-white/3 border-black/5 dark:border-white/5 opacity-60'
+                                                    }`}
+                                            >
+                                                {/* Sesi & Waktu */}
+                                                <div className="flex items-center gap-4 min-w-[200px]">
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-black text-xs
+                                                        ${isOpen ? 'bg-brand-gold text-brand-black' :
+                                                            isBooked ? 'bg-green-500 text-white' : 'bg-black/10 dark:bg-white/10 text-brand-black/40 dark:text-brand-white/40'}
+                                                    `}>
+                                                        {index + 1}
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 block">Sesi {index + 1}</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <h3 className="text-sm font-black text-brand-black dark:text-brand-white tracking-widest uppercase">
+                                                                Jam {startTime} - {endTime}
+                                                            </h3>
+                                                            {item.cumulative_offset !== 0 && (
+                                                                <span className="text-[10px] font-bold text-brand-red italic">
+                                                                    ({item.cumulative_offset > 0 ? '+' : ''}{item.cumulative_offset}m)
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
-                                                ) : item.status === 'booked' ? (
-                                                    <div className="flex flex-col gap-1.5 w-full overflow-hidden">
-                                                        <div className="flex items-center gap-1">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                                            <span className="text-[8px] font-black uppercase text-green-500">Terisi</span>
-                                                        </div>
-                                                        {item.booking_info && (
-                                                            <div className="mt-1 flex flex-col gap-0.5 border-t border-green-500/10 pt-1">
-                                                                <p className="text-[9px] font-black text-brand-black dark:text-brand-white uppercase truncate">
-                                                                    {item.booking_info.customer_name}
-                                                                </p>
-                                                                <p className="text-[7px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase truncate">
-                                                                    {item.booking_info.package_name}
-                                                                </p>
+                                                </div>
+
+                                                {/* Informasi Status / Customer */}
+                                                <div className="flex-1">
+                                                    {isBooked ? (
+                                                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                                            <div className="flex items-center gap-1.5 px-3 py-1 bg-green-500/10 text-green-500 rounded-full w-fit">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                                <span className="text-[10px] font-black uppercase tracking-widest">TERISI</span>
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-brand-black/20 dark:bg-brand-white/20" />
-                                                        <span className="text-[8px] font-black uppercase text-brand-black/20 dark:text-brand-white/20">Kosong (Off)</span>
-                                                    </>
-                                                )}
-                                            </div>
+                                                            {item.booking_info && (
+                                                                <div className="flex flex-col">
+                                                                    <p className="text-xs font-black text-brand-black dark:text-brand-white uppercase leading-none">
+                                                                        {item.booking_info.customer_name}
+                                                                    </p>
+                                                                    <p className="text-[9px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase mt-0.5">
+                                                                        {item.booking_info.package_name}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ) : isOff ? (
+                                                        <div className="flex items-center gap-1.5 px-3 py-1 bg-black/5 dark:bg-white/5 text-brand-black/30 dark:text-brand-white/30 rounded-full w-fit">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">LIBUR / OFF</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-1.5 px-3 py-1 bg-brand-gold/10 text-brand-gold rounded-full w-fit">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">TERSEDIA / OPEN</span>
+                                                        </div>
+                                                    )}
+                                                </div>
 
-                                            {/* Admin Actions - Compact Overlay */}
-                                            {item.status !== 'off' && (
-                                                <button
-                                                    onClick={() => openOffsetModal(item)}
-                                                    className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-black dark:bg-white/10 text-white transition-all shadow-lg flex items-center gap-1 z-30"
-                                                    title="Set Offset"
-                                                >
-                                                    <AdjustmentsHorizontalIcon className="w-3.5 h-3.5" />
-                                                    <span className="text-[7px] font-black uppercase">Offset</span>
-                                                </button>
-                                            )}
-                                        </div>
-                                    ))}
+                                                {/* Aksi */}
+                                                <div className="flex items-center gap-2">
+                                                    {!isOff && (
+                                                        <div className="flex items-center gap-2">
+                                                            {isBooked && (
+                                                                <button
+                                                                    onClick={() => openMoveModal(item)}
+                                                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-gold text-brand-black hover:bg-brand-black hover:text-white transition-all shadow-sm"
+                                                                >
+                                                                    <ArrowsRightLeftIcon className="w-4 h-4" />
+                                                                    <span className="text-[10px] font-black uppercase tracking-widest">Pindah Sesi</span>
+                                                                </button>
+                                                            )}
+
+                                                            <button
+                                                                onClick={() => openOffsetModal(item)}
+                                                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-black dark:bg-white/10 text-white hover:bg-brand-gold hover:text-brand-black transition-all shadow-sm"
+                                                            >
+                                                                <AdjustmentsHorizontalIcon className="w-4 h-4" />
+                                                                <span className="text-[10px] font-black uppercase tracking-widest">Transisi</span>
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
+
 
                                 {/* Footer Legend */}
                                 <div className="mt-8 flex flex-wrap gap-6 p-5 bg-black/2 dark:bg-white/2 rounded-2xl border border-dashed border-black/10 dark:border-white/10">
@@ -407,6 +459,12 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                         <div className="w-4 h-4 rounded-md bg-white dark:bg-white/3 border border-black/5 dark:border-white/5" />
                                         <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Sesi Kosong (Off)</span>
                                     </div>
+                                    <div className="flex items-center gap-3 border-l border-black/10 dark:border-white/10 pl-6">
+                                        <ArrowsRightLeftIcon className="w-4 h-4 text-brand-gold" />
+                                        <span className="text-[8px] font-bold uppercase tracking-widest opacity-40 italic">
+                                            * Tombol Pindah Sesi muncul otomatis jika jadwal sudah ter-booking
+                                        </span>
+                                    </div>
                                 </div>
                             </>
                         )}
@@ -417,10 +475,10 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
             {/* Offset Modal */}
             <Modal show={isOffsetModalOpen} onClose={() => setIsOffsetModalOpen(false)} maxWidth="md" closeable={false}>
                 <div className="p-8">
-                    <h2 className="text-xl font-black uppercase tracking-tighter italic mb-4">Set Offset Waktu</h2>
+                    <h2 className="text-xl font-black uppercase tracking-tighter italic mb-4">Pengaturan Transisi Waktu</h2>
                     <div className="space-y-4">
                         <div>
-                            <label className="text-[10px] uppercase font-black tracking-widest text-brand-black/40 block mb-2">Menit Offset (+ / -)</label>
+                            <label className="text-[10px] uppercase font-black tracking-widest text-brand-black/40 block mb-2">Menit Transisi (+ / -)</label>
                             <input
                                 type="number"
                                 value={offsetData.minutes}
@@ -439,7 +497,7 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                             />
                         </div>
                         <div className="flex flex-col gap-3 pt-2">
-                            <button onClick={submitOffset} className="w-full bg-black text-white py-4 rounded-xl font-black uppercase tracking-widest text-[10px]">Simpan Offset</button>
+                            <button onClick={submitOffset} className="w-full bg-black text-white py-4 rounded-xl font-black uppercase tracking-widest text-[10px]">Simpan Transisi</button>
                             {(selectedSession?.offset_minutes !== 0 || selectedSession?.offset_description) && (
                                 <button
                                     onClick={() => {
@@ -453,10 +511,105 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                     }}
                                     className="w-full bg-brand-red/10 hover:bg-brand-red/20 text-brand-red py-4 rounded-xl font-black uppercase tracking-widest text-[10px] transition-colors"
                                 >
-                                    Hapus Offset & Reset
+                                    Hapus & Reset Transisi
                                 </button>
                             )}
                         </div>
+                    </div>
+                </div>
+            </Modal>
+            {/* Move Session Modal */}
+            <Modal show={isMoveModalOpen} onClose={() => setIsMoveModalOpen(false)} maxWidth="lg" closeable={false}>
+                <div className="p-8">
+                    <h2 className="text-xl font-black uppercase tracking-tighter italic mb-2">Pindah Jadwal Sesi</h2>
+                    <p className="text-[10px] font-bold text-brand-black/40 uppercase tracking-widest mb-6">Pindahkan sesi milik customer ke jam atau photographer lain</p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-brand-black/60 border-b border-black/5 pb-2">Informasi Sesi</h3>
+                            <div className="bg-black/2 dark:bg-white/5 p-4 rounded-2xl space-y-3">
+                                <div className="flex justify-between items-center text-[10px]">
+                                    <span className="font-bold opacity-40 uppercase">Customer</span>
+                                    <span className="font-black uppercase">{selectedSession?.booking_info?.customer_name || '-'}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-[10px]">
+                                    <span className="font-bold opacity-40 uppercase">Paket</span>
+                                    <span className="font-black uppercase">{selectedSession?.booking_info?.package_name || '-'}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-[10px]">
+                                    <span className="font-bold opacity-40 uppercase">Jadwal Sblmnya</span>
+                                    <span className="font-black uppercase text-brand-red italic">{selectedSession?.time} - {selectedSession?.date}</span>
+                                </div>
+                                {!selectedSession?.booking_info && (
+                                    <div className="p-3 bg-brand-red/5 rounded-xl border border-brand-red/10 mt-2">
+                                        <p className="text-[8px] font-black uppercase text-brand-red text-center">Tidak ada data booking untuk dipindahkan</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-brand-black/60 border-b border-black/5 pb-2">Jadwal Baru</h3>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-[9px] uppercase font-black tracking-widest text-brand-black/30 block mb-1.5 ml-1">Pilih Photographer Baru</label>
+                                    <select
+                                        value={moveData.photographer_id}
+                                        onChange={(e) => setMoveData({ ...moveData, photographer_id: e.target.value })}
+                                        className="w-full bg-black/5 dark:bg-white/5 border-0 rounded-xl px-4 py-3 text-xs font-black uppercase tracking-widest focus:ring-brand-gold transition-all dark:text-brand-white"
+                                    >
+                                        {photographers.map(fg => (
+                                            <option key={fg.id} value={fg.id} className="bg-white dark:bg-brand-black font-sans capitalize">{fg.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="text-[9px] uppercase font-black tracking-widest text-brand-black/30 block mb-1.5 ml-1">Tanggal Baru</label>
+                                    <input
+                                        type="date"
+                                        value={moveData.date}
+                                        onChange={(e) => setMoveData({ ...moveData, date: e.target.value })}
+                                        className="w-full bg-black/5 dark:bg-white/5 border-0 rounded-xl px-4 py-3 text-xs font-black focus:ring-brand-gold transition-all dark:text-brand-white"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-[9px] uppercase font-black tracking-widest text-brand-black/30 block mb-1.5 ml-1">Pilih Jam Baru</label>
+                                    <select
+                                        value={moveData.time}
+                                        onChange={(e) => setMoveData({ ...moveData, time: e.target.value })}
+                                        className="w-full bg-black/5 dark:bg-white/5 border-0 rounded-xl px-4 py-3 text-xs font-black uppercase tracking-widest focus:ring-brand-gold transition-all dark:text-brand-white"
+                                    >
+                                        {/* Generate available times 05:00 - 20:00 */}
+                                        {Array.from({ length: 31 }).map((_, i) => {
+                                            const hour = Math.floor(i / 2) + 5;
+                                            const min = i % 2 === 0 ? '00' : '30';
+                                            const t = `${hour.toString().padStart(2, '0')}:${min}:00`;
+                                            const tDisplay = `${hour.toString().padStart(2, '0')}.${min}`;
+                                            return (
+                                                <option key={t} value={t} className="bg-white dark:bg-brand-black font-sans">JAM {tDisplay}</option>
+                                            );
+                                        })}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 mt-10">
+                        <button
+                            onClick={() => setIsMoveModalOpen(false)}
+                            className="flex-1 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-black/10 hover:bg-black/5 transition-all"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            onClick={submitMove}
+                            className="flex-2 bg-brand-black text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-brand-black/20 hover:bg-brand-gold hover:text-brand-black transition-all"
+                        >
+                            Konfirmasi Pindah Jadwal
+                        </button>
                     </div>
                 </div>
             </Modal>
