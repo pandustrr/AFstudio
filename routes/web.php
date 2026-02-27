@@ -27,6 +27,7 @@ Route::get('/schedule/check', [ScheduleController::class, 'checkAvailability'])-
 Route::get('/schedule/check-time', [ScheduleController::class, 'checkTimeAvailability'])->name('schedule.check-time');
 Route::get('/schedule/photographer-slots', [ScheduleController::class, 'getPhotographerTimeSlots']);
 Route::get('/schedule/check-photographer-availability', [ScheduleController::class, 'checkPhotographerAvailability']);
+Route::get('/schedule/available-rooms', [ScheduleController::class, 'getAvailableRooms']);
 
 // Shared / Locked Routes
 Route::get('/share/SemuaKategori', [\App\Http\Controllers\SharedPricelistController::class, 'all'])->name('share.all');

@@ -20,6 +20,7 @@ class BookingItem extends Model
         'start_time',
         'end_time',
         'room_id',
+        'room_name',
         'photographer_id',
     ];
 

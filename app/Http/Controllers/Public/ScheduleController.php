@@ -209,6 +209,35 @@ class ScheduleController extends Controller
     }
 
     /**
+     * Get available rooms for a specific date (rooms where photographers have open sessions)
+     */
+    public function getAvailableRooms(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date|after_or_equal:today',
+            'package_id' => 'required|exists:pricelist_packages,id',
+        ]);
+
+        $date = Carbon::parse($request->date)->toDateString();
+        
+        // Find rooms (room_name) from photographers who have 'open' sessions on this date
+        $rooms = \App\Models\User::where('role', 'photographer')
+            ->whereHas('sessions', function($query) use ($date) {
+                $query->where('date', $date)
+                    ->where('status', 'open');
+            })
+            ->whereNotNull('room_name')
+            ->pluck('room_name')
+            ->unique()
+            ->values()
+            ->all();
+
+        return response()->json([
+            'rooms' => $rooms
+        ]);
+    }
+
+    /**
      * Check if photographer is available for specific time slot
      * Auto-find photographer with consecutive open sessions
      */
@@ -219,11 +248,13 @@ class ScheduleController extends Controller
             'start_time' => 'required',
             'sessions_needed' => 'required|integer|min:1',
             'package_id' => 'required|exists:pricelist_packages,id',
+            'room_name' => 'nullable|string',
         ]);
 
         $date = Carbon::parse($request->date)->toDateString();
         $startTime = $request->start_time; // Format: H:i
         $sessionsNeeded = $request->sessions_needed;
+        $roomName = $request->room_name;
 
         // Generate consecutive time slots needed (convert H:i to H:i:s for database queries)
         $slots = [];
@@ -234,14 +265,18 @@ class ScheduleController extends Controller
         }
 
         // Find photographer who has ALL these slots available (open status)
-        // Using direct query on PhotographerSession table
-        $photographer = \App\Models\User::where('role', 'photographer')
+        $query = \App\Models\User::where('role', 'photographer')
             ->whereHas('sessions', function($query) use ($date, $slots) {
                 $query->where('date', $date)
                     ->whereIn('start_time', $slots)
                     ->where('status', 'open');
-            }, '=', count($slots))
-            ->first();
+            }, '=', count($slots));
+
+        if ($roomName) {
+            $query->where('room_name', $roomName);
+        }
+
+        $photographer = $query->first();
         $available = $photographer !== null;
 
         return response()->json([
@@ -262,6 +297,7 @@ class ScheduleController extends Controller
             'end_time' => 'nullable|date_format:H:i',
             'package_id' => 'required|exists:pricelist_packages,id',
             'cart_uid' => 'nullable|string',
+            'room_name' => 'nullable|string',
         ]);
 
         try {
@@ -298,7 +334,7 @@ class ScheduleController extends Controller
                 }
 
                 // Find photographer with ALL slots available (excluding sessions already in cart)
-                $photographer = \App\Models\User::where('role', 'photographer')
+                $query = \App\Models\User::where('role', 'photographer')
                     ->whereHas('sessions', function($query) use ($date, $slots, $cartSessionIds) {
                         $query->where('date', $date)
                             ->whereIn('start_time', $slots)
@@ -308,8 +344,13 @@ class ScheduleController extends Controller
                         if (!empty($cartSessionIds)) {
                             $query->whereNotIn('id', $cartSessionIds);
                         }
-                    }, '=', count($slots))
-                    ->first();
+                    }, '=', count($slots));
+
+                if ($request->room_name) {
+                    $query->where('room_name', $request->room_name);
+                }
+
+                $photographer = $query->first();
 
                 return response()->json([
                     'available' => $photographer !== null,

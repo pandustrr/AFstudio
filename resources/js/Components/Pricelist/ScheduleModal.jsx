@@ -14,7 +14,8 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     const [slots, setSlots] = useState([]);
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [error, setError] = useState(null);
-    const [roomInfos, setRoomInfos] = useState([]);
+    const [availableRooms, setAvailableRooms] = useState([]);
+    const [selectedRoom, setSelectedRoom] = useState('');
 
     // Modal controls
     const [showSuccessUID, setShowSuccessUID] = useState(false);
@@ -82,6 +83,8 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             setSelectedSlot(null);
             setSelectedSessions([]);
             setStartTime('');
+            setSelectedRoom('');
+            setAvailableRooms([]);
             setAvailabilityStatus(null);
             setError(null);
             // Set maxSessions from package data
@@ -133,12 +136,33 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         }
     }, [date]);
 
-    // Fetch photographer availability when date changes
+    // Fetch photographer availability when date and room changes
     useEffect(() => {
-        if (date && packageData) {
+        if (date && packageData && selectedRoom) {
             fetchPhotographerAvailability();
         }
-    }, [date, photographerId]);
+    }, [date, selectedRoom]);
+
+    // Fetch rooms when date changes
+    useEffect(() => {
+        if (date && packageData) {
+            fetchRooms();
+        }
+    }, [date]);
+
+    const fetchRooms = async () => {
+        try {
+            const response = await axios.get('/schedule/available-rooms', {
+                params: {
+                    date: date,
+                    package_id: packageData.id
+                }
+            });
+            setAvailableRooms(response.data.rooms || []);
+        } catch (err) {
+            console.error("Failed to fetch rooms", err);
+        }
+    };
 
     // Hoisted function to avoid ReferenceError
     function getOrCreateUID() {
@@ -171,7 +195,8 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             const response = await axios.get('/schedule/photographer-slots', {
                 params: {
                     date: date,
-                    package_id: packageData.id
+                    package_id: packageData.id,
+                    room_name: selectedRoom
                 }
             });
             // getPhotographerTimeSlots returns time_slots array
@@ -221,7 +246,8 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                     date: date,
                     start_time: startT,
                     sessions_needed: sessionsNeeded,
-                    package_id: packageData.id
+                    package_id: packageData.id,
+                    room_name: selectedRoom
                 }
             });
 
@@ -264,7 +290,11 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             return;
         }
         if (!photographerId) {
-            setError('Fotografer belum ditentukan.');
+            setError('Fotografer belum ditentukan atau tidak tersedia di room ini.');
+            return;
+        }
+        if (!selectedRoom) {
+            setError('Pilih room terlebih dahulu.');
             return;
         }
 
@@ -280,6 +310,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             start_time: startTime,
             sessions_needed: selectedSessions > 0 ? selectedSessions : maxSessions,
             photographer_id: photographerId,
+            room_name: selectedRoom,
             cart_uid: uid
         };
 
@@ -319,6 +350,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             start_time: startTime,
             sessions_needed: selectedSessions > 0 ? selectedSessions : maxSessions,
             photographer_id: photographerId,
+            room_name: selectedRoom,
             cart_uid: uid
         };
 
@@ -424,12 +456,44 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                         </div>
                                                     </div>
                                                 </div>
-                                                {date && (
-                                                    <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold px-1">
-                                                        {new Date(date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })}
-                                                    </p>
-                                                )}
                                             </div>
+
+                                            {/* Room Selection */}
+                                            {date && availableRooms.length > 0 && (
+                                                <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-500">
+                                                    <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
+                                                        <HomeIcon className="w-4 h-4" /> Pilih Room
+                                                    </label>
+                                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                        {availableRooms.map((room) => (
+                                                            <button
+                                                                key={room}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setSelectedRoom(room);
+                                                                    setAvailabilityStatus(null);
+                                                                    setPhotographerId(null);
+                                                                    setSlots([]);
+                                                                }}
+                                                                className={`px-4 py-3 rounded-xl border-2 transition-all font-bold text-xs uppercase tracking-wider ${selectedRoom === room
+                                                                    ? 'border-brand-gold bg-brand-gold/10 text-brand-gold shadow-lg shadow-brand-gold/10 scale-[1.02]'
+                                                                    : 'border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/5 text-brand-black/40 dark:text-brand-white/40 hover:border-brand-gold/30'
+                                                                    }`}
+                                                            >
+                                                                {room}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {date && availableRooms.length === 0 && !loading && (
+                                                <div className="p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 rounded-2xl animate-in zoom-in duration-300">
+                                                    <p className="text-[10px] font-black uppercase text-red-600 dark:text-red-400 tracking-widest text-center">
+                                                        Maaf, tidak ada room tersedia untuk tanggal ini.
+                                                    </p>
+                                                </div>
+                                            )}
 
                                             {/* Time Input for Photographer Packages */}
                                             {date && (

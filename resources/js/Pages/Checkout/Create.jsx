@@ -315,6 +315,35 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                                 </div>
                             </div>
 
+                            {/* Detail Penugasan (Room & Photographer) */}
+                            {(carts[0]?.room_name || carts[0]?.room_id || carts[0]?.photographer_id) && (
+                                <div className="space-y-4 p-4 bg-brand-gold/5 border border-brand-gold/10 rounded-2xl">
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-gold/60">Detail Ruangan & Fotografer</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {(carts[0]?.room_name || carts[0]?.room_id) && (
+                                            <div className="space-y-1">
+                                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
+                                                    <HomeIcon className="w-3 h-3" /> Studio / Ruangan
+                                                </label>
+                                                <p className="text-sm font-bold text-brand-black dark:text-brand-white">
+                                                    {carts[0]?.room_name || getRoomLabel(carts[0]?.room_id)}
+                                                </p>
+                                            </div>
+                                        )}
+                                        {carts[0]?.photographer_id && (
+                                            <div className="space-y-1">
+                                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
+                                                    <UserIcon className="w-3 h-3" /> Fotografer
+                                                </label>
+                                                <p className="text-sm font-bold text-brand-black dark:text-brand-white">
+                                                    {getPhotographerName(carts[0].photographer_id)}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Paket yang diambil (Read-only summary) */}
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
@@ -441,18 +470,19 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                                                 <ClockIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
                                                 <span>{cart.start_time?.substring(0, 5)} - {cart.end_time?.substring(0, 5)}</span>
                                             </div>
-                                            {(cart.photographer_id || cart.room_id) && (
-                                                <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white">
-                                                    {cart.photographer_id ? (
-                                                        <>
+                                            {(cart.photographer_id || cart.room_id || cart.room_name) && (
+                                                <div className="flex flex-col gap-1 border-t border-brand-gold/10 pt-1 mt-1">
+                                                    {cart.photographer_id && (
+                                                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white">
                                                             <UserIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
                                                             <span>FG: {getPhotographerName(cart.photographer_id)}</span>
-                                                        </>
-                                                    ) : (
-                                                        <>
+                                                        </div>
+                                                    )}
+                                                    {(cart.room_id || cart.room_name) && (
+                                                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white">
                                                             <MapPinIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
-                                                            <span>Studio {getRoomLabel(cart.room_id)}</span>
-                                                        </>
+                                                            <span>Studio: {cart.room_name || getRoomLabel(cart.room_id)}</span>
+                                                        </div>
                                                     )}
                                                 </div>
                                             )}

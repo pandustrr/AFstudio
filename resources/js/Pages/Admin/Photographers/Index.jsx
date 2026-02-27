@@ -6,7 +6,7 @@ import ConfirmModal from '@/Components/ConfirmModal';
 import EditNotif from '@/Components/EditNotif';
 import Edit from './Edit';
 
-export default function Index({ photographers }) {
+export default function Index({ photographers, rooms }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingFG, setEditingFG] = useState(null);
     const [deleteFG, setDeleteFG] = useState(null);
@@ -66,7 +66,14 @@ export default function Index({ photographers }) {
                                     <UserIcon className="w-5 h-5 sm:w-6 sm:h-6 text-brand-gold" />
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <h3 className="font-black text-brand-black dark:text-brand-white uppercase tracking-tighter text-sm sm:text-base leading-none mb-1.5 truncate">{fg.name}</h3>
+                                    <div className="flex items-center gap-2 mb-1.5">
+                                        <h3 className="font-black text-brand-black dark:text-brand-white uppercase tracking-tighter text-sm sm:text-base leading-none truncate">{fg.name}</h3>
+                                        {fg.room_name && (
+                                            <span className="bg-brand-gold/10 text-brand-gold text-[8px] font-black uppercase px-2 py-0.5 rounded-full tracking-widest">
+                                                {fg.room_name}
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="flex flex-col gap-0.5 sm:gap-1">
                                         <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 leading-none truncate">
                                             Username: <span className="text-brand-gold font-mono uppercase">{fg.username}</span>
@@ -122,6 +129,7 @@ export default function Index({ photographers }) {
                 isOpen={isModalOpen}
                 onClose={closeModal}
                 photographer={editingFG}
+                rooms={rooms}
             />
 
             <ConfirmModal
