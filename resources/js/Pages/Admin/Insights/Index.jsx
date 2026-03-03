@@ -406,6 +406,273 @@ export default function Index({ stats = {}, filters = {}, filterOptions = {}, mo
                         </div>
                     </div>
 
+                    {/* Pricelist Statistics Section */}
+                    <div className="mt-8 bg-white dark:bg-white/3 border border-black/5 dark:border-white/5 rounded-2xl p-6 shadow-lg">
+                        <h2 className="text-lg font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-4 flex items-center gap-2">
+                            <ChartBarIcon className="w-5 h-5 text-brand-gold" />
+                            Statistik Price List
+                        </h2>
+
+                        {stats?.pricelistStats ? (
+                            <div className="space-y-4">
+                                {/* Overview Stats */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                    <div className="bg-brand-gold/5 border border-brand-gold/10 rounded-xl p-4">
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-brand-gold/60 mb-2">
+                                            Total Kunjungan
+                                        </p>
+                                        <p className="text-2xl font-black text-brand-gold tracking-tighter">
+                                            {formatNumber(stats.pricelistStats.totalViews || 0)}
+                                        </p>
+                                        <p className="text-xs text-brand-black/40 dark:text-brand-white/40 mt-1">
+                                            Semua pengunjung price list
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-brand-red/5 border border-brand-red/10 rounded-xl p-4">
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-brand-red/60 mb-2">
+                                            Pengunjung Unik
+                                        </p>
+                                        <p className="text-2xl font-black text-brand-red tracking-tighter">
+                                            {formatNumber(stats.pricelistStats.uniqueVisitors || 0)}
+                                        </p>
+                                        <p className="text-xs text-brand-black/40 dark:text-brand-white/40 mt-1">
+                                            Device unik yang mengakses
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-brand-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl p-4">
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 mb-2">
+                                            Bounce Rate
+                                        </p>
+                                        <p className="text-2xl font-black text-brand-black dark:text-brand-white tracking-tighter">
+                                            {stats.pricelistStats.uniqueVisitors > 0 
+                                                ? Math.round((stats.pricelistStats.uniqueVisitors / stats.pricelistStats.totalViews) * 100) 
+                                                : 0}%
+                                        </p>
+                                        <p className="text-xs text-brand-black/40 dark:text-brand-white/40 mt-1">
+                                            Rasio pengunjung unik
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Pricelist Chart */}
+                                <div className="border-t border-black/5 dark:border-white/5 pt-6 mt-6">
+                                    <h3 className="text-sm font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-4">
+                                        Trend Kunjungan Price List
+                                    </h3>
+                                    {stats?.pricelistByDay && stats.pricelistByDay.length > 0 && typeof window !== 'undefined' ? (
+                                        <Chart
+                                            options={{
+                                                chart: {
+                                                    height: 250,
+                                                    type: 'area',
+                                                    toolbar: { show: false },
+                                                    background: 'transparent',
+                                                    zoom: { enabled: false }
+                                                },
+                                                colors: ['#D4AF37'],
+                                                stroke: {
+                                                    width: 2,
+                                                    curve: 'smooth'
+                                                },
+                                                fill: {
+                                                    type: 'gradient',
+                                                    gradient: {
+                                                        shadeIntensity: 1,
+                                                        opacityFrom: 0.6,
+                                                        opacityTo: 0.1,
+                                                        stops: [0, 100]
+                                                    }
+                                                },
+                                                dataLabels: {
+                                                    enabled: false
+                                                },
+                                                xaxis: {
+                                                    categories: stats.pricelistByDay.map(item => {
+                                                        const date = new Date(item.date);
+                                                        return date.toLocaleDateString('id-ID', { month: 'short', day: 'numeric' });
+                                                    }),
+                                                    labels: {
+                                                        style: {
+                                                            colors: '#9CA3AF',
+                                                            fontSize: '10px',
+                                                            fontWeight: 700,
+                                                        }
+                                                    }
+                                                },
+                                                yaxis: {
+                                                    labels: {
+                                                        style: {
+                                                            colors: '#9CA3AF',
+                                                            fontSize: '10px',
+                                                            fontWeight: 700,
+                                                        },
+                                                        formatter: (val) => formatNumber(Math.round(val))
+                                                    }
+                                                },
+                                                grid: {
+                                                    borderColor: '#E5E7EB',
+                                                    strokeDashArray: 4,
+                                                    padding: {
+                                                        top: 0,
+                                                        right: 10,
+                                                        bottom: 0,
+                                                        left: 10
+                                                    }
+                                                },
+                                                tooltip: {
+                                                    theme: 'dark',
+                                                    y: {
+                                                        formatter: (val) => `${formatNumber(val)} visitors`
+                                                    }
+                                                },
+                                                responsive: [{
+                                                    breakpoint: 1024,
+                                                    options: {
+                                                        chart: {
+                                                            height: 200
+                                                        }
+                                                    }
+                                                }]
+                                            }}
+                                            series={[{
+                                                name: 'Kunjungan',
+                                                data: stats.pricelistByDay.map(item => item.views)
+                                            }]}
+                                            type="area"
+                                            height={250}
+                                        />
+                                    ) : (
+                                        <div className="h-[250px] flex items-center justify-center text-brand-black/40 dark:text-brand-white/40 text-sm">
+                                            Belum ada data trend kunjungan
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Category Distribution Chart */}
+                                <div className="border-t border-black/5 dark:border-white/5 pt-6 mt-6">
+                                    <h3 className="text-sm font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-4">
+                                        Distribusi Kategori
+                                    </h3>
+                                    {stats?.pricelistStats?.topCategories && stats.pricelistStats.topCategories.length > 0 && typeof window !== 'undefined' ? (
+                                        <Chart
+                                            options={{
+                                                chart: {
+                                                    type: 'donut',
+                                                    background: 'transparent',
+                                                    toolbar: { show: false }
+                                                },
+                                                colors: ['#DC2626', '#D4AF37', '#3B82F6', '#10B981', '#8B5CF6'],
+                                                plotOptions: {
+                                                    pie: {
+                                                        donut: {
+                                                            size: '65%',
+                                                            labels: {
+                                                                show: true,
+                                                                name: {
+                                                                    fontSize: '12px',
+                                                                    fontWeight: 700,
+                                                                    color: '#6B7280'
+                                                                },
+                                                                value: {
+                                                                    fontSize: '16px',
+                                                                    fontWeight: 700,
+                                                                    color: '#1F2937',
+                                                                    formatter: (val) => formatNumber(val)
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                },
+                                                dataLabels: {
+                                                    enabled: true,
+                                                    formatter: (val) => `${Math.round(val)}%`,
+                                                    style: {
+                                                        fontSize: '11px',
+                                                        fontWeight: 700
+                                                    }
+                                                },
+                                                legend: {
+                                                    position: 'bottom',
+                                                    fontSize: '11px',
+                                                    fontWeight: 700,
+                                                    labels: {
+                                                        colors: '#6B7280'
+                                                    }
+                                                },
+                                                tooltip: {
+                                                    theme: 'dark',
+                                                    y: {
+                                                        formatter: (val) => `${formatNumber(val)} views`
+                                                    }
+                                                }
+                                            }}
+                                            series={stats.pricelistStats.topCategories.map(cat => cat.views)}
+                                            labels={stats.pricelistStats.topCategories.map(cat => cat.category_name)}
+                                            type="donut"
+                                            height={300}
+                                        />
+                                    ) : (
+                                        <div className="h-[300px] flex items-center justify-center text-brand-black/40 dark:text-brand-white/40 text-sm">
+                                            Belum ada data distribusi kategori
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Top Categories */}
+                                <div className="border-t border-black/5 dark:border-white/5 pt-4">
+                                    <h3 className="text-sm font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-3">
+                                        Kategori Paling Diminati
+                                    </h3>
+                                    <div className="space-y-2">
+                                        {stats.pricelistStats.topCategories && stats.pricelistStats.topCategories.length > 0 ? (
+                                            stats.pricelistStats.topCategories.map((cat, idx) => (
+                                                <div key={idx} className="flex items-center justify-between p-3 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-all">
+                                                    <div className="flex-1">
+                                                        <p className="font-black text-sm text-brand-black dark:text-brand-white">
+                                                            {cat.category_name}
+                                                        </p>
+                                                        <p className="text-xs text-brand-black/40 dark:text-brand-white/40">
+                                                            {formatNumber(cat.views)} views
+                                                        </p>
+                                                    </div>
+                                                    <div className="bg-brand-gold/10 text-brand-gold px-3 py-1 rounded-lg font-black text-xs">
+                                                        {Math.round((cat.views / (stats.pricelistStats.totalViews || 1)) * 100)}%
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-center text-brand-black/40 dark:text-brand-white/40 py-4 text-sm">
+                                                Belum ada data kategori
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* CTA */}
+                                <div className="border-t border-black/5 dark:border-white/5 pt-4 mt-4">
+                                    <Link
+                                        href="/admin/insights/page?page=price-list"
+                                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-gold text-brand-black rounded-xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-transform"
+                                    >
+                                        <DocumentTextIcon className="w-4 h-4" />
+                                        Lihat Detail Lengkap
+                                    </Link>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="py-8 text-center">
+                                <p className="text-brand-black/40 dark:text-brand-white/40 text-sm mb-2">
+                                    Belum ada data price list
+                                </p>
+                                <p className="text-xs text-brand-black/30 dark:text-brand-white/30">
+                                    Tunggu ada pengunjung yang mengakses halaman price list
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
                     {/* Recent Page Activity */}
                     <div className="mt-6 bg-white dark:bg-white/3 border border-black/5 dark:border-white/5 rounded-2xl p-6 shadow-lg">
                         <h2 className="text-lg font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-4 flex items-center gap-2">
@@ -463,6 +730,221 @@ export default function Index({ stats = {}, filters = {}, filterOptions = {}, mo
             </div>
 
             <style>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: rgba(255, 255, 255, 0.05);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(212, 175, 55, 0.3);
+                    border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(212, 175, 55, 0.5);
+                }
+            `}</style>
+
+            {/* Jenis Interaksi - Detail Lengkap */}
+            <div className="mt-8 bg-gradient-to-br from-brand-black to-brand-black/80 dark:from-white/5 dark:to-transparent border border-brand-gold/20 rounded-2xl p-6 shadow-xl overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-gold/5 blur-3xl -mr-16 -mt-16"></div>
+                
+                <h2 className="text-lg font-black text-white uppercase tracking-tighter mb-6 flex items-center gap-2 relative z-10">
+                    <BoltIcon className="w-5 h-5 text-brand-gold" />
+                    Jenis-Jenis Interaksi
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
+                    {[
+                        {
+                            type: 'Page View',
+                            icon: '👁️',
+                            desc: 'User mengakses halaman website',
+                            color: 'brand-red'
+                        },
+                        {
+                            type: 'Price List Click',
+                            icon: '📋',
+                            desc: 'User membuka halaman price list',
+                            color: 'brand-gold'
+                        },
+                        {
+                            type: 'Category Click',
+                            icon: '🏷️',
+                            desc: 'User memilih kategori paket',
+                            color: 'brand-blue'
+                        },
+                        {
+                            type: 'Cart Add',
+                            icon: '🛒',
+                            desc: 'User menambahkan paket ke cart',
+                            color: 'brand-green'
+                        },
+                        {
+                            type: 'Booking Start',
+                            icon: '📅',
+                            desc: 'User memulai proses booking',
+                            color: 'brand-purple'
+                        },
+                        {
+                            type: 'Payment Submit',
+                            icon: '💳',
+                            desc: 'User mengirimkan bukti pembayaran',
+                            color: 'brand-orange'
+                        },
+                    ].map((interaction, idx) => (
+                        <div key={idx} className="bg-white/5 border border-white/10 rounded-xl p-4 hover:border-brand-gold/30 transition-all">
+                            <div className="text-3xl mb-2">{interaction.icon}</div>
+                            <h3 className="font-black text-white text-sm uppercase tracking-tight mb-1">
+                                {interaction.type}
+                            </h3>
+                            <p className="text-xs text-white/60 leading-relaxed">
+                                {interaction.desc}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="border-t border-white/10 mt-6 pt-4 relative z-10">
+                    <p className="text-xs text-white/50 italic">
+                        💡 Setiap interaksi dicatat secara otomatis untuk analisis mendalam tentang perilaku user.
+                    </p>
+                </div>
+            </div>
+
+            {/* Interaksi Live - Detail Lengkap */}
+            <div className="mt-8 bg-white dark:bg-white/3 border border-black/5 dark:border-white/5 rounded-2xl p-6 shadow-lg overflow-hidden">
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-black text-brand-black dark:text-brand-white uppercase tracking-tighter flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-brand-red animate-pulse"></span>
+                        Interaksi Live (Real-Time)
+                    </h2>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 bg-black/5 dark:bg-white/5 px-3 py-1 rounded-full">
+                        Auto-refresh 30 detik
+                    </span>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-brand-red/5 border border-brand-red/10 rounded-xl p-4">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-brand-red/60 mb-2">
+                            Total Interaksi
+                        </p>
+                        <p className="text-2xl font-black text-brand-red">
+                            {stats?.eventStats?.reduce((sum, e) => sum + e.count, 0) || 0}
+                        </p>
+                    </div>
+
+                    <div className="bg-brand-gold/5 border border-brand-gold/10 rounded-xl p-4">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-brand-gold/60 mb-2">
+                            Jenis Event
+                        </p>
+                        <p className="text-2xl font-black text-brand-gold">
+                            {stats?.eventStats?.length || 0}
+                        </p>
+                    </div>
+
+                    <div className="bg-brand-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl p-4">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 mb-2">
+                            Event Terbaru
+                        </p>
+                        <p className="text-2xl font-black text-brand-black dark:text-brand-white">
+                            {stats?.recentInteractions?.length || 0}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Event Distribution */}
+                <div className="border-t border-black/5 dark:border-white/5 pt-4 mb-6">
+                    <h3 className="text-sm font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-3">
+                        Distribusi Event
+                    </h3>
+                    <div className="space-y-2">
+                        {stats?.eventStats && stats.eventStats.length > 0 ? (
+                            stats.eventStats.map((event, idx) => {
+                                const totalEvents = stats.eventStats.reduce((sum, e) => sum + e.count, 0);
+                                const percentage = Math.round((event.count / totalEvents) * 100);
+                                return (
+                                    <div key={idx} className="flex items-center gap-3">
+                                        <div className="flex-1">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <p className="text-sm font-bold text-brand-black dark:text-brand-white capitalize">
+                                                    {event.event_type.replace(/_/g, ' ')}
+                                                </p>
+                                                <span className="text-xs font-black text-brand-black/40 dark:text-brand-white/40">
+                                                    {event.count}
+                                                </span>
+                                            </div>
+                                            <div className="w-full h-2 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
+                                                <div 
+                                                    className="h-full bg-gradient-to-r from-brand-red to-brand-gold rounded-full transition-all"
+                                                    style={{ width: `${percentage}%` }}
+                                                ></div>
+                                            </div>
+                                            <p className="text-xs text-brand-black/40 dark:text-brand-white/40 mt-1">
+                                                {percentage}% dari total events
+                                            </p>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <p className="text-center text-brand-black/40 dark:text-brand-white/40 py-4 text-sm">
+                                Belum ada data event
+                            </p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Live Stream */}
+                <div className="border-t border-black/5 dark:border-white/5 pt-4">
+                    <h3 className="text-sm font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-3 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-brand-red animate-pulse"></span>
+                        Stream Live (15 event terakhir)
+                    </h3>
+                    <div className="max-h-[400px] overflow-y-auto space-y-2 custom-scrollbar">
+                        {stats?.recentInteractions && stats.recentInteractions.length > 0 ? (
+                            stats.recentInteractions.map((inter, idx) => (
+                                <div key={idx} className="flex items-start gap-3 p-3 bg-black/5 dark:bg-white/5 rounded-lg border border-black/5 dark:border-white/5 hover:border-brand-gold/30 transition-all">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-[9px] font-black text-brand-red uppercase tracking-tight bg-brand-red/10 px-2 py-0.5 rounded whitespace-nowrap">
+                                                {inter.event_type.replace(/_/g, ' ')}
+                                            </span>
+                                            <span className="text-[8px] text-brand-black/40 dark:text-brand-white/40 font-mono">
+                                                {new Date(inter.created_at).toLocaleTimeString('id-ID')}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs font-bold text-brand-black dark:text-brand-white truncate">
+                                            {inter.item_name || inter.page_name || 'Unknown'}
+                                        </p>
+                                        {inter.payload && Object.keys(inter.payload).length > 0 && (
+                                            <p className="text-[9px] text-brand-black/40 dark:text-brand-white/40 mt-1">
+                                                📊 Payload: {JSON.stringify(inter.payload).substring(0, 50)}...
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="flex-shrink-0">
+                                        <span className="w-2 h-2 rounded-full bg-brand-gold animate-pulse block"></span>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-center text-brand-black/40 dark:text-brand-white/40 py-6 italic text-xs font-black uppercase tracking-widest">
+                                Menunggu interaksi live...
+                            </p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="border-t border-black/5 dark:border-white/5 mt-4 pt-4">
+                    <p className="text-xs text-brand-black/40 dark:text-brand-white/40 italic">
+                        🔄 Data ini terupdate otomatis setiap 30 detik. Setiap interaksi user akan muncul di sini dalam real-time untuk monitoring langsung.
+                    </p>
+                </div>
+            </div>
+
+            <style jsx>{`
                 .custom-scrollbar::-webkit-scrollbar {
                     width: 6px;
                 }

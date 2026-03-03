@@ -199,6 +199,7 @@ class BookingController extends Controller
                     'start_time' => $cart->start_time,
                     'end_time' => $cart->end_time,
                     'room_id' => $cart->room_id,
+                    'room_name' => $cart->room_name,
                     'photographer_id' => $cart->photographer_id,
                 ]);
 
@@ -295,7 +296,7 @@ class BookingController extends Controller
             // This allows the Create.jsx component to show the success state without changing the URL
             return redirect()->back()->with([
                 'success' => 'Booking created successfully!',
-                'booking' => $booking->load(['items.package.subCategory', 'paymentProof']),
+                'booking' => $booking->load(['items.package.subCategory', 'items.photographer', 'paymentProof']),
                 'rooms' => \App\Models\Room::all(),
             ]);
         } catch (\Exception $e) {
@@ -308,7 +309,7 @@ class BookingController extends Controller
 
     public function show($code)
     {
-        $booking = Booking::with(['items.package.subCategory', 'paymentProof'])->where('booking_code', $code)->firstOrFail();
+        $booking = Booking::with(['items.package.subCategory', 'items.photographer', 'paymentProof'])->where('booking_code', $code)->firstOrFail();
 
         // Jika dipanggil via route lama /booking/{code}, redirect ke /checkout?code=...
         if (request()->routeIs('booking.show')) {

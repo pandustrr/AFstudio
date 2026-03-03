@@ -19,6 +19,7 @@ class Cart extends Model
         'start_time',
         'end_time',
         'room_id',
+        'room_name',
         'photographer_id',
         'session_ids',
         'sessions_needed',

@@ -68,6 +68,7 @@ class CartController extends Controller
             'photographer_id' => 'nullable|exists:users,id',
             'session_ids' => 'nullable|array',
             'sessions_needed' => 'nullable|integer|min:1',
+            'room_name' => 'nullable|string',
             'cart_uid' => 'required|string',
         ]);
 
@@ -113,7 +114,8 @@ class CartController extends Controller
                 $data['start_time'] = $startTime->format('H:i');
                 $data['end_time'] = $endTime->format('H:i');
                 $data['sessions_needed'] = $sessionsNeeded;
-                // photographer_id will be null, assigned during checkout
+                $data['photographer_id'] = $request->photographer_id;
+                $data['room_name'] = $request->room_name;
             } else {
                 // Old flow: photographer_id + session_ids (legacy support)
                 if (!$request->photographer_id || empty($request->session_ids)) {
@@ -157,6 +159,7 @@ class CartController extends Controller
 
                 $data['photographer_id'] = $request->photographer_id;
                 $data['session_ids'] = $request->session_ids;
+                $data['room_name'] = $request->room_name;
                 $data['start_time'] = $startTime->format('H:i');
                 $data['end_time'] = $endTime->format('H:i');
             }
@@ -263,6 +266,7 @@ class CartController extends Controller
             }
 
             $data['room_id'] = $assignedRoom;
+            $data['room_name'] = \App\Models\Room::find($assignedRoom)?->label; // Using label for display
             $data['photographer_id'] = $assignedPhotographer;
             $data['session_ids'] = $sessionIds;
             $data['start_time'] = $request->start_time;

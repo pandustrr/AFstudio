@@ -139,7 +139,16 @@ Mohon konfirmasinya. Terima kasih!`;
                                     <p className="text-[10px] text-brand-black/60 dark:text-brand-white/60">
                                         Date: {item.scheduled_date} | Time: {item.start_time.substring(0, 5)} - {item.end_time.substring(0, 5)}
                                     </p>
-                                    <p className="text-[10px] text-brand-black/60 dark:text-brand-white/60">Room: {getRoomLabel(item.room_id)}</p>
+                                    {(item.room_id || item.room_name) && (
+                                        <p className="text-[10px] text-brand-black/60 dark:text-brand-white/60">
+                                            Studio: {item.room_name || getRoomLabel(item.room_id)}
+                                        </p>
+                                    )}
+                                    {item.photographer && (
+                                        <p className="text-[10px] text-brand-black/60 dark:text-brand-white/60">
+                                            Photographer: {item.photographer.name}
+                                        </p>
+                                    )}
                                 </div>
                             ))}
                         </div>

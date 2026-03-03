@@ -101,6 +101,38 @@ class InsightController extends Controller
             ->limit(20)
             ->get();
 
+        // Pricelist Statistics
+        $pricelistQuery = (clone $query)->where('page_name', 'price-list');
+        $pricelistTotalViews = $pricelistQuery->count();
+        $pricelistUniqueVisitors = (clone $pricelistQuery)->distinct('device_hash')->count('device_hash');
+        
+        // Pricelist views per day (untuk chart trend)
+        $pricelistByDay = (clone $pricelistQuery)
+            ->select(
+                'viewed_date as date',
+                DB::raw('count(distinct device_hash) as views')
+            )
+            ->groupBy('viewed_date')
+            ->orderBy('viewed_date', 'asc')
+            ->get();
+        
+        // Top categories for pricelist (if interaction tracking exists)
+        $pricelistTopCategories = \App\Models\Interaction::select('item_name as category_name', DB::raw('count(*) as views'))
+            ->where('event_type', 'pricelist_category_click')
+            ->when(isset($startDate), function ($q) use ($startDate) {
+                return $q->where('created_at', '>=', $startDate);
+            })
+            ->groupBy('item_name')
+            ->orderBy('views', 'desc')
+            ->limit(5)
+            ->get();
+
+        $pricelistStats = [
+            'totalViews' => $pricelistTotalViews,
+            'uniqueVisitors' => $pricelistUniqueVisitors,
+            'topCategories' => $pricelistTopCategories,
+        ];
+
         // Filter options
         $filterOptions = [
             'years' => range(date('Y'), date('Y') - 5),
@@ -133,6 +165,8 @@ class InsightController extends Controller
                 'recentViews' => $recentViews,
                 'recentInteractions' => $recentInteractions,
                 'eventStats' => $eventStats,
+                'pricelistStats' => $pricelistStats,
+                'pricelistByDay' => $pricelistByDay,
             ],
             'filters' => [
                 'days' => $days,

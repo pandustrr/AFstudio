@@ -24,7 +24,10 @@ class User extends Authenticatable
         'plain_password',
         'role',
         'phone',
+        'room_name',
+        'inactive_dates',
     ];
+
 
     /**
      * The attributes that should be hidden for serialization.
@@ -45,6 +48,7 @@ class User extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'inactive_dates' => 'array',
         ];
     }
 
