@@ -104,12 +104,12 @@ class CartController extends Controller
             // New flow: split session or auto-assign or manual
             if ($request->has('selected_times') && !empty($request->selected_times)) {
                 // Split session flow
-                $sessionIds = \App\Models\PhotographerSession::where('user_id', $request->photographer_id)
+                $sessionIds = \App\Models\PhotographerSession::where('photographer_id', $request->photographer_id)
                     ->where('date', $request->scheduled_date)
                     ->whereIn('start_time', collect($request->selected_times)->map(fn($t) => $t . ':00'))
                     ->pluck('id')
                     ->toArray();
-                
+
                 if (count($sessionIds) !== count($request->selected_times)) {
                     return redirect()->back()->with('error', 'Beberapa sesi tidak valid atau sudah tidak tersedia.');
                 }
@@ -117,7 +117,7 @@ class CartController extends Controller
                 $data['photographer_id'] = $request->photographer_id;
                 $data['session_ids'] = $sessionIds;
                 $data['room_name'] = $request->room_name;
-                
+
                 // For split sessions, we still need a start/end time for display in cart
                 // We'll use the range from earliest to latest selected
                 $times = collect($request->selected_times)->sort();

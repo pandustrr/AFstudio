@@ -638,10 +638,10 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
 
                                                     {availabilityStatus === 'available' && (
                                                         <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl animate-in zoom-in duration-300">
-                                                            <p className="text-xs font-bold text-green-700 dark:text-green-400 uppercase tracking-widest flex items-center gap-2">
+                                                            <div className="text-xs font-bold text-green-700 dark:text-green-400 uppercase tracking-widest flex items-center gap-2">
                                                                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                                                                 Fotografer tersedia untuk {maxSessions} sesi
-                                                            </p>
+                                                            </div>
                                                         </div>
                                                     )}
                                                     {error && (
