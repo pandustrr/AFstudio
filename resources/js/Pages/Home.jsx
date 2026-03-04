@@ -585,7 +585,8 @@ ${data.message}`;
                 <div className="absolute -right-10 lg:-right-20 top-0 text-[100px] lg:text-[150px] font-black text-brand-black/2 dark:text-brand-white/2 select-none italic leading-none pointer-events-none uppercase">VISI</div>
             </section>
 
-            <style jsx>{`
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 @keyframes marquee {
                     0% { transform: translateX(0); }
                     100% { transform: translateX(-50%); }
@@ -631,7 +632,7 @@ ${data.message}`;
                 .animate-fade-in-up {
                     animation: fade-in-up 1.2s cubic-bezier(0.23, 1, 0.32, 1) forwards;
                 }
-            `}</style>
+            ` }} />
         </GuestLayout>
     );
 }
