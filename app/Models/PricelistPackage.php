@@ -19,6 +19,7 @@ class PricelistPackage extends Model
         'duration',
         'max_sessions',
         'max_editing_quota',
+        'allow_split_session',
     ];
 
     public static function boot()
@@ -47,6 +48,7 @@ class PricelistPackage extends Model
     protected $casts = [
         'features' => 'array',
         'is_popular' => 'boolean',
+        'allow_split_session' => 'boolean',
         'price_numeric' => 'decimal:2',
     ];
 

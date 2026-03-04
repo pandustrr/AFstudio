@@ -85,7 +85,11 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
         router.post('/admin/photographer-sessions/offset', {
             session_id: selectedSession.session_id,
             offset_minutes: offsetData.minutes,
-            offset_description: offsetData.description
+            offset_description: offsetData.description,
+            // For creating session if it doesn't exist
+            date: selectedDate,
+            start_time: selectedSession.time_full,
+            photographer_id: selectedPhotographerId
         }, {
             onSuccess: () => setIsOffsetModalOpen(false)
         });
@@ -581,12 +585,13 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                         onChange={(e) => setMoveData({ ...moveData, time: e.target.value })}
                                         className="w-full bg-black/5 dark:bg-white/5 border-0 rounded-xl px-4 py-3 text-xs font-black uppercase tracking-widest focus:ring-brand-gold transition-all dark:text-brand-white"
                                     >
-                                        {/* Generate available times 05:00 - 20:00 */}
+                                        {/* Generate available times 05:10 - 20:10 */}
                                         {Array.from({ length: 31 }).map((_, i) => {
-                                            const hour = Math.floor(i / 2) + 5;
-                                            const min = i % 2 === 0 ? '00' : '30';
-                                            const t = `${hour.toString().padStart(2, '0')}:${min}:00`;
-                                            const tDisplay = `${hour.toString().padStart(2, '0')}.${min}`;
+                                            const totalMinutes = (i * 30) + (5 * 60) + 10;
+                                            const hour = Math.floor(totalMinutes / 60);
+                                            const min = totalMinutes % 60;
+                                            const t = `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}:00`;
+                                            const tDisplay = `${hour.toString().padStart(2, '0')}.${min.toString().padStart(2, '0')}`;
                                             return (
                                                 <option key={t} value={t} className="bg-white dark:bg-brand-black font-sans">JAM {tDisplay}</option>
                                             );
