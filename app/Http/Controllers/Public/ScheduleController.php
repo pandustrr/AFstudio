@@ -192,10 +192,10 @@ class ScheduleController extends Controller
 
         $maxSessions = $package->max_sessions ?? 1;
 
-        // Generate all operational time slots (05:00 - 20:00, every 30 minutes)
+        // Generate all operational time slots (05:10 - 20:10, every 30 minutes)
         $timeSlots = [];
-        $start = Carbon::createFromTimeString('05:00');
-        $end = Carbon::createFromTimeString('20:00');
+        $start = Carbon::createFromTimeString('05:10');
+        $end = Carbon::createFromTimeString('20:10');
         
         while ($start <= $end) {
             $timeSlots[] = $start->format('H:i');
@@ -293,11 +293,12 @@ class ScheduleController extends Controller
     {
         $request->validate([
             'date' => 'required|date|after_or_equal:today',
-            'start_time' => 'required|date_format:H:i',
+            'start_time' => 'nullable|date_format:H:i',
             'end_time' => 'nullable|date_format:H:i',
             'package_id' => 'required|exists:pricelist_packages,id',
             'cart_uid' => 'nullable|string',
             'room_name' => 'nullable|string',
+            'selected_times' => 'nullable|array', // For split session
         ]);
 
         try {
@@ -309,15 +310,20 @@ class ScheduleController extends Controller
             $isPhotographer = $package->subCategory?->category?->type === 'photographer';
 
             if ($isPhotographer) {
-                // Check if photographer has consecutive open sessions for this duration
-                $sessionsNeeded = ceil($durationMinutes / 30);
-                
-                // Generate required time slots (H:i:s format for DB query)
-                $slots = [];
-                $time = Carbon::createFromFormat('H:i', $startTime);
-                for ($i = 0; $i < $sessionsNeeded; $i++) {
-                    $slots[] = $time->format('H:i:s');
-                    $time->addMinutes(30);
+                // If selected_times is provided (Split Session), use it
+                // Otherwise calculate consecutive slots (Traditional)
+                if ($request->has('selected_times') && !empty($request->selected_times)) {
+                    $slots = collect($request->selected_times)->map(function($t) {
+                        return Carbon::createFromFormat('H:i', $t)->format('H:i:s');
+                    })->toArray();
+                } else {
+                    $sessionsNeeded = ceil($durationMinutes / 30);
+                    $slots = [];
+                    $time = Carbon::createFromFormat('H:i', $startTime);
+                    for ($i = 0; $i < $sessionsNeeded; $i++) {
+                        $slots[] = $time->format('H:i:s');
+                        $time->addMinutes(30);
+                    }
                 }
 
                 // Get session IDs already in cart with same cart_uid (to exclude them)
@@ -406,5 +412,93 @@ class ScheduleController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Get session grid for a specific room and date
+     */
+    public function getRoomSessionGrid(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date|after_or_equal:today',
+            'room_name' => 'required|string',
+            'package_id' => 'required|exists:pricelist_packages,id',
+        ]);
+
+        $date = Carbon::parse($request->date)->toDateString();
+        $roomName = $request->room_name;
+        $packageId = $request->package_id;
+
+        // Find photographer for this room
+        $photographer = \App\Models\User::where('role', 'photographer')
+            ->where('room_name', $roomName)
+            ->first();
+
+        if (!$photographer) {
+            return response()->json(['error' => 'No photographer assigned to this room'], 404);
+        }
+
+        $sessions = \App\Models\PhotographerSession::where('date', $date)
+            ->where('photographer_id', $photographer->id)
+            ->with(['bookingItem.booking', 'bookingItem.package'])
+            ->orderBy('start_time')
+            ->get();
+
+        // Use same logic as admin grid but simplified for customer
+        $grid = $this->generateSessionGrid($date, $sessions);
+
+        return response()->json([
+            'date' => $date,
+            'room_name' => $roomName,
+            'photographer_id' => $photographer->id,
+            'grid' => $grid
+        ]);
+    }
+
+    private function generateSessionGrid($date, $existingSessions)
+    {
+        $grid = [];
+        $existingByTime = $existingSessions->keyBy('start_time');
+
+        $start = Carbon::createFromTimeString('05:10');
+        $end = Carbon::createFromTimeString('20:10');
+
+        $cumulativeOffset = 0;
+
+        while ($start <= $end) {
+            $timeString = $start->format('H:i:s');
+            $session = $existingByTime->get($timeString);
+            $status = 'open'; // Default status if no session exists
+
+            if ($session) {
+                $status = $session->status; // Use the actual status from the session record
+                // Offset persists and accumulates through booked and open sessions
+                if ($status === 'booked' || $status === 'open') {
+                    $cumulativeOffset += ($session->offset_minutes ?? 0);
+                } else {
+                    $cumulativeOffset = 0; // Reset on 'off'
+                }
+            }
+
+            $grid[] = [
+                'time' => $start->format('H:i'),
+                'time_full' => $timeString,
+                'status' => ($status === 'booked' && ($session->bookingItem->booking->status ?? '') !== 'confirmed') ? 'open' : $status,
+                'session_id' => $session ? $session->id : null,
+                'booking_item_id' => $session ? $session->booking_item_id : null,
+                'booking_status' => $session && $session->bookingItem ? $session->bookingItem->booking->status : null,
+                'booking_info' => $session && $session->bookingItem && $session->bookingItem->booking->status === 'confirmed' ? [
+                    'customer_name' => $session->bookingItem->booking->name ?? 'GUEST',
+                    'package_name' => $session->bookingItem->package->name ?? 'N/A',
+                ] : null,
+                'offset_minutes' => $session ? $session->offset_minutes : 0,
+                'cumulative_offset' => $cumulativeOffset,
+                'offset_description' => $session ? $session->offset_description : '',
+            ];
+
+            $start->addMinutes(30);
+        }
+
+        return $grid;
     }
 }

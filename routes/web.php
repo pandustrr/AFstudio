@@ -24,10 +24,11 @@ Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
 Route::patch('/cart/{cart}', [CartController::class, 'update'])->name('cart.update');
 Route::delete('/cart/{cart}', [CartController::class, 'destroy'])->name('cart.destroy');
 Route::get('/schedule/check', [ScheduleController::class, 'checkAvailability'])->name('schedule.check');
-Route::get('/schedule/check-time', [ScheduleController::class, 'checkTimeAvailability'])->name('schedule.check-time');
+Route::post('/schedule/check-time-availability', [ScheduleController::class, 'checkTimeAvailability'])->name('schedule.check-time');
 Route::get('/schedule/photographer-slots', [ScheduleController::class, 'getPhotographerTimeSlots']);
 Route::get('/schedule/check-photographer-availability', [ScheduleController::class, 'checkPhotographerAvailability']);
 Route::get('/schedule/available-rooms', [ScheduleController::class, 'getAvailableRooms']);
+Route::get('/schedule/room-session-grid', [ScheduleController::class, 'getRoomSessionGrid']);
 
 // Shared / Locked Routes
 Route::get('/share/SemuaKategori', [\App\Http\Controllers\SharedPricelistController::class, 'all'])->name('share.all');

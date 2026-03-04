@@ -20,6 +20,8 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     // Modal controls
     const [showSuccessUID, setShowSuccessUID] = useState(false);
     const [currentUID, setCurrentUID] = useState('');
+    const [sessionGrid, setSessionGrid] = useState([]);
+    const [isLoadingGrid, setIsLoadingGrid] = useState(false);
 
     const rooms = initialRooms;
 
@@ -67,6 +69,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     const [selectedSessions, setSelectedSessions] = useState([]);
     const [maxSessions, setMaxSessions] = useState(1);
     const [startTime, setStartTime] = useState('');
+    const [selectedSplitTimes, setSelectedSplitTimes] = useState([]);
     const [availabilityStatus, setAvailabilityStatus] = useState(null);
 
     // Reset state when modal opens/closes or package changes
@@ -84,9 +87,11 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             setSelectedSessions([]);
             setStartTime('');
             setSelectedRoom('');
-            setAvailableRooms([]);
             setAvailabilityStatus(null);
             setError(null);
+            setSessionGrid([]);
+            setSelectedSplitTimes([]);
+            setIsLoadingGrid(false);
             // Set maxSessions from package data
             setMaxSessions(packageData?.max_sessions || 1);
         }
@@ -140,7 +145,13 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     useEffect(() => {
         if (date && packageData && selectedRoom) {
             fetchPhotographerAvailability();
+            fetchSessionGrid();
         }
+        // Reset selection when date or room changes
+        setStartTime('');
+        setSelectedSplitTimes([]);
+        setAvailabilityStatus(null);
+        setError(null);
     }, [date, selectedRoom]);
 
     // Fetch rooms when date changes
@@ -161,6 +172,24 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             setAvailableRooms(response.data.rooms || []);
         } catch (err) {
             console.error("Failed to fetch rooms", err);
+        }
+    };
+
+    const fetchSessionGrid = async () => {
+        setIsLoadingGrid(true);
+        try {
+            const response = await axios.get('/schedule/room-session-grid', {
+                params: {
+                    date: date,
+                    room_name: selectedRoom,
+                    package_id: packageData.id
+                }
+            });
+            setSessionGrid(response.data.grid || []);
+        } catch (err) {
+            console.error("Failed to fetch session grid", err);
+        } finally {
+            setIsLoadingGrid(false);
         }
     };
 
@@ -212,49 +241,26 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         }
     };
 
-    const checkTimeAvailability = async (startT, endT) => {
-        if (!startT || !endT || !date) return;
+    const checkTimeAvailability = async (startTimeStr, endTimeStr, customTimes = null) => {
+        if ((!startTimeStr && !customTimes) || !date) return;
 
         setAvailabilityStatus('checking');
         setError(null);
 
         try {
-            // Calculate sessions from time range
-            const [startHour, startMin] = startT.split(':').map(Number);
-            const [endHour, endMin] = endT.split(':').map(Number);
-
-            const startMinutes = startHour * 60 + startMin;
-            const endMinutes = endHour * 60 + endMin;
-            const durationMinutes = endMinutes - startMinutes;
-            const sessionsNeeded = Math.ceil(durationMinutes / 30);
-
-            if (sessionsNeeded > maxSessions) {
-                setAvailabilityStatus('full');
-                setError(`Durasi terlalu lama! Maksimal ${maxSessions} sesi (${formatSessionDuration(maxSessions)}), Anda memerlukan ${sessionsNeeded} sesi.`);
-                return;
-            }
-
-            if (durationMinutes <= 0) {
-                setAvailabilityStatus('full');
-                setError('Jam selesai harus lebih besar dari jam mulai.');
-                return;
-            }
-
-            // Check photographer availability
-            const response = await axios.get('/schedule/check-photographer-availability', {
-                params: {
-                    date: date,
-                    start_time: startT,
-                    sessions_needed: sessionsNeeded,
-                    package_id: packageData.id,
-                    room_name: selectedRoom
-                }
+            const response = await axios.post('/schedule/check-time-availability', {
+                date: date,
+                start_time: startTimeStr || '',
+                end_time: endTimeStr || '',
+                package_id: packageData.id,
+                room_name: selectedRoom,
+                cart_uid: localStorage.getItem('afstudio_cart_uid'),
+                selected_times: customTimes
             });
 
             if (response.data.available) {
-                setPhotographerId(response.data.photographer_id);
                 setAvailabilityStatus('available');
-                setSelectedSessions(sessionsNeeded); // Store sessions count
+                setPhotographerId(response.data.photographer_id);
             } else {
                 setAvailabilityStatus('full');
                 setError('Tidak ada fotografer tersedia untuk waktu tersebut.');
@@ -266,33 +272,56 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         }
     };
 
-    const toggleSession = (sessionId) => {
-        if (selectedSessions.includes(sessionId)) {
-            setSelectedSessions(selectedSessions.filter(id => id !== sessionId));
+    const toggleSplitSession = (time) => {
+        let newSelected;
+        if (selectedSplitTimes.includes(time)) {
+            newSelected = selectedSplitTimes.filter(t => t !== time);
         } else {
-            if (selectedSessions.length >= maxSessions) {
-                setError(`Maksimal ${maxSessions} sesi untuk paket ini.`);
+            if (selectedSplitTimes.length >= maxSessions) {
+                // Remove first more and add new? Or just block?
+                // User said "Customer can select sessions 1 by 1", let's block if max reached
                 return;
             }
-            setSelectedSessions([...selectedSessions, sessionId]);
-            setError(null);
+            newSelected = [...selectedSplitTimes, time];
+        }
+
+        setSelectedSplitTimes(newSelected);
+        setAvailabilityStatus(null);
+        setStartTime(newSelected.length > 0 ? newSelected[0] : ''); // Use first selected as start_time anchor
+
+        // Automatically check availability if selection is complete
+        if (newSelected.length === maxSessions) {
+            checkTimeAvailability(null, null, newSelected);
         }
     };
 
     const handleSubmit = () => {
         if (!date) return;
-        if (!startTime) {
-            setError('Pilih jam mulai.');
-            return;
+
+        const isSplit = packageData?.allow_split_session;
+
+        if (isSplit) {
+            if (selectedSplitTimes.length < maxSessions) {
+                setError(`Pilih ${maxSessions} sesi.`);
+                return;
+            }
+        } else {
+            if (!startTime) {
+                setError('Pilih jam mulai.');
+                return;
+            }
         }
+
         if (availabilityStatus !== 'available') {
             setError('Cek ketersediaan fotografer terlebih dahulu.');
             return;
         }
+
         if (!photographerId) {
             setError('Fotografer belum ditentukan atau tidak tersedia di room ini.');
             return;
         }
+
         if (!selectedRoom) {
             setError('Pilih room terlebih dahulu.');
             return;
@@ -300,7 +329,6 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
 
         setError(null);
 
-        // Kembali pakai UID yang sama agar tidak duplikat di database
         const uid = getOrCreateUID();
 
         const payload = {
@@ -308,25 +336,23 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             quantity: 1,
             scheduled_date: date,
             start_time: startTime,
-            sessions_needed: selectedSessions > 0 ? selectedSessions : maxSessions,
+            sessions_needed: maxSessions,
             photographer_id: photographerId,
             room_name: selectedRoom,
-            cart_uid: uid
+            cart_uid: uid,
+            // Pass all selected times if split session
+            session_ids: isSplit ? null : null, // Actually CartController will handle by start_time + sessions_needed or photographer_id
+            selected_times: isSplit ? selectedSplitTimes : null
         };
 
         if (mode === 'direct') {
             router.post('/cart', payload, {
                 headers: { 'X-Cart-UID': uid },
                 onSuccess: (page) => {
-                    // Ambil ID barang yang baru saja disimpan dari flash message
                     const itemId = page.props.flash?.last_added_id;
-                    console.log('Direct Buy Debug:', { uid, itemId });
-
                     if (itemId) {
-                        // Redirect dengan instruksi: "Tampilkan barang ID ini saja"
                         router.visit(`/checkout?uid=${uid}&cart_item_id=${itemId}`);
                     } else {
-                        // Fallback jika ID gagal didapat
                         router.visit(`/checkout?uid=${uid}`);
                     }
                     onClose();
@@ -337,23 +363,11 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                 }
             });
         } else {
-            // Cart mode
-            processCart(uid);
+            processCart(uid, payload);
         }
     };
 
-    const processCart = (uid) => {
-        const payload = {
-            pricelist_package_id: packageData.id,
-            quantity: 1,
-            scheduled_date: date,
-            start_time: startTime,
-            sessions_needed: selectedSessions > 0 ? selectedSessions : maxSessions,
-            photographer_id: photographerId,
-            room_name: selectedRoom,
-            cart_uid: uid
-        };
-
+    const processCart = (uid, payload) => {
         router.post('/cart', payload, {
             headers: { 'X-Cart-UID': uid },
             onSuccess: (page) => {
@@ -495,78 +509,143 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                 </div>
                                             )}
 
-                                            {/* Time Input for Photographer Packages */}
-                                            {date && (
-                                                <div className="space-y-3">
+                                            {/* Session List */}
+                                            {date && selectedRoom && (
+                                                <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-500">
                                                     <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
-                                                        <ClockIcon className="w-4 h-4" /> Waktu Session
+                                                        <ClockIcon className="w-4 h-4" /> Pilih Sesi
                                                     </label>
 
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        <div>
-                                                            <label className="text-[10px] font-bold uppercase tracking-widest text-brand-black/50 dark:text-brand-white/50 block mb-2">Jam Mulai</label>
-                                                            <input
-                                                                type="time"
-                                                                value={startTime}
-                                                                onChange={(e) => {
-                                                                    setStartTime(e.target.value);
-                                                                    setAvailabilityStatus(null);
-                                                                }}
-                                                                min="05:00"
-                                                                max="20:00"
-                                                                className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/5 dark:border-white/5 rounded-xl px-4 py-3 text-brand-black dark:text-brand-white font-bold placeholder-brand-black/40 focus:outline-none focus:border-brand-gold"
-                                                            />
+                                                    {isLoadingGrid ? (
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            {[1, 2, 3, 4, 5, 6].map(i => (
+                                                                <div key={i} className="h-20 w-full animate-pulse bg-black/5 dark:bg-white/5 rounded-xl" />
+                                                            ))}
                                                         </div>
-                                                        <div>
-                                                            <label className="text-[10px] font-bold uppercase tracking-widest text-brand-black/50 dark:text-brand-white/50 block mb-2">Jam Selesai</label>
-                                                            <input
-                                                                type="time"
-                                                                value={
-                                                                    !startTime ? '' :
-                                                                        (() => {
-                                                                            const [h, m] = startTime.split(':').map(Number);
-                                                                            const totalMin = h * 60 + m + maxSessions * 30;
-                                                                            const endH = Math.floor(totalMin / 60);
-                                                                            const endM = totalMin % 60;
-                                                                            return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-                                                                        })()
-                                                                }
-                                                                onChange={(e) => {
-                                                                    setAvailabilityStatus(null);
-                                                                }}
-                                                                disabled
-                                                                className="w-full bg-black/5 dark:bg-white/5 border-2 border-black/5 dark:border-white/5 rounded-xl px-4 py-3 text-brand-black dark:text-brand-white font-bold opacity-50 cursor-not-allowed"
-                                                            />
-                                                        </div>
-                                                    </div>
+                                                    ) : (
+                                                        <div className="grid grid-cols-3 gap-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar p-1">
+                                                            {sessionGrid.map((item, index) => {
+                                                                const isBooked = item.status === 'booked';
+                                                                const isOff = item.status === 'off';
+                                                                const isOpen = item.status === 'open';
+                                                                const isSplit = packageData?.allow_split_session;
 
-                                                    {startTime && (
-                                                        <button
-                                                            onClick={() => {
-                                                                const [h, m] = startTime.split(':').map(Number);
-                                                                const totalMin = h * 60 + m + maxSessions * 30;
-                                                                const endH = Math.floor(totalMin / 60);
-                                                                const endM = totalMin % 60;
-                                                                const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-                                                                checkTimeAvailability(startTime, endTime);
-                                                            }}
-                                                            disabled={availabilityStatus === 'checking'}
-                                                            className="w-full px-6 py-3 bg-brand-gold text-brand-black font-black uppercase text-xs tracking-widest rounded-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        >
-                                                            {availabilityStatus === 'checking' ? 'Mengecek...' : 'Cek Ketersediaan'}
-                                                        </button>
+                                                                // Helper to check if this slot is selected
+                                                                const isSelected = isSplit
+                                                                    ? selectedSplitTimes.includes(item.time)
+                                                                    : startTime === item.time;
+
+                                                                // End time calculation for the 30min slot
+                                                                const slotEndTime = (() => {
+                                                                    const [h, m] = item.time.split(':').map(Number);
+                                                                    const totalMin = h * 60 + m + 30;
+                                                                    const endH = Math.floor(totalMin / 60);
+                                                                    const endM = totalMin % 60;
+                                                                    return `${String(endH).padStart(2, '0')}.${String(endM).padStart(2, '0')}`;
+                                                                })();
+
+                                                                // Helper to check if this slot is part of a consecutive selection (traditional)
+                                                                const isPartOfConsecutive = (() => {
+                                                                    if (isSplit || !startTime) return false;
+                                                                    const startIdx = sessionGrid.findIndex(s => s.time === startTime);
+                                                                    const currentIdx = index;
+                                                                    return currentIdx >= startIdx && currentIdx < startIdx + maxSessions;
+                                                                })();
+
+                                                                const isHighlighted = isSplit ? isSelected : isPartOfConsecutive;
+                                                                const isStartSelection = startTime === item.time;
+
+                                                                return (
+                                                                    <button
+                                                                        key={index}
+                                                                        type="button"
+                                                                        disabled={isBooked || isOff}
+                                                                        onClick={() => {
+                                                                            if (isSplit) {
+                                                                                toggleSplitSession(item.time);
+                                                                            } else {
+                                                                                if (isStartSelection) {
+                                                                                    setStartTime('');
+                                                                                    setAvailabilityStatus(null);
+                                                                                } else {
+                                                                                    setStartTime(item.time);
+                                                                                    const endTimeStr = (() => {
+                                                                                        const [h, m] = item.time.split(':').map(Number);
+                                                                                        const totalMin = h * 60 + m + maxSessions * 30;
+                                                                                        const endH = Math.floor(totalMin / 60);
+                                                                                        const endM = totalMin % 60;
+                                                                                        return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+                                                                                    })();
+                                                                                    checkTimeAvailability(item.time, endTimeStr);
+                                                                                }
+                                                                            }
+                                                                        }}
+                                                                        className={`relative flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center group
+                                                                                ${isHighlighted
+                                                                                ? 'bg-brand-gold/10 border-brand-gold text-brand-gold shadow-lg shadow-brand-gold/10 scale-[1.05] z-10'
+                                                                                : isOpen
+                                                                                    ? 'bg-black/5 dark:bg-white/5 border-black/5 dark:border-white/5 hover:border-brand-gold/30 hover:scale-[1.02]'
+                                                                                    : 'bg-black/2 dark:bg-white/2 border-transparent opacity-40 grayscale cursor-not-allowed'
+                                                                            }`}
+                                                                    >
+                                                                        <span className={`text-[8px] font-black uppercase tracking-tighter opacity-40 block mb-1
+                                                                                ${isHighlighted ? 'text-brand-gold opacity-100' : ''}
+                                                                            `}>
+                                                                            Sesi {index + 1}
+                                                                        </span>
+
+                                                                        <h3 className={`text-[11px] font-black tracking-tighter uppercase mb-0.5
+                                                                                ${isHighlighted ? 'text-brand-gold' : 'text-brand-black dark:text-brand-white'}
+                                                                            `}>
+                                                                            {item.time.replace(':', '.')}-{slotEndTime}
+                                                                        </h3>
+
+                                                                        <div className={`text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border mt-1
+                                                                                ${isBooked ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                                                                                isOff ? 'bg-black/10 text-brand-black/40 border-black/20' :
+                                                                                    isHighlighted ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-brand-gold/10 text-brand-gold border-brand-gold/20'}
+                                                                            `}>
+                                                                            {isBooked ? 'TERISI' : isOff ? 'LIBUR' : isHighlighted ? 'FIXED' : 'OPEN'}
+                                                                        </div>
+
+                                                                        {isHighlighted && isSplit && (
+                                                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-brand-gold rounded-full flex items-center justify-center text-brand-black shadow-md border border-white dark:border-brand-black shadow-brand-gold/20 text-[10px] font-black">
+                                                                                {selectedSplitTimes.indexOf(item.time) + 1}
+                                                                            </div>
+                                                                        )}
+
+                                                                        {!isSplit && isStartSelection && (
+                                                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-brand-gold rounded-full flex items-center justify-center text-brand-black shadow-md border border-white dark:border-brand-black shadow-brand-gold/20">
+                                                                                <div className="w-1.5 h-1.5 bg-brand-black rounded-full animate-pulse" />
+                                                                            </div>
+                                                                        )}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+
+                                                    {packageData?.allow_split_session && (
+                                                        <div className="flex items-center justify-between px-2 pt-1">
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
+                                                                Sesi Terpilih:
+                                                            </span>
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-gold">
+                                                                {selectedSplitTimes.length} dari {maxSessions}
+                                                            </span>
+                                                        </div>
                                                     )}
 
                                                     {availabilityStatus === 'available' && (
-                                                        <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
-                                                            <p className="text-xs font-bold text-green-700 dark:text-green-400 uppercase tracking-widest">
-                                                                ✓ Fotografer tersedia untuk {selectedSessions} sesi ({formatSessionDuration(selectedSessions)})
+                                                        <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl animate-in zoom-in duration-300">
+                                                            <p className="text-xs font-bold text-green-700 dark:text-green-400 uppercase tracking-widest flex items-center gap-2">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                                Fotografer tersedia untuk {maxSessions} sesi
                                                             </p>
                                                         </div>
                                                     )}
-
                                                     {error && (
-                                                        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                                                        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl animate-in shake duration-500">
                                                             <p className="text-xs font-bold text-red-700 dark:text-red-400 uppercase tracking-widest">{error}</p>
                                                         </div>
                                                     )}
@@ -575,7 +654,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
 
                                             <button
                                                 onClick={handleSubmit}
-                                                disabled={!date || loading}
+                                                disabled={!date || !startTime || availabilityStatus !== 'available' || loading}
                                                 className="w-full py-5 bg-brand-black dark:bg-brand-white text-white dark:text-brand-black font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl disabled:opacity-50 mt-4"
                                             >
                                                 {mode === 'direct' ? 'Lanjut ke Booking' : 'Tambah ke Keranjang'}

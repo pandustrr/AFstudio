@@ -12,6 +12,7 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
         is_popular: false,
         max_sessions: 1,
         max_editing_quota: 0,
+        allow_split_session: false,
     });
 
     const formatCurrency = (value) => {
@@ -49,6 +50,7 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
                 is_popular: pkg.is_popular || false,
                 max_sessions: pkg.max_sessions || 1,
                 max_editing_quota: pkg.max_editing_quota || 0,
+                allow_split_session: pkg.allow_split_session || false,
             });
         } else {
             reset();
@@ -88,6 +90,7 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
             max_editing_quota: parseInt(data.max_editing_quota) || 0,
             price_numeric: cleanPrice ? parseFloat(cleanPrice) : null,
             is_popular: Boolean(data.is_popular),
+            allow_split_session: Boolean(data.allow_split_session),
         };
 
         if (pkg) {
@@ -215,6 +218,23 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
                                     className="w-5 h-5 rounded border-0 bg-black/10 dark:bg-white/10 text-brand-gold focus:ring-brand-gold"
                                 />
                                 <label htmlFor="is_popular" className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white cursor-pointer select-none">Populer</label>
+                            </div>
+                        </div>
+
+                        {/* Split Session Toggle */}
+                        <div className="md:col-span-3">
+                            <div className="flex items-center gap-3 p-4 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/5 dark:border-white/5 transition-all hover:border-brand-gold/30">
+                                <input
+                                    type="checkbox"
+                                    id="allow_split_session"
+                                    checked={data.allow_split_session}
+                                    onChange={(e) => setData('allow_split_session', e.target.checked)}
+                                    className="w-6 h-6 rounded-md border-0 bg-black/10 dark:bg-white/10 text-brand-gold focus:ring-brand-gold"
+                                />
+                                <div className="flex-1">
+                                    <label htmlFor="allow_split_session" className="text-xs font-black uppercase tracking-widest text-brand-black dark:text-brand-white cursor-pointer select-none block">Aktifkan Split Sesi</label>
+                                    <p className="text-[10px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase tracking-tighter">Customer bisa memilih sesi secara terpisah (tidak harus berurutan)</p>
+                                </div>
                             </div>
                         </div>
                     </div>

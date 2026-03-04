@@ -82,7 +82,7 @@ class PhotographerSessionController extends Controller
             $availableDays = range(1, $daysInMonth);
         }
 
-        // Operasional 05:00 - 20:30 (31 sesi)
+        // Operasional 05:10 - 20:40 (31 sesi)
         $grid = $this->generateSessionGrid($date, $sessions);
 
         // Get Monthly Stats for Calendar Indicators
@@ -226,16 +226,34 @@ class PhotographerSessionController extends Controller
     public function updateOffset(Request $request)
     {
         $request->validate([
-            'session_id' => 'required|exists:photographer_sessions,id',
+            'session_id' => 'nullable|exists:photographer_sessions,id',
             'offset_minutes' => 'required|integer',
             'offset_description' => 'nullable|string',
         ]);
 
-        $session = PhotographerSession::findOrFail($request->session_id);
-        $session->update([
-            'offset_minutes' => $request->offset_minutes,
-            'offset_description' => $request->offset_description,
-        ]);
+        if ($request->session_id) {
+            $session = PhotographerSession::findOrFail($request->session_id);
+            $session->update([
+                'offset_minutes' => $request->offset_minutes,
+                'offset_description' => $request->offset_description,
+            ]);
+        } else {
+            // If session record doesn't exist, create it (likely an 'open' slot)
+            $request->validate([
+                'date' => 'required|date',
+                'start_time' => 'required',
+                'photographer_id' => 'required|exists:users,id',
+            ]);
+
+            PhotographerSession::create([
+                'photographer_id' => $request->photographer_id,
+                'date' => $request->date,
+                'start_time' => $request->start_time,
+                'status' => 'open',
+                'offset_minutes' => $request->offset_minutes,
+                'offset_description' => $request->offset_description,
+            ]);
+        }
 
         return back()->with('success', 'Offset berhasil diperbarui');
     }
@@ -249,10 +267,10 @@ class PhotographerSessionController extends Controller
 
         $session = PhotographerSession::findOrFail($request->session_id);
 
-        // Ensure the new time is in 30min increments and within operational hours
+        // Ensure the new time is in 30min increments (starting from 05:10 to 05:40, etc)
         $newTime = Carbon::createFromTimeString($request->new_start_time);
-        if ($newTime->minute % 30 !== 0) {
-            return back()->withErrors(['new_start_time' => 'Waktu harus kelipatan 30 menit']);
+        if ($newTime->minute % 30 !== 10) {
+            return back()->withErrors(['new_start_time' => 'Waktu harus kelipatan 30 menit (xx:10 atau xx:40)']);
         }
 
         // Check availability
@@ -388,27 +406,27 @@ class PhotographerSessionController extends Controller
         $grid = [];
         $existingByTime = $existingSessions->keyBy('start_time');
 
-        $start = Carbon::createFromTimeString('05:00');
-        $end = Carbon::createFromTimeString('20:00');
+        $start = Carbon::createFromTimeString('05:10');
+        $end = Carbon::createFromTimeString('20:10');
 
         $cumulativeOffset = 0;
 
         while ($start <= $end) {
             $timeString = $start->format('H:i:s');
             $session = $existingByTime->get($timeString);
+            $status = 'open'; // Default status if no session exists
 
             if ($session) {
-                $status = $session->status;
-                // Offset only persists and accumulates through 'booked' sessions
-                if ($status === 'booked') {
+                $status = $session->status; // Use the actual status from the session record
+                // Offset persists and accumulates through booked and open sessions
+                if ($status === 'booked' || $status === 'open') {
                     $cumulativeOffset += ($session->offset_minutes ?? 0);
                 } else {
-                    $cumulativeOffset = 0; // Reset on 'off' or manual 'open'
+                    $cumulativeOffset = 0; // Reset on 'off'
                 }
-            } else {
-                $status = 'open';
-                $cumulativeOffset = 0; // Reset on open gaps
             }
+            // Don't reset offset on gaps, allow it to propagate
+            // $cumulativeOffset = 0; 
 
             $grid[] = [
                 'time' => $start->format('H:i'),
