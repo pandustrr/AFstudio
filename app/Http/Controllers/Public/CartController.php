@@ -117,6 +117,7 @@ class CartController extends Controller
                 $data['photographer_id'] = $request->photographer_id;
                 $data['session_ids'] = $sessionIds;
                 $data['room_name'] = $request->room_name;
+                $data['selected_times'] = $request->selected_times;
 
                 // For split sessions, we still need a start/end time for display in cart
                 // We'll use the range from earliest to latest selected
@@ -140,6 +141,7 @@ class CartController extends Controller
                 $data['sessions_needed'] = $sessionsNeeded;
                 $data['photographer_id'] = $request->photographer_id;
                 $data['room_name'] = $request->room_name;
+                $data['selected_times'] = $request->selected_times;
             } else {
                 // Old flow: photographer_id + session_ids (legacy support)
                 if (!$request->photographer_id || empty($request->session_ids)) {
@@ -295,6 +297,7 @@ class CartController extends Controller
             $data['session_ids'] = $sessionIds;
             $data['start_time'] = $request->start_time;
             $data['end_time'] = $endTime->format('H:i');
+            $data['selected_times'] = $request->selected_times;
         }
 
         $cart = Cart::create($data);

@@ -81,6 +81,7 @@ class BookingController extends Controller
             'university' => 'nullable|string|max:255',
             'domicile' => 'nullable|string|max:255',
             'location' => 'required|string|max:255',
+            'venue_name' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
             'referral_code' => 'nullable|string',
         ]);
@@ -166,6 +167,7 @@ class BookingController extends Controller
                 'domicile' => $request->domicile,
                 'booking_date' => now(), // Use current timestamp for the transaction date
                 'location' => $request->location,
+                'venue_name' => $request->venue_name,
                 'notes' => $request->notes,
                 'total_price' => $totalPrice,
                 'discount_amount' => $discountAmount,
@@ -201,6 +203,7 @@ class BookingController extends Controller
                     'room_id' => $cart->room_id,
                     'room_name' => $cart->room_name,
                     'photographer_id' => $cart->photographer_id,
+                    'selected_times' => $cart->selected_times,
                 ]);
 
                 // Handle photographer booking

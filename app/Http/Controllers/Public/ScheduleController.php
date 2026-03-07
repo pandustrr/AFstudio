@@ -34,7 +34,7 @@ class ScheduleController extends Controller
             if ($isPhotographer) {
                 // Fetch photographer sessions with 'open' status
                 $sessionsNeeded = ceil($durationMinutes / 30);
-                
+
                 $sessions = \App\Models\PhotographerSession::where('date', $date)
                     ->where('status', 'open')
                     ->orderBy('photographer_id')
@@ -46,7 +46,7 @@ class ScheduleController extends Controller
                 $availableSlots = [];
 
                 foreach ($photographerSlots as $photographerId => $slots) {
-                    $slotTimes = $slots->pluck('start_time')->map(function($time) {
+                    $slotTimes = $slots->pluck('start_time')->map(function ($time) {
                         return substr($time, 0, 5); // H:i format
                     })->toArray();
 
@@ -54,13 +54,13 @@ class ScheduleController extends Controller
                     foreach ($slotTimes as $index => $startTime) {
                         $isConsecutive = true;
                         $endIndex = $index + $sessionsNeeded;
-                        
+
                         if ($endIndex <= count($slotTimes)) {
                             for ($i = $index; $i < $endIndex; $i++) {
                                 $expectedTime = Carbon::createFromFormat('H:i', $slotTimes[$index])
                                     ->addMinutes(($i - $index) * 30)
                                     ->format('H:i');
-                                
+
                                 if ($slotTimes[$i] !== $expectedTime) {
                                     $isConsecutive = false;
                                     break;
@@ -102,7 +102,7 @@ class ScheduleController extends Controller
                 foreach ($allRooms as $room) {
                     $roomSchedules = isset($schedules[$room->id]) ? $schedules[$room->id] : collect();
                     $activeSchedules = $roomSchedules->where('date', $date);
-                    
+
                     if ($activeSchedules->isEmpty()) {
                         $activeSchedules = $roomSchedules->whereNull('date')->where('day_of_week', $dayOfWeek);
                     }
@@ -185,7 +185,7 @@ class ScheduleController extends Controller
 
         $date = Carbon::parse($request->date)->toDateString();
         $package = PricelistPackage::with('subCategory.category')->findOrFail($request->package_id);
-        
+
         if ($package->subCategory?->category?->type !== 'photographer') {
             return response()->json(['error' => 'Package is not photographer type'], 400);
         }
@@ -196,7 +196,7 @@ class ScheduleController extends Controller
         $timeSlots = [];
         $start = Carbon::createFromTimeString('05:10');
         $end = Carbon::createFromTimeString('20:10');
-        
+
         while ($start <= $end) {
             $timeSlots[] = $start->format('H:i');
             $start->addMinutes(30);
@@ -219,13 +219,10 @@ class ScheduleController extends Controller
         ]);
 
         $date = Carbon::parse($request->date)->toDateString();
-        
-        // Find rooms (room_name) from photographers who have 'open' sessions on this date
+
+        // Find rooms from photographers who don't have all sessions marked as 'off' for this date
+        // Actually, just returning all rooms with photographers is simpler and safer.
         $rooms = \App\Models\User::where('role', 'photographer')
-            ->whereHas('sessions', function($query) use ($date) {
-                $query->where('date', $date)
-                    ->where('status', 'open');
-            })
             ->whereNotNull('room_name')
             ->pluck('room_name')
             ->unique()
@@ -264,13 +261,13 @@ class ScheduleController extends Controller
             $time->addMinutes(30);
         }
 
-        // Find photographer who has ALL these slots available (open status)
+        // Find photographer who DOES NOT have any conflicts (booked or off)
         $query = \App\Models\User::where('role', 'photographer')
-            ->whereHas('sessions', function($query) use ($date, $slots) {
+            ->whereDoesntHave('sessions', function ($query) use ($date, $slots) {
                 $query->where('date', $date)
                     ->whereIn('start_time', $slots)
-                    ->where('status', 'open');
-            }, '=', count($slots));
+                    ->whereIn('status', ['booked', 'off']);
+            });
 
         if ($roomName) {
             $query->where('room_name', $roomName);
@@ -313,7 +310,7 @@ class ScheduleController extends Controller
                 // If selected_times is provided (Split Session), use it
                 // Otherwise calculate consecutive slots (Traditional)
                 if ($request->has('selected_times') && !empty($request->selected_times)) {
-                    $slots = collect($request->selected_times)->map(function($t) {
+                    $slots = collect($request->selected_times)->map(function ($t) {
                         return Carbon::createFromFormat('H:i', $t)->format('H:i:s');
                     })->toArray();
                 } else {
@@ -332,29 +329,30 @@ class ScheduleController extends Controller
                     $cartsWithSessions = \App\Models\Cart::where('cart_uid', $request->cart_uid)
                         ->whereNotNull('session_ids')
                         ->get();
-                    
+
                     foreach ($cartsWithSessions as $cart) {
                         $sessionIds = $cart->session_ids ?? [];
                         $cartSessionIds = array_merge($cartSessionIds, $sessionIds);
                     }
                 }
 
-                // Find photographer with ALL slots available (excluding sessions already in cart)
-                $query = \App\Models\User::where('role', 'photographer')
-                    ->whereHas('sessions', function($query) use ($date, $slots, $cartSessionIds) {
-                        $query->where('date', $date)
-                            ->whereIn('start_time', $slots)
-                            ->where('status', 'open');
-                        
-                        // Exclude sessions already in customer's cart
-                        if (!empty($cartSessionIds)) {
-                            $query->whereNotIn('id', $cartSessionIds);
-                        }
-                    }, '=', count($slots));
+                // Find photographer who DOES NOT have any conflicts (booked, off, or already in this user's cart)
+                $query = \App\Models\User::where('role', 'photographer');
 
                 if ($request->room_name) {
                     $query->where('room_name', $request->room_name);
                 }
+
+                $query->whereDoesntHave('sessions', function ($query) use ($date, $slots, $cartSessionIds) {
+                    $query->where('date', $date)
+                        ->whereIn('start_time', $slots)
+                        ->where(function ($q) use ($cartSessionIds) {
+                            $q->whereIn('status', ['booked', 'off']);
+                            if (!empty($cartSessionIds)) {
+                                $q->orWhereIn('id', $cartSessionIds);
+                            }
+                        });
+                });
 
                 $photographer = $query->first();
 
@@ -364,20 +362,20 @@ class ScheduleController extends Controller
                 ]);
             } else {
                 // For room booking, use customer-provided end_time or calculate from duration
-                $endTimeFormatted = $endTime 
+                $endTimeFormatted = $endTime
                     ? $endTime . ':00'
                     : Carbon::createFromFormat('H:i', $startTime)->addMinutes($durationMinutes)->format('H:i:s');
                 $startTimeFormatted = $startTime . ':00';
 
                 // Check room schedules
                 $dayOfWeek = Carbon::parse($date)->dayOfWeek;
-                $schedules = \App\Models\RoomSchedule::where(function($q) use ($date, $dayOfWeek) {
-                    $q->where('date', $date)->orWhere(function($q2) use ($dayOfWeek) {
+                $schedules = \App\Models\RoomSchedule::where(function ($q) use ($date, $dayOfWeek) {
+                    $q->where('date', $date)->orWhere(function ($q2) use ($dayOfWeek) {
                         $q2->whereNull('date')->where('day_of_week', $dayOfWeek);
                     });
                 })
-                ->where('is_active', true)
-                ->get();
+                    ->where('is_active', true)
+                    ->get();
 
                 // Check if requested time falls within any active schedule window
                 $isInWindow = false;
@@ -393,14 +391,14 @@ class ScheduleController extends Controller
                 }
 
                 // Check for booking conflicts
-                $conflict = BookingItem::whereHas('booking', function($q) {
+                $conflict = BookingItem::whereHas('booking', function ($q) {
                     $q->whereIn('status', ['pending', 'confirmed', 'completed']);
                 })
                     ->whereDate('scheduled_date', $date)
-                    ->where(function($q) use ($startTimeFormatted, $endTime) {
+                    ->where(function ($q) use ($startTimeFormatted, $endTime) {
                         $q->whereBetween('start_time', [$startTimeFormatted, $endTime])
                             ->orWhereBetween('end_time', [$startTimeFormatted, $endTime])
-                            ->orWhere(function($q2) use ($startTimeFormatted, $endTime) {
+                            ->orWhere(function ($q2) use ($startTimeFormatted, $endTime) {
                                 $q2->where('start_time', '<=', $startTimeFormatted)
                                     ->where('end_time', '>=', $endTime);
                             });
@@ -483,7 +481,7 @@ class ScheduleController extends Controller
             $grid[] = [
                 'time' => $start->format('H:i'),
                 'time_full' => $timeString,
-                'status' => ($status === 'booked' && ($session->bookingItem->booking->status ?? '') !== 'confirmed') ? 'open' : $status,
+                'status' => $status, // Return the actual status (open, booked, off)
                 'session_id' => $session ? $session->id : null,
                 'booking_item_id' => $session ? $session->booking_item_id : null,
                 'booking_status' => $session && $session->bookingItem ? $session->bookingItem->booking->status : null,

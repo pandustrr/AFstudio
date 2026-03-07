@@ -14,7 +14,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     const [slots, setSlots] = useState([]);
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [error, setError] = useState(null);
-    const [availableRooms, setAvailableRooms] = useState([]);
+    const [availableRooms, setAvailableRooms] = useState(null);
     const [selectedRoom, setSelectedRoom] = useState('');
 
     // Modal controls
@@ -22,6 +22,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     const [currentUID, setCurrentUID] = useState('');
     const [sessionGrid, setSessionGrid] = useState([]);
     const [isLoadingGrid, setIsLoadingGrid] = useState(false);
+    const [isLoadingRooms, setIsLoadingRooms] = useState(false);
 
     const rooms = initialRooms;
 
@@ -87,6 +88,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             setSelectedSessions([]);
             setStartTime('');
             setSelectedRoom('');
+            setAvailableRooms(null);
             setAvailabilityStatus(null);
             setError(null);
             setSessionGrid([]);
@@ -161,6 +163,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     }, [date]);
 
     const fetchRooms = async () => {
+        setIsLoadingRooms(true);
         try {
             const response = await axios.get('/schedule/available-rooms', {
                 params: {
@@ -171,6 +174,8 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             setAvailableRooms(response.data.rooms || []);
         } catch (err) {
             console.error("Failed to fetch rooms", err);
+        } finally {
+            setIsLoadingRooms(false);
         }
     };
 
@@ -345,7 +350,13 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             photographer_id: photographerId,
             room_name: selectedRoom,
             cart_uid: uid,
-            selected_times: packageData?.allow_split_session ? selectedSplitTimes : null
+            selected_times: packageData?.allow_split_session
+                ? selectedSplitTimes
+                : Array.from({ length: maxSessions }, (_, i) => {
+                    const [h, m] = startTime.split(':').map(Number);
+                    const totalMin = h * 60 + m + (i * 30);
+                    return `${String(Math.floor(totalMin / 60)).padStart(2, '0')}:${String(totalMin % 60).padStart(2, '0')}`;
+                })
         };
 
         if (mode === 'direct') {
@@ -476,13 +487,17 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                             </div>
 
                                             {/* Room Selection */}
-                                            {date && availableRooms.length > 0 && (
+                                            {date && (isLoadingRooms || (availableRooms !== null && availableRooms.length > 0)) && (
                                                 <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-500">
                                                     <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
                                                         <HomeIcon className="w-4 h-4" /> Pilih Room
                                                     </label>
                                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                                        {availableRooms.map((room) => (
+                                                        {isLoadingRooms ? (
+                                                            [1, 2, 3].map(i => (
+                                                                <div key={i} className="h-10 animate-pulse bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/10" />
+                                                            ))
+                                                        ) : availableRooms?.map((room) => (
                                                             <button
                                                                 key={room}
                                                                 type="button"
@@ -504,7 +519,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                 </div>
                                             )}
 
-                                            {date && availableRooms.length === 0 && !loading && (
+                                            {availableRooms !== null && availableRooms.length === 0 && !isLoadingRooms && (
                                                 <div className="p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 rounded-2xl animate-in zoom-in duration-300">
                                                     <p className="text-[10px] font-black uppercase text-red-600 dark:text-red-400 tracking-widest text-center">
                                                         Maaf, tidak ada room tersedia untuk tanggal ini.
@@ -630,14 +645,46 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                         )}
                                                     </div>
 
-                                                    {packageData?.allow_split_session && (
-                                                        <div className="flex items-center justify-between px-2 pt-1 mt-2">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
-                                                                Sesi Terpilih:
-                                                            </span>
-                                                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-gold">
-                                                                {selectedSplitTimes.length} dari {maxSessions}
-                                                            </span>
+                                                    {/* Rincian Sesi Terpilih */}
+                                                    {(packageData?.allow_split_session ? selectedSplitTimes.length > 0 : startTime) && (
+                                                        <div className="bg-brand-gold/5 border border-brand-gold/10 rounded-2xl p-4 space-y-3 mt-4 animate-in slide-in-from-bottom-2 duration-300">
+                                                            <div className="flex items-center justify-between border-b border-brand-gold/10 pb-2">
+                                                                <span className="text-[10px] font-black uppercase tracking-widest text-brand-gold">Rincian Jadwal</span>
+                                                                <span className="text-[10px] font-black uppercase tracking-widest text-brand-gold/60">
+                                                                    {packageData?.allow_split_session
+                                                                        ? `${selectedSplitTimes.length} / ${maxSessions} Sesi`
+                                                                        : `${maxSessions} Sesi Terangkai`}
+                                                                </span>
+                                                            </div>
+                                                            <div className="grid grid-cols-1 gap-2">
+                                                                {packageData?.allow_split_session ? (
+                                                                    selectedSplitTimes.sort().map((t, i) => {
+                                                                        const [h, m] = t.split(':').map(Number);
+                                                                        const totalMin = h * 60 + m + 30;
+                                                                        const endT = `${String(Math.floor(totalMin / 60)).padStart(2, '0')}.${String(totalMin % 60).padStart(2, '0')}`;
+                                                                        return (
+                                                                            <div key={i} className="flex items-center justify-between text-xs font-bold text-brand-black dark:text-brand-white bg-white/50 dark:bg-black/20 px-3 py-2 rounded-xl">
+                                                                                <span>Sesi {i + 1}</span>
+                                                                                <span className="font-black italic">{t.replace(':', '.')}-{endT}</span>
+                                                                            </div>
+                                                                        );
+                                                                    })
+                                                                ) : (
+                                                                    Array.from({ length: maxSessions }).map((_, i) => {
+                                                                        const [h, m] = startTime.split(':').map(Number);
+                                                                        const startMin = h * 60 + m + (i * 30);
+                                                                        const endMin = startMin + 30;
+                                                                        const startT = `${String(Math.floor(startMin / 60)).padStart(2, '0')}.${String(startMin % 60).padStart(2, '0')}`;
+                                                                        const endT = `${String(Math.floor(endMin / 60)).padStart(2, '0')}.${String(endMin % 60).padStart(2, '0')}`;
+                                                                        return (
+                                                                            <div key={i} className="flex items-center justify-between text-xs font-bold text-brand-black dark:text-brand-white bg-white/50 dark:bg-black/20 px-3 py-2 rounded-xl">
+                                                                                <span>Sesi {i + 1}</span>
+                                                                                <span className="font-black italic">{startT}-{endT}</span>
+                                                                            </div>
+                                                                        );
+                                                                    })
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     )}
 

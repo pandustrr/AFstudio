@@ -22,6 +22,11 @@ class BookingItem extends Model
         'room_id',
         'room_name',
         'photographer_id',
+        'selected_times',
+    ];
+
+    protected $casts = [
+        'selected_times' => 'array',
     ];
 
     protected $appends = ['adjusted_start_time', 'adjusted_end_time'];
