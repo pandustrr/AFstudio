@@ -345,7 +345,13 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             photographer_id: photographerId,
             room_name: selectedRoom,
             cart_uid: uid,
-            selected_times: packageData?.allow_split_session ? selectedSplitTimes : null
+            selected_times: packageData?.allow_split_session
+                ? selectedSplitTimes
+                : Array.from({ length: maxSessions }, (_, i) => {
+                    const [h, m] = startTime.split(':').map(Number);
+                    const totalMin = h * 60 + m + (i * 30);
+                    return `${String(Math.floor(totalMin / 60)).padStart(2, '0')}:${String(totalMin % 60).padStart(2, '0')}`;
+                })
         };
 
         if (mode === 'direct') {
@@ -630,14 +636,46 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                         )}
                                                     </div>
 
-                                                    {packageData?.allow_split_session && (
-                                                        <div className="flex items-center justify-between px-2 pt-1 mt-2">
-                                                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
-                                                                Sesi Terpilih:
-                                                            </span>
-                                                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-gold">
-                                                                {selectedSplitTimes.length} dari {maxSessions}
-                                                            </span>
+                                                    {/* Rincian Sesi Terpilih */}
+                                                    {(packageData?.allow_split_session ? selectedSplitTimes.length > 0 : startTime) && (
+                                                        <div className="bg-brand-gold/5 border border-brand-gold/10 rounded-2xl p-4 space-y-3 mt-4 animate-in slide-in-from-bottom-2 duration-300">
+                                                            <div className="flex items-center justify-between border-b border-brand-gold/10 pb-2">
+                                                                <span className="text-[10px] font-black uppercase tracking-widest text-brand-gold">Rincian Jadwal</span>
+                                                                <span className="text-[10px] font-black uppercase tracking-widest text-brand-gold/60">
+                                                                    {packageData?.allow_split_session
+                                                                        ? `${selectedSplitTimes.length} / ${maxSessions} Sesi`
+                                                                        : `${maxSessions} Sesi Terangkai`}
+                                                                </span>
+                                                            </div>
+                                                            <div className="grid grid-cols-1 gap-2">
+                                                                {packageData?.allow_split_session ? (
+                                                                    selectedSplitTimes.sort().map((t, i) => {
+                                                                        const [h, m] = t.split(':').map(Number);
+                                                                        const totalMin = h * 60 + m + 30;
+                                                                        const endT = `${String(Math.floor(totalMin / 60)).padStart(2, '0')}.${String(totalMin % 60).padStart(2, '0')}`;
+                                                                        return (
+                                                                            <div key={i} className="flex items-center justify-between text-xs font-bold text-brand-black dark:text-brand-white bg-white/50 dark:bg-black/20 px-3 py-2 rounded-xl">
+                                                                                <span>Sesi {i + 1}</span>
+                                                                                <span className="font-black italic">{t.replace(':', '.')}-{endT}</span>
+                                                                            </div>
+                                                                        );
+                                                                    })
+                                                                ) : (
+                                                                    Array.from({ length: maxSessions }).map((_, i) => {
+                                                                        const [h, m] = startTime.split(':').map(Number);
+                                                                        const startMin = h * 60 + m + (i * 30);
+                                                                        const endMin = startMin + 30;
+                                                                        const startT = `${String(Math.floor(startMin / 60)).padStart(2, '0')}.${String(startMin % 60).padStart(2, '0')}`;
+                                                                        const endT = `${String(Math.floor(endMin / 60)).padStart(2, '0')}.${String(endMin % 60).padStart(2, '0')}`;
+                                                                        return (
+                                                                            <div key={i} className="flex items-center justify-between text-xs font-bold text-brand-black dark:text-brand-white bg-white/50 dark:bg-black/20 px-3 py-2 rounded-xl">
+                                                                                <span>Sesi {i + 1}</span>
+                                                                                <span className="font-black italic">{startT}-{endT}</span>
+                                                                            </div>
+                                                                        );
+                                                                    })
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     )}
 

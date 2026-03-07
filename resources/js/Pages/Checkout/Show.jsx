@@ -47,19 +47,32 @@ export default function CheckoutShow({ booking, rooms = [], homePage = {} }) {
 
     let itemsMessage = "";
     booking.items.forEach((item, index) => {
-        itemsMessage += `${index + 1}. ${item.package.name} - ${item.scheduled_date} (${item.start_time.substring(0, 5)}-${item.end_time.substring(0, 5)}) [${getRoomLabel(item.room_id)}]\n`;
+        let scheduleStr = `${item.start_time.substring(0, 5).replace(':', '.')}-${item.end_time.substring(0, 5).replace(':', '.')}`;
+
+        if (item.selected_times && item.selected_times.length > 0) {
+            const sorted = [...item.selected_times].sort();
+            scheduleStr = "\n   - " + sorted.map((t, i) => {
+                const [h, m] = t.split(':').map(Number);
+                const totalMin = h * 60 + m + 30;
+                const endT = `${String(Math.floor(totalMin / 60)).padStart(2, '0')}.${String(totalMin % 60).padStart(2, '0')}`;
+                return `Sesi ${i + 1}: ${t.substring(0, 5).replace(':', '.')}-${endT}`;
+            }).join("\n   - ");
+        }
+
+        itemsMessage += `${index + 1}. ${item.package.name}\n   Tanggal: ${item.scheduled_date}\n   Studio: ${item.room_name || getRoomLabel(item.room_id)}\n   Jadwal: ${scheduleStr}\n`;
     });
 
     const message = `Halo Admin AF Studio, saya sudah melakukan booking dan pembayaran DP.
 
 No. Booking: *${booking.booking_code}*
 Nama: ${booking.name}
+Lokasi/Venue: ${booking.location}${booking.venue_name ? ` (${booking.venue_name})` : ''}
 
 Detail Paket:
 ${itemsMessage}
 
 Total Biaya: ${formatPrice(booking.total_price)}
-DP yang ditransfer (25%): *${formatPrice(booking.down_payment)}*
+DP yang ditransfer: *${formatPrice(booking.down_payment)}*
 
 Mohon konfirmasinya. Terima kasih!`;
 
@@ -139,18 +152,43 @@ Mohon konfirmasinya. Terima kasih!`;
                                     <p className="text-[10px] text-brand-black/60 dark:text-brand-white/60">
                                         Date: {item.scheduled_date} | Time: {item.start_time.substring(0, 5)} - {item.end_time.substring(0, 5)}
                                     </p>
+                                    {item.selected_times && item.selected_times.length > 0 && (
+                                        <div className="mt-1 bg-brand-gold/5 p-2 rounded-lg border border-brand-gold/10">
+                                            <p className="text-[9px] font-black text-brand-gold mb-1 uppercase tracking-widest">Rincian Jadwal:</p>
+                                            <div className="grid grid-cols-2 gap-1">
+                                                {item.selected_times.sort().map((t, i) => {
+                                                    const [h, m] = t.split(':').map(Number);
+                                                    const totalMin = h * 60 + m + 30;
+                                                    const endT = `${String(Math.floor(totalMin / 60)).padStart(2, '0')}.${String(totalMin % 60).padStart(2, '0')}`;
+                                                    return (
+                                                        <div key={i} className="flex justify-between text-[9px] font-bold text-brand-black/60 dark:text-brand-white/60">
+                                                            <span>Sesi {i + 1}</span>
+                                                            <span className="text-brand-gold">{t.substring(0, 5).replace(':', '.')}-{endT}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
                                     {(item.room_id || item.room_name) && (
                                         <p className="text-[10px] text-brand-black/60 dark:text-brand-white/60">
                                             Studio: {item.room_name || getRoomLabel(item.room_id)}
                                         </p>
                                     )}
-                                    {item.photographer && (
-                                        <p className="text-[10px] text-brand-black/60 dark:text-brand-white/60">
-                                            Photographer: {item.photographer.name}
-                                        </p>
-                                    )}
                                 </div>
                             ))}
+
+                            {/* Global Booking Info: Location & Venue */}
+                            <div className="pt-2 mt-2 border-t border-black/5 dark:border-white/5 space-y-1">
+                                <p className="text-[10px] text-brand-black/60 dark:text-brand-white/60">
+                                    <span className="font-bold">Alamat:</span> {booking.location}
+                                </p>
+                                {booking.venue_name && (
+                                    <p className="text-[10px] text-brand-black/60 dark:text-brand-white/60">
+                                        <span className="font-bold">Gedung:</span> {booking.venue_name}
+                                    </p>
+                                )}
+                            </div>
                         </div>
 
                         <div className="mb-4 text-left">

@@ -185,6 +185,12 @@
                         <td class="meta-label">Lokasi:</td>
                         <td>{{ $booking->location }}</td>
                     </tr>
+                    @if($booking->venue_name)
+                    <tr>
+                        <td class="meta-label">Gedung:</td>
+                        <td>{{ $booking->venue_name }}</td>
+                    </tr>
+                    @endif
                     <tr>
                         <td class="meta-label">UID:</td>
                         <td style="font-weight: bold; font-family: monospace;">{{ $booking->guest_uid ?? $booking->booking_code }}</td>
@@ -214,9 +220,27 @@
                 <td style="font-size: 10pt;">
                     <strong>{{ \Carbon\Carbon::parse($item->scheduled_date)->format('d/m/Y') }}</strong><br>
                     <span style="font-size: 9pt;">
-                        @if($item->start_time !== $item->adjusted_start_time)
-                        <span style="text-decoration: line-through; color: #999; font-size: 8pt;">{{ substr($item->start_time, 0, 5) }} - {{ substr($item->end_time, 0, 5) }}</span><br>
-                        <span style="font-weight: bold; color: #000;">{{ substr($item->adjusted_start_time, 0, 5) }} - {{ substr($item->adjusted_end_time, 0, 5) }} WIB</span>
+                        @if($item->selected_times && count($item->selected_times) > 0)
+                        <div style="margin-top: 4px; border-top: 0.5px solid #eee; padding-top: 2px;">
+                            <span style="font-size: 8pt; font-weight: bold;">Rincian Sesi:</span><br>
+                            <table style="width: 100%; font-size: 8pt; border: none;">
+                                @php
+                                $sortedTimes = $item->selected_times;
+                                sort($sortedTimes);
+                                @endphp
+                                @foreach($sortedTimes as $index => $t)
+                                @php
+                                $timeParts = explode(':', $t);
+                                $totalMin = ($timeParts[0] * 60) + $timeParts[1] + 30;
+                                $endT = sprintf('%02d.%02d', floor($totalMin/60), $totalMin%60);
+                                @endphp
+                                <tr>
+                                    <td style="border:none; padding: 0;">Sesi {{ $index + 1 }}:</td>
+                                    <td style="border:none; padding: 0; text-align: right; font-family: monospace;">{{ str_replace(':', '.', substr($t, 0, 5)) }}-{{ $endT }}</td>
+                                </tr>
+                                @endforeach
+                            </table>
+                        </div>
                         @else
                         {{ substr($item->start_time, 0, 5) }} - {{ substr($item->end_time, 0, 5) }} WIB
                         @endif

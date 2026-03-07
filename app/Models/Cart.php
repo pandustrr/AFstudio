@@ -23,10 +23,12 @@ class Cart extends Model
         'photographer_id',
         'session_ids',
         'sessions_needed',
+        'selected_times',
     ];
 
     protected $casts = [
         'session_ids' => 'array',
+        'selected_times' => 'array',
     ];
 
     public function user(): BelongsTo

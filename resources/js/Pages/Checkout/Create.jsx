@@ -39,6 +39,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
         domicile: '',
         phone: '',
         location: '',
+        venue_name: '',
         notes: '',
         referral_code: '',
         cart_uid: uidFromUrl || localStorage.getItem('afstudio_cart_uid') || '',
@@ -172,10 +173,36 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                     const waNumber = settings?.admin_whatsapp || homePage?.admin_whatsapp || "6282232586727";
                     let itemsMessage = "";
                     b.items?.forEach((item, index) => {
-                        itemsMessage += `${index + 1}. ${item.package?.name} - ${item.scheduled_date} (${item.start_time?.substring(0, 5)}-${item.end_time?.substring(0, 5)})\n`;
+                        const packageObj = item.package;
+                        let timeInfo = `${item.start_time?.substring(0, 5).replace(':', '.')}-${item.end_time?.substring(0, 5).replace(':', '.')}`;
+
+                        if (item.selected_times && item.selected_times.length > 0) {
+                            const sorted = [...item.selected_times].sort();
+                            timeInfo = "\n      - " + sorted.map((t, i) => {
+                                const [h, m] = t.split(':').map(Number);
+                                const totalMin = h * 60 + m + 30;
+                                const endT = `${String(Math.floor(totalMin / 60)).padStart(2, '0')}.${String(totalMin % 60).padStart(2, '0')}`;
+                                return `Sesi ${i + 1}: ${t.substring(0, 5).replace(':', '.')}-${endT}`;
+                            }).join("\n      - ");
+                        }
+
+                        itemsMessage += `${index + 1}. ${packageObj?.name}\n   Tanggal: ${item.scheduled_date}\n   Jadwal: ${timeInfo}\n`;
+                        if (item.room_name) itemsMessage += `   Studio: ${item.room_name}\n`;
                     });
 
-                    const message = `Halo Admin AF Studio, saya sudah melakukan booking dan pembayaran DP.\n\nNo. Booking: *${b.booking_code}*\nUID: ${b.guest_uid || '-'}\nNama: ${b.name}\n\nDetail Paket:\n${itemsMessage}\nTotal Biaya: ${formatPrice(b.total_price)}\nDP yang ditransfer: *${formatPrice(b.down_payment)}*\n\nMohon konfirmasinya. Terima kasih!`;
+                    const message = `Halo Admin AF Studio, saya sudah melakukan booking dan pembayaran DP.
+
+No. Booking: *${b.booking_code}*
+Nama: ${b.name}
+Lokasi/Venue: ${b.location}${b.venue_name ? ` (${b.venue_name})` : ''}
+
+Detail Paket:
+${itemsMessage}
+
+Total Biaya: ${formatPrice(b.total_price)}
+DP yang ditransfer: *${formatPrice(b.down_payment)}*
+
+Mohon konfirmasinya. Terima kasih!`;
 
                     window.location.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
                 }
@@ -310,36 +337,34 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                                         <ClockIcon className="w-4 h-4" /> Jam yg disepakati
                                     </label>
                                     <div className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 text-brand-black/60 dark:text-brand-white/60 font-bold">
-                                        {carts[0]?.start_time?.substring(0, 5) || '-'} WIB
+                                        {carts[0]?.package?.allow_split_session && carts[0]?.selected_times ? (
+                                            <div className="flex flex-wrap gap-2">
+                                                {carts[0].selected_times.map((t, i) => (
+                                                    <span key={i} className="bg-brand-gold/10 px-2 py-0.5 rounded border border-brand-gold/20">
+                                                        {t.substring(0, 5)}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <span>{carts[0]?.start_time?.substring(0, 5)} WIB</span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
 
                             {/* Detail Penugasan (Room & Photographer) */}
-                            {(carts[0]?.room_name || carts[0]?.room_id || carts[0]?.photographer_id) && (
+                            {(carts[0]?.room_name || carts[0]?.room_id) && (
                                 <div className="space-y-4 p-4 bg-brand-gold/5 border border-brand-gold/10 rounded-2xl">
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-gold/60">Detail Ruangan & Fotografer</h4>
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-gold/60">Detail Ruangan</h4>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {(carts[0]?.room_name || carts[0]?.room_id) && (
-                                            <div className="space-y-1">
-                                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
-                                                    <HomeIcon className="w-3 h-3" /> Studio / Ruangan
-                                                </label>
-                                                <p className="text-sm font-bold text-brand-black dark:text-brand-white">
-                                                    {carts[0]?.room_name || getRoomLabel(carts[0]?.room_id)}
-                                                </p>
-                                            </div>
-                                        )}
-                                        {carts[0]?.photographer_id && (
-                                            <div className="space-y-1">
-                                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
-                                                    <UserIcon className="w-3 h-3" /> Fotografer
-                                                </label>
-                                                <p className="text-sm font-bold text-brand-black dark:text-brand-white">
-                                                    {getPhotographerName(carts[0].photographer_id)}
-                                                </p>
-                                            </div>
-                                        )}
+                                        <div className="space-y-1">
+                                            <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
+                                                <HomeIcon className="w-3 h-3" /> Studio / Ruangan
+                                            </label>
+                                            <p className="text-sm font-bold text-brand-black dark:text-brand-white">
+                                                {carts[0]?.room_name || getRoomLabel(carts[0]?.room_id)}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -357,7 +382,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                             {/* Location (Alamat Acara) */}
                             <div className="space-y-2">
                                 <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/70 dark:text-brand-white/70">
-                                    <MapPinIcon className="w-4 h-4" /> Alamat acara ; <span className="text-red-500">*</span>
+                                    <MapPinIcon className="w-4 h-4" /> Alamat lokasi acara <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -368,6 +393,21 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                                     placeholder="Alamat lengkap lokasi pemotretan"
                                 />
                                 {errors.location && <p className="text-red-500 text-xs font-bold">{errors.location}</p>}
+                            </div>
+
+                            {/* Venue (Gedung Acara) */}
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/70 dark:text-brand-white/70">
+                                    <HomeIcon className="w-4 h-4" /> Gedung acara
+                                </label>
+                                <input
+                                    type="text"
+                                    value={data.venue_name}
+                                    onChange={e => setData('venue_name', e.target.value)}
+                                    className="w-full bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white"
+                                    placeholder="Contoh: Gedung Soetardjo / Ballroom Hotel / Kediaman"
+                                />
+                                {errors.venue_name && <p className="text-red-500 text-xs font-bold">{errors.venue_name}</p>}
                             </div>
 
                             {/* Voucher Code */}
@@ -466,24 +506,38 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                                                 <CalendarIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
                                                 <span>{cart.scheduled_date}</span>
                                             </div>
-                                            <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white mb-1">
-                                                <ClockIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
-                                                <span>{cart.start_time?.substring(0, 5)} - {cart.end_time?.substring(0, 5)}</span>
+                                            <div className="flex items-start gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white mb-1">
+                                                <ClockIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40 mt-0.5" />
+                                                {cart.package?.allow_split_session && cart.selected_times ? (
+                                                    <div className="flex flex-col gap-1 w-full">
+                                                        <div className="flex items-center justify-between border-b border-brand-gold/10 pb-1 mb-1">
+                                                            <span className="text-[9px] opacity-60">RINCIAN JADWAL</span>
+                                                            <span className="text-[9px] text-brand-gold">{cart.selected_times.length} SESI</span>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 gap-1">
+                                                            {cart.selected_times.sort().map((t, i) => {
+                                                                const [h, m] = t.split(':').map(Number);
+                                                                const totalMin = h * 60 + m + 30;
+                                                                const endT = `${String(Math.floor(totalMin / 60)).padStart(2, '0')}.${String(totalMin % 60).padStart(2, '0')}`;
+                                                                return (
+                                                                    <div key={i} className="flex justify-between items-center bg-black/5 dark:bg-white/5 px-2 py-1 rounded">
+                                                                        <span>Sesi {i + 1}</span>
+                                                                        <span className="text-brand-gold">{t.substring(0, 5).replace(':', '.')}-{endT}</span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <span>{cart.start_time?.substring(0, 5)} - {cart.end_time?.substring(0, 5)}</span>
+                                                )}
                                             </div>
-                                            {(cart.photographer_id || cart.room_id || cart.room_name) && (
+                                            {(cart.room_id || cart.room_name) && (
                                                 <div className="flex flex-col gap-1 border-t border-brand-gold/10 pt-1 mt-1">
-                                                    {cart.photographer_id && (
-                                                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white">
-                                                            <UserIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
-                                                            <span>FG: {getPhotographerName(cart.photographer_id)}</span>
-                                                        </div>
-                                                    )}
-                                                    {(cart.room_id || cart.room_name) && (
-                                                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white">
-                                                            <MapPinIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
-                                                            <span>Studio: {cart.room_name || getRoomLabel(cart.room_id)}</span>
-                                                        </div>
-                                                    )}
+                                                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white">
+                                                        <MapPinIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
+                                                        <span>Studio: {cart.room_name || getRoomLabel(cart.room_id)}</span>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
