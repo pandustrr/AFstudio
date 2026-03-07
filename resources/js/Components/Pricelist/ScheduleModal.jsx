@@ -303,16 +303,23 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                 setError(`Pilih ${maxSessions} sesi.`);
                 return;
             }
+            if (availabilityStatus !== 'available') {
+                setError('Tunggu sebentar, sedang memastikan ketersediaan fotografer...');
+                // Re-trigger if somehow stuck
+                if (!loading && availabilityStatus !== 'checking') {
+                    checkTimeAvailability(null, null, selectedSplitTimes);
+                }
+                return;
+            }
         } else {
             if (!startTime) {
                 setError('Pilih jam mulai.');
                 return;
             }
-        }
-
-        if (availabilityStatus !== 'available') {
-            setError('Cek ketersediaan fotografer terlebih dahulu.');
-            return;
+            if (availabilityStatus !== 'available') {
+                setError('Cek ketersediaan fotografer terlebih dahulu.');
+                return;
+            }
         }
 
         if (!photographerId) {
