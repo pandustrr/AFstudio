@@ -663,9 +663,8 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                     disabled={
                                                         !date ||
                                                         (packageData?.allow_split_session
-                                                            ? selectedSplitTimes.length < maxSessions
-                                                            : !startTime) ||
-                                                        availabilityStatus !== 'available' ||
+                                                            ? (selectedSplitTimes.length < maxSessions)
+                                                            : (!startTime || availabilityStatus !== 'available')) ||
                                                         loading
                                                     }
                                                     className="w-full py-5 bg-brand-black dark:bg-brand-white text-white dark:text-brand-black font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl disabled:opacity-50 mt-4"
