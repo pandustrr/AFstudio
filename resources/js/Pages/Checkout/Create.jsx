@@ -46,6 +46,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
         cart_item_id: cartItemIdFromUrl || '',
         cart_item_ids: cartItemIdsFromUrl || '',
         proof_file: null,
+        dp_amount: 0,
     });
 
     const total = Array.isArray(carts)
@@ -141,6 +142,13 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
         if (finalTotal > 500000) return "(25% of Total)";
         return "(Min. 100k)";
     };
+
+    // Sync initial/min DP to form data
+    React.useEffect(() => {
+        if (data.dp_amount < downPayment) {
+            setData('dp_amount', downPayment);
+        }
+    }, [downPayment]);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -579,12 +587,45 @@ Mohon konfirmasinya. Terima kasih!`;
 
                                     <div className="p-4 bg-brand-red/5 rounded-2xl border border-brand-red/20 text-center mb-6">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-1">Down Payment (Transfer Amount)</p>
-                                        <p className="text-3xl font-black text-brand-red italic tracking-tighter">
-                                            {formatPrice(downPayment)}
-                                        </p>
-                                        <p className="text-[10px] font-bold text-brand-black/40 dark:text-brand-white/40 mt-1 uppercase italic pointer-events-none">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <div className="relative w-full max-w-[240px] mx-auto">
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-red font-black text-xl italic italic">Rp</span>
+                                                <input
+                                                    type="text"
+                                                    value={new Intl.NumberFormat('id-ID').format(data.dp_amount || 0)}
+                                                    onChange={(e) => {
+                                                        const val = parseInt(e.target.value.replace(/[^0-9]/g, '')) || 0;
+                                                        setData('dp_amount', val);
+                                                    }}
+                                                    className="w-full pl-12 pr-4 py-3 bg-white dark:bg-black/20 border-2 border-brand-red/40 focus:border-brand-red rounded-xl text-2xl font-black text-brand-red italic tracking-tighter text-center"
+                                                />
+                                            </div>
+                                            {data.dp_amount < downPayment && (
+                                                <p className="text-[10px] font-bold text-brand-red animate-pulse uppercase">
+                                                    Min. Pembayaran {formatPrice(downPayment)}
+                                                </p>
+                                            )}
+                                            {data.dp_amount > finalTotal && (
+                                                <p className="text-[10px] font-bold text-brand-red animate-pulse uppercase">
+                                                    Max. Pembayaran {formatPrice(finalTotal)}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <p className="text-[10px] font-bold text-brand-black/40 dark:text-brand-white/40 mt-2 uppercase italic pointer-events-none">
                                             {getDPLabel()}
                                         </p>
+                                        <p className="text-[8px] text-brand-black/30 dark:text-brand-white/30 mt-1">
+                                            (Tap angka di atas jika ingin membayar lebih)
+                                        </p>
+
+                                        {data.dp_amount >= downPayment && data.dp_amount <= finalTotal && (
+                                            <div className="mt-4 pt-4 border-t border-brand-red/10">
+                                                <p className="text-[10px] font-black uppercase text-brand-black/40 dark:text-brand-white/40 mb-1">Sisa Tagihan (Pelunasan)</p>
+                                                <p className="text-sm font-black text-brand-red tracking-tighter">
+                                                    {formatPrice(finalTotal - data.dp_amount)}
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Upload Proof Form Field Integrated */}

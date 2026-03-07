@@ -84,6 +84,7 @@ class BookingController extends Controller
             'venue_name' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
             'referral_code' => 'nullable|string',
+            'dp_amount' => 'nullable|numeric|min:0',
         ]);
 
         try {
@@ -153,6 +154,15 @@ class BookingController extends Controller
                 $calculatedDP = $finalPrice;
             }
 
+            // ALLOW CUSTOM DP: If user wants to pay more than minimum
+            $finalDP = $calculatedDP;
+            if ($request->filled('dp_amount')) {
+                $userDP = (float) $request->dp_amount;
+                if ($userDP >= $calculatedDP && $userDP <= $finalPrice) {
+                    $finalDP = $userDP;
+                }
+            }
+
             // Generate unique booking code
             $bookingCode = 'AF-' . strtoupper(uniqid());
 
@@ -171,7 +181,7 @@ class BookingController extends Controller
                 'notes' => $request->notes,
                 'total_price' => $totalPrice,
                 'discount_amount' => $discountAmount,
-                'down_payment' => $calculatedDP,
+                'down_payment' => $finalDP,
                 'status' => 'pending',
             ]);
 

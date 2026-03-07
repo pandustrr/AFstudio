@@ -222,13 +222,16 @@ Mohon konfirmasinya. Terima kasih!`;
                         </div>
 
                         <div className="mb-8 text-left bg-brand-gold/10 p-4 rounded-xl border border-brand-gold/20">
-                            <p className="text-xs font-bold uppercase text-brand-black/60 dark:text-brand-white/60 mb-1">Down Payment (Transfer Amount)</p>
+                            <p className="text-xs font-bold uppercase text-brand-black/60 dark:text-brand-white/60 mb-1">Total yang dibayarkan (DP)</p>
                             <p className="text-3xl font-black text-brand-red italic tracking-tight">
                                 {formatPrice(booking.down_payment)}
                             </p>
-                            <p className="text-[10px] text-brand-black/40 dark:text-brand-white/40 mt-1">
-                                (25% of Total, Min. 100k)
-                            </p>
+                            <div className="mt-4 pt-4 border-t border-brand-gold/20">
+                                <p className="text-xs font-bold uppercase text-brand-black/40 dark:text-brand-white/40 mb-1">Sisa Pelunasan (H-Day)</p>
+                                <p className="text-xl font-black text-brand-red tracking-tight">
+                                    {formatPrice((booking.total_price - booking.discount_amount) - booking.down_payment)}
+                                </p>
+                            </div>
                         </div>
 
                         {/* Upload Proof of Payment Section - REQUIRED FIRST STEP */}
