@@ -1,11 +1,11 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon, CalendarIcon, ClockIcon, HomeIcon, ExclamationTriangleIcon, UserIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CalendarIcon, ClockIcon, HomeIcon, ExclamationTriangleIcon, UserIcon, CheckIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { router, usePage } from '@inertiajs/react';
 import SuccessModal from './Modals/SuccessModal';
 
-export default function ScheduleModal({ isOpen, onClose, packageData, rooms: initialRooms = [], mode = 'cart' }) {
+export default function ScheduleModal({ isOpen, onClose, packageData, rooms: initialRooms = [], mode = 'cart', canBook = true, onLanjutBooking }) {
     const { flash } = usePage().props;
     const [date, setDate] = useState('');
     const [dateInput, setDateInput] = useState('');
@@ -91,7 +91,6 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             setError(null);
             setSessionGrid([]);
             setSelectedSplitTimes([]);
-            setIsLoadingGrid(false);
             // Set maxSessions from package data
             setMaxSessions(packageData?.max_sessions || 1);
         }
@@ -273,6 +272,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     };
 
     const toggleSplitSession = (time) => {
+        if (!packageData?.allow_split_session) return;
         let newSelected;
         if (selectedSplitTimes.includes(time)) {
             newSelected = selectedSplitTimes.filter(t => t !== time);
@@ -298,9 +298,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     const handleSubmit = () => {
         if (!date) return;
 
-        const isSplit = packageData?.allow_split_session;
-
-        if (isSplit) {
+        if (packageData?.allow_split_session) {
             if (selectedSplitTimes.length < maxSessions) {
                 setError(`Pilih ${maxSessions} sesi.`);
                 return;
@@ -340,9 +338,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             photographer_id: photographerId,
             room_name: selectedRoom,
             cart_uid: uid,
-            // Pass all selected times if split session
-            session_ids: isSplit ? null : null, // Actually CartController will handle by start_time + sessions_needed or photographer_id
-            selected_times: isSplit ? selectedSplitTimes : null
+            selected_times: packageData?.allow_split_session ? selectedSplitTimes : null
         };
 
         if (mode === 'direct') {
@@ -512,121 +508,123 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                             {/* Session List */}
                                             {date && selectedRoom && (
                                                 <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-500">
-                                                    <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
+                                                    <label className="text-xs font-bold uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 flex items-center gap-2">
                                                         <ClockIcon className="w-4 h-4" /> Pilih Sesi
                                                     </label>
 
-                                                    {isLoadingGrid ? (
-                                                        <div className="grid grid-cols-3 gap-2">
-                                                            {[1, 2, 3, 4, 5, 6].map(i => (
-                                                                <div key={i} className="h-20 w-full animate-pulse bg-black/5 dark:bg-white/5 rounded-xl" />
-                                                            ))}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="grid grid-cols-3 gap-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar p-1">
-                                                            {sessionGrid.map((item, index) => {
-                                                                const isBooked = item.status === 'booked';
-                                                                const isOff = item.status === 'off';
-                                                                const isOpen = item.status === 'open';
-                                                                const isSplit = packageData?.allow_split_session;
+                                                    <div className="flex flex-col gap-4">
+                                                        {isLoadingGrid ? (
+                                                            <div className="grid grid-cols-3 gap-2">
+                                                                {[1, 2, 3, 4, 5, 6].map(i => (
+                                                                    <div key={i} className="h-20 w-full animate-pulse bg-black/5 dark:bg-white/5 rounded-xl" />
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="grid grid-cols-3 gap-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar p-1">
+                                                                {sessionGrid.map((item, index) => {
+                                                                    const isBooked = item.status === 'booked';
+                                                                    const isOff = item.status === 'off';
+                                                                    const isOpen = item.status === 'open';
+                                                                    const isSplitActive = packageData?.allow_split_session;
 
-                                                                // Helper to check if this slot is selected
-                                                                const isSelected = isSplit
-                                                                    ? selectedSplitTimes.includes(item.time)
-                                                                    : startTime === item.time;
+                                                                    // Helper to check if this slot is selected
+                                                                    const isSelected = isSplitActive
+                                                                        ? selectedSplitTimes.includes(item.time)
+                                                                        : startTime === item.time;
 
-                                                                // End time calculation for the 30min slot
-                                                                const slotEndTime = (() => {
-                                                                    const [h, m] = item.time.split(':').map(Number);
-                                                                    const totalMin = h * 60 + m + 30;
-                                                                    const endH = Math.floor(totalMin / 60);
-                                                                    const endM = totalMin % 60;
-                                                                    return `${String(endH).padStart(2, '0')}.${String(endM).padStart(2, '0')}`;
-                                                                })();
+                                                                    // End time calculation for the 30min slot
+                                                                    const slotEndTime = (() => {
+                                                                        const [h, m] = item.time.split(':').map(Number);
+                                                                        const totalMin = h * 60 + m + 30;
+                                                                        const endH = Math.floor(totalMin / 60);
+                                                                        const endM = totalMin % 60;
+                                                                        return `${String(endH).padStart(2, '0')}.${String(endM).padStart(2, '0')}`;
+                                                                    })();
 
-                                                                // Helper to check if this slot is part of a consecutive selection (traditional)
-                                                                const isPartOfConsecutive = (() => {
-                                                                    if (isSplit || !startTime) return false;
-                                                                    const startIdx = sessionGrid.findIndex(s => s.time === startTime);
-                                                                    const currentIdx = index;
-                                                                    return currentIdx >= startIdx && currentIdx < startIdx + maxSessions;
-                                                                })();
+                                                                    // Helper to check if this slot is part of a consecutive selection (traditional)
+                                                                    const isPartOfConsecutive = (() => {
+                                                                        if (isSplitActive || !startTime) return false;
+                                                                        const startIdx = sessionGrid.findIndex(s => s.time === startTime);
+                                                                        const currentIdx = index;
+                                                                        return currentIdx >= startIdx && currentIdx < startIdx + maxSessions;
+                                                                    })();
 
-                                                                const isHighlighted = isSplit ? isSelected : isPartOfConsecutive;
-                                                                const isStartSelection = startTime === item.time;
+                                                                    const isHighlighted = isSplitActive ? isSelected : isPartOfConsecutive;
+                                                                    const isStartSelection = startTime === item.time;
 
-                                                                return (
-                                                                    <button
-                                                                        key={index}
-                                                                        type="button"
-                                                                        disabled={isBooked || isOff}
-                                                                        onClick={() => {
-                                                                            if (isSplit) {
-                                                                                toggleSplitSession(item.time);
-                                                                            } else {
-                                                                                if (isStartSelection) {
-                                                                                    setStartTime('');
-                                                                                    setAvailabilityStatus(null);
+                                                                    return (
+                                                                        <button
+                                                                            key={index}
+                                                                            type="button"
+                                                                            disabled={isBooked || isOff}
+                                                                            onClick={() => {
+                                                                                if (isSplitActive) {
+                                                                                    toggleSplitSession(item.time);
                                                                                 } else {
-                                                                                    setStartTime(item.time);
-                                                                                    const endTimeStr = (() => {
-                                                                                        const [h, m] = item.time.split(':').map(Number);
-                                                                                        const totalMin = h * 60 + m + maxSessions * 30;
-                                                                                        const endH = Math.floor(totalMin / 60);
-                                                                                        const endM = totalMin % 60;
-                                                                                        return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
-                                                                                    })();
-                                                                                    checkTimeAvailability(item.time, endTimeStr);
+                                                                                    if (isStartSelection) {
+                                                                                        setStartTime('');
+                                                                                        setAvailabilityStatus(null);
+                                                                                    } else {
+                                                                                        setStartTime(item.time);
+                                                                                        const endTimeStr = (() => {
+                                                                                            const [h, m] = item.time.split(':').map(Number);
+                                                                                            const totalMin = h * 60 + m + maxSessions * 30;
+                                                                                            const endH = Math.floor(totalMin / 60);
+                                                                                            const endM = totalMin % 60;
+                                                                                            return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+                                                                                        })();
+                                                                                        checkTimeAvailability(item.time, endTimeStr);
+                                                                                    }
                                                                                 }
-                                                                            }
-                                                                        }}
-                                                                        className={`relative flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center group
+                                                                            }}
+                                                                            className={`relative flex flex-col items-center justify-center p-3 rounded-xl border transition-all text-center group
                                                                                 ${isHighlighted
-                                                                                ? 'bg-brand-gold/10 border-brand-gold text-brand-gold shadow-lg shadow-brand-gold/10 scale-[1.05] z-10'
-                                                                                : isOpen
-                                                                                    ? 'bg-black/5 dark:bg-white/5 border-black/5 dark:border-white/5 hover:border-brand-gold/30 hover:scale-[1.02]'
-                                                                                    : 'bg-black/2 dark:bg-white/2 border-transparent opacity-40 grayscale cursor-not-allowed'
-                                                                            }`}
-                                                                    >
-                                                                        <span className={`text-[8px] font-black uppercase tracking-tighter opacity-40 block mb-1
+                                                                                    ? 'bg-brand-gold/10 border-brand-gold text-brand-gold shadow-lg shadow-brand-gold/10 scale-[1.05] z-10'
+                                                                                    : isOpen
+                                                                                        ? 'bg-black/5 dark:bg-white/5 border-black/5 dark:border-white/5 hover:border-brand-gold/30 hover:scale-[1.02]'
+                                                                                        : 'bg-black/2 dark:bg-white/2 border-transparent opacity-40 grayscale cursor-not-allowed'
+                                                                                }`}
+                                                                        >
+                                                                            <span className={`text-[8px] font-black uppercase tracking-tighter opacity-40 block mb-1
                                                                                 ${isHighlighted ? 'text-brand-gold opacity-100' : ''}
                                                                             `}>
-                                                                            Sesi {index + 1}
-                                                                        </span>
+                                                                                Sesi {index + 1}
+                                                                            </span>
 
-                                                                        <h3 className={`text-[11px] font-black tracking-tighter uppercase mb-0.5
+                                                                            <h3 className={`text-[11px] font-black tracking-tighter uppercase mb-0.5
                                                                                 ${isHighlighted ? 'text-brand-gold' : 'text-brand-black dark:text-brand-white'}
                                                                             `}>
-                                                                            {item.time.replace(':', '.')}-{slotEndTime}
-                                                                        </h3>
+                                                                                {item.time.replace(':', '.')}-{slotEndTime}
+                                                                            </h3>
 
-                                                                        <div className={`text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border mt-1
+                                                                            <div className={`text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border mt-1
                                                                                 ${isBooked ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-                                                                                isOff ? 'bg-black/10 text-brand-black/40 border-black/20' :
-                                                                                    isHighlighted ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-brand-gold/10 text-brand-gold border-brand-gold/20'}
+                                                                                    isOff ? 'bg-black/10 text-brand-black/40 border-black/20' :
+                                                                                        isHighlighted ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-brand-gold/10 text-brand-gold border-brand-gold/20'}
                                                                             `}>
-                                                                            {isBooked ? 'TERISI' : isOff ? 'LIBUR' : isHighlighted ? 'FIXED' : 'OPEN'}
-                                                                        </div>
-
-                                                                        {isHighlighted && isSplit && (
-                                                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-brand-gold rounded-full flex items-center justify-center text-brand-black shadow-md border border-white dark:border-brand-black shadow-brand-gold/20 text-[10px] font-black">
-                                                                                {selectedSplitTimes.indexOf(item.time) + 1}
+                                                                                {isBooked ? 'TERISI' : isOff ? 'LIBUR' : isHighlighted ? 'FIXED' : 'OPEN'}
                                                                             </div>
-                                                                        )}
 
-                                                                        {!isSplit && isStartSelection && (
-                                                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-brand-gold rounded-full flex items-center justify-center text-brand-black shadow-md border border-white dark:border-brand-black shadow-brand-gold/20">
-                                                                                <div className="w-1.5 h-1.5 bg-brand-black rounded-full animate-pulse" />
-                                                                            </div>
-                                                                        )}
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    )}
+                                                                            {isHighlighted && isSplitActive && (
+                                                                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-brand-gold rounded-full flex items-center justify-center text-brand-black shadow-md border border-white dark:border-brand-black shadow-brand-gold/20 text-[10px] font-black">
+                                                                                    {selectedSplitTimes.indexOf(item.time) + 1}
+                                                                                </div>
+                                                                            )}
+
+                                                                            {!isSplitActive && isStartSelection && (
+                                                                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-brand-gold rounded-full flex items-center justify-center text-brand-black shadow-md border border-white dark:border-brand-black shadow-brand-gold/20">
+                                                                                    <div className="w-1.5 h-1.5 bg-brand-black rounded-full animate-pulse" />
+                                                                                </div>
+                                                                            )}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
 
                                                     {packageData?.allow_split_session && (
-                                                        <div className="flex items-center justify-between px-2 pt-1">
+                                                        <div className="flex items-center justify-between px-2 pt-1 mt-2">
                                                             <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
                                                                 Sesi Terpilih:
                                                             </span>
@@ -652,13 +650,29 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                 </div>
                                             )}
 
-                                            <button
-                                                onClick={handleSubmit}
-                                                disabled={!date || !startTime || availabilityStatus !== 'available' || loading}
-                                                className="w-full py-5 bg-brand-black dark:bg-brand-white text-white dark:text-brand-black font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl disabled:opacity-50 mt-4"
-                                            >
-                                                {mode === 'direct' ? 'Lanjut ke Booking' : 'Tambah ke Keranjang'}
-                                            </button>
+                                            {!canBook ? (
+                                                <a
+                                                    href={`https://wa.me/6282232586727?text=Halo%20Admin%2C%20saya%20tertarik%20dengan%20paket%20${packageData?.name}.%20Bisa%20bantu%20booking?`}
+                                                    className="w-full py-5 bg-brand-gold text-brand-black font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl block text-center mt-4"
+                                                >
+                                                    Hubungi Admin untuk Booking
+                                                </a>
+                                            ) : (
+                                                <button
+                                                    onClick={handleSubmit}
+                                                    disabled={
+                                                        !date ||
+                                                        (packageData?.allow_split_session
+                                                            ? selectedSplitTimes.length < maxSessions
+                                                            : !startTime) ||
+                                                        availabilityStatus !== 'available' ||
+                                                        loading
+                                                    }
+                                                    className="w-full py-5 bg-brand-black dark:bg-brand-white text-white dark:text-brand-black font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl disabled:opacity-50 mt-4"
+                                                >
+                                                    {(packageData?.allow_split_session && mode === 'direct') ? 'Selesaikan Pilihan Sesi' : (mode === 'direct' ? 'Lanjut ke Booking' : 'Tambah ke Keranjang')}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </Dialog.Panel>

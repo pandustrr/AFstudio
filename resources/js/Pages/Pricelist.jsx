@@ -283,7 +283,7 @@ export default function Pricelist({ categories, rooms, locked }) {
                                                         {/* Icon Keranjang */}
                                                         <button
                                                             onClick={() => openScheduleModal(pkg, 'cart')}
-                                                            className={`flex items-center justify-center w-14 md:w-16 py-3.5 md:py-4 rounded-2xl md:rounded-xl transition-all ${pkg.is_popular
+                                                            className={`flex items-center justify-center ${pkg.allow_split_session ? 'w-14 md:w-16' : 'w-14 md:w-16'} py-3.5 md:py-4 rounded-2xl md:rounded-xl transition-all ${pkg.is_popular
                                                                 ? 'bg-brand-gold/20 text-brand-gold hover:bg-brand-gold hover:text-brand-black border-2 border-brand-gold/30'
                                                                 : 'bg-black/5 dark:bg-white/10 text-brand-black dark:text-brand-white hover:bg-brand-gold hover:text-brand-black border-2 border-black/5 dark:border-white/5'
                                                                 }`}
@@ -299,7 +299,7 @@ export default function Pricelist({ categories, rooms, locked }) {
                                                                 : 'bg-black/5 dark:bg-white/10 text-brand-black dark:text-brand-white hover:bg-brand-black hover:text-white dark:hover:bg-brand-gold dark:hover:text-brand-black shadow-sm'
                                                                 }`}
                                                         >
-                                                            Langsung Beli
+                                                            {pkg.allow_split_session ? 'Sesi Terpisah (Beli)' : 'Langsung Beli'}
                                                         </button>
                                                     </>
                                                 )}
