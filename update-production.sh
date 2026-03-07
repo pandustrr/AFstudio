@@ -9,7 +9,7 @@ echo "------------------------------------------"
 
 # 1. Tarik kode terbaru
 echo "🎬 Step 1: Tarik kode dari GitHub..."
-git pull origin branch-pnd
+git pull origin main
 
 # 2. Update dependensi PHP
 echo "🐘 Step 2: Install Composer dependencies..."
