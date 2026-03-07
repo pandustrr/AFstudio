@@ -299,7 +299,7 @@ export default function BookingShow({ booking, photographers = [] }) {
                             {/* Paket & Jadwal Booking */}
                             <section className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-3xl p-8 shadow-xl">
                                 <h2 className="text-sm font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-6 flex items-center gap-2">
-                                    <CalendarIcon className="w-4 h-4" /> Paket & Jadwal 
+                                    <CalendarIcon className="w-4 h-4" /> Paket & Jadwal
                                 </h2>
                                 <div className="space-y-6">
                                     {booking.items.map((item) => (
@@ -407,7 +407,7 @@ export default function BookingShow({ booking, photographers = [] }) {
                                     <div className="bg-brand-red/10 dark:bg-brand-red/5 p-4 rounded-xl border border-brand-red/20">
                                         <div className="flex justify-between items-center mb-1">
                                             <span className="text-[10px] font-black uppercase tracking-widest text-brand-red">Down Payment</span>
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-red">25% Rounded</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-red">Amount Paid</span>
                                         </div>
                                         <div className="flex justify-between items-center text-brand-red font-black text-2xl italic tracking-tighter">
                                             <span>{formatPrice(booking.down_payment)}</span>
@@ -416,7 +416,7 @@ export default function BookingShow({ booking, photographers = [] }) {
 
                                     <div className="flex justify-between items-center pt-2">
                                         <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">Remaining (On the day)</span>
-                                        <span className="text-xs font-black italic tracking-tighter opacity-60">
+                                        <span className="text-sm font-black italic tracking-tighter text-brand-red">
                                             {formatPrice((booking.total_price - booking.discount_amount) - booking.down_payment)}
                                         </span>
                                     </div>

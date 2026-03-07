@@ -289,12 +289,12 @@
         @endif
 
         <div class="totals-row">
-            <div class="totals-label">Uang Muka (DP 25%)</div>
+            <div class="totals-label">Uang Muka (Dibayarkan)</div>
             <div class="totals-value">- {{ number_format($booking->down_payment, 0, ',', '.') }}</div>
         </div>
         <div class="totals-row grand-total">
             <div class="totals-label">Sisa Tagihan (Pelunasan H-Day)</div>
-            <div class="totals-value">{{ number_format(($booking->total_price - $booking->discount_amount) - $booking->down_payment, 0, ',', '.') }}</div>
+            <div class="totals-value" style="color: #e63946;">{{ number_format(($booking->total_price - $booking->discount_amount) - $booking->down_payment, 0, ',', '.') }}</div>
         </div>
     </div>
 
