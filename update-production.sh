@@ -19,8 +19,13 @@ composer install --no-dev --optimize-autoloader
 echo "📂 Step 3: Menjalankan migrasi database..."
 php artisan migrate --force
 
-# 4. Optimasi Cache
-echo "⚡ Step 4: Membersihkan cache..."
+# 4. Update dependensi JS & Build Assets
+echo "📦 Step 4: Menginstall dependensi NPM & Build Assets (React)..."
+npm install
+npm run build
+
+# 5. Optimasi Cache
+echo "⚡ Step 5: Membersihkan cache..."
 php artisan optimize:clear
 php artisan config:cache
 php artisan route:cache
