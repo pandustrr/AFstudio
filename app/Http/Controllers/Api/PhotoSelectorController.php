@@ -283,4 +283,71 @@ class PhotoSelectorController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Cancel a specific photo edit request
+     */
+    public function cancelPhoto(Request $request, $uid)
+    {
+        $session = PhotoEditing::where('uid', $uid)->first();
+        if (!$session) {
+            return response()->json(['error' => 'Session not found'], 404);
+        }
+
+        $photoId = $request->input('photoId');
+        if (!$photoId) {
+            return response()->json(['error' => 'Photo ID is required'], 400);
+        }
+
+        // Find the edit request containing this photo
+        $editRequests = EditRequest::where('photo_session_id', $session->id)
+            ->where('status', 'pending')
+            ->get();
+
+        $targetRequest = null;
+        foreach ($editRequests as $req) {
+            $photos = collect($req->selected_photos);
+            if ($photos->contains('id', $photoId)) {
+                $targetRequest = $req;
+                break;
+            }
+        }
+
+        if (!$targetRequest) {
+            return response()->json(['error' => 'Permintaan edit tidak ditemukan atau sudah diproses admin.'], 404);
+        }
+
+        // Remove the photo from the array
+        $updatedPhotos = collect($targetRequest->selected_photos)->filter(function ($p) use ($photoId) {
+            return $p['id'] !== $photoId;
+        })->values()->all();
+
+        if (empty($updatedPhotos)) {
+            $targetRequest->delete();
+        } else {
+            $targetRequest->update(['selected_photos' => $updatedPhotos]);
+        }
+
+        // Recalculate everything for response
+        $session->load('editRequests', 'booking.items.package');
+
+        $requestedPhotoIds = $session->editRequests->flatMap(function ($request) {
+            return collect($request->selected_photos)->pluck('id');
+        })->unique()->values()->all();
+
+        $requestedCount = count($requestedPhotoIds);
+
+        $maxEditingQuota = 0;
+        if ($session->booking && $session->booking->items->isNotEmpty()) {
+            $maxEditingQuota = ($session->booking->items->first()->package->max_editing_quota ?? 0) + ($session->extra_editing_quota ?? 0);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Permintaan edit dibatalkan.',
+            'requested_photo_ids' => $requestedPhotoIds,
+            'requested_count' => $requestedCount,
+            'edit_quota_remaining' => max(0, $maxEditingQuota - $requestedCount)
+        ]);
+    }
 }
