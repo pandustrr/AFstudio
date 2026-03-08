@@ -144,7 +144,15 @@ class PhotographerSessionController extends Controller
             $day = $day ?: $carbonDate->day;
         }
 
-        $photographers = \App\Models\User::where('role', 'photographer')->get();
+        $photographers = \App\Models\User::where('role', 'photographer')
+            ->withCount(['sessions' => function ($query) use ($date) {
+                $query->where('date', $date)
+                    ->where('status', 'booked')
+                    ->whereHas('bookingItem.booking', function ($q) {
+                        $q->where('status', 'confirmed');
+                    });
+            }])
+            ->get();
 
         $sessions = [];
         if ($photographerId) {

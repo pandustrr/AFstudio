@@ -202,23 +202,11 @@ const CalendarWidget = ({ selectedDate, onDateSelect, monthlyStats = {}, availab
                                         {item.day}
                                     </span>
 
-                                    {/* Indicators */}
+                                    {/* Event Count Badge */}
                                     {hasStats && (
-                                        <div className="absolute -bottom-1 flex flex-col gap-[1.5px] items-center">
-                                            {item.stats > 2 ? (
-                                                <>
-                                                    <div className={`w-5 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'}`}></div>
-                                                    <div className={`w-5 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'} opacity-70`}></div>
-                                                    <div className={`w-5 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'} opacity-40`}></div>
-                                                </>
-                                            ) : item.stats > 1 ? (
-                                                <>
-                                                    <div className={`w-5 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'}`}></div>
-                                                    <div className={`w-5 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'} opacity-50`}></div>
-                                                </>
-                                            ) : (
-                                                <div className={`w-5 h-[2px] ${isSun ? 'bg-red-600' : 'bg-brand-gold'}`}></div>
-                                            )}
+                                        <div className={`absolute -top-1 -left-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-black shadow-sm z-20
+                                            ${isSun ? 'bg-red-600 text-white' : 'bg-brand-gold text-brand-black'}`}>
+                                            {item.stats}
                                         </div>
                                     )}
                                 </>
