@@ -30,19 +30,20 @@ export default function ViewModal({ session, onClose }) {
                     </button>
                 </div>
 
-                {session.quota_request && (
-                    <div className="mx-8 mt-6 p-4 bg-brand-gold/10 border border-brand-gold/20 rounded-xl flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
+
+                {session.extra_editing_quota > 0 && (
+                    <div className="mx-8 mt-6 p-4 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-brand-gold/20 rounded-full flex items-center justify-center shrink-0">
-                                <ChartBarIcon className="w-6 h-6 text-brand-gold" />
+                            <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center shrink-0">
+                                <ChartBarIcon className="w-6 h-6 text-green-500" />
                             </div>
                             <div>
-                                <h4 className="text-[10px] font-black text-brand-gold uppercase tracking-widest mb-0.5">Permintaan Tambah Kuota</h4>
-                                <p className="text-xs font-bold text-brand-black dark:text-brand-white">"{session.quota_request}"</p>
+                                <h4 className="text-[10px] font-black text-green-500 uppercase tracking-widest mb-0.5">Total Kuota Tambahan</h4>
+                                <p className="text-sm font-black text-brand-black dark:text-brand-white">+{session.extra_editing_quota} Foto</p>
                             </div>
                         </div>
-                        <div className="bg-brand-gold text-brand-black px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest">
-                            New Request
+                        <div className="bg-green-500 text-white px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest">
+                            Automated
                         </div>
                     </div>
                 )}

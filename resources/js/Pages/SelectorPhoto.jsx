@@ -234,12 +234,27 @@ export default function SelectorPhoto() {
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Gagal mengirim permintaan');
 
-            setSessionData(prev => ({ ...prev, quota_request: quotaRequest }));
+            // Sync all quota related states
+            if (data.max_editing_quota !== undefined) {
+                setMaxEditQuota(data.max_editing_quota);
+            }
+            if (data.edit_quota_remaining !== undefined) {
+                setEditQuotaRemaining(data.edit_quota_remaining);
+            }
+
+            setSessionData(prev => ({
+                ...prev,
+                extra_editing_quota: data.extra_editing_quota,
+                max_editing_quota: data.max_editing_quota,
+                edit_quota_remaining: data.edit_quota_remaining
+            }));
+
             setNotif({
                 show: true,
-                message: 'Permintaan kuota tambahan telah dikirim ke admin.',
+                message: 'Kuota editing berhasil ditambahkan!',
                 type: 'success'
             });
+            setQuotaRequest('');
             setShowQuotaInput(false);
         } catch (err) {
             setNotif({
@@ -482,19 +497,23 @@ export default function SelectorPhoto() {
                                             ) : (
                                                 <div className="flex flex-col items-center gap-2 w-full animate-in fade-in slide-in-from-top-1 duration-300">
                                                     <input
-                                                        type="text"
+                                                        type="number"
                                                         value={quotaRequest}
                                                         onChange={(e) => setQuotaRequest(e.target.value)}
-                                                        placeholder="Contoh: Tambah 5 foto lagi..."
-                                                        className="w-full max-w-[200px] bg-black/5 dark:bg-white/5 border border-brand-gold/20 rounded-lg px-3 py-1.5 text-[10px] text-brand-black dark:text-brand-white font-bold focus:outline-none focus:border-brand-gold"
+                                                        placeholder="0"
+                                                        min="1"
+                                                        className="w-full max-w-[100px] text-center bg-black/5 dark:bg-white/5 border border-brand-gold/20 rounded-lg px-3 py-1.5 text-[10px] text-brand-black dark:text-brand-white font-black focus:outline-none focus:border-brand-gold"
                                                     />
-                                                    <div className="flex gap-2">
+                                                    <p className="text-[8px] font-black text-brand-gold/60 uppercase tracking-widest">
+                                                        💰 3k per 1 foto
+                                                    </p>
+                                                    <div className="flex gap-4 mt-1">
                                                         <button
                                                             onClick={handleSendQuotaRequest}
-                                                            disabled={isRequestingQuota}
+                                                            disabled={isRequestingQuota || !quotaRequest}
                                                             className="text-[9px] font-black uppercase tracking-widest text-brand-gold hover:underline disabled:opacity-50"
                                                         >
-                                                            {isRequestingQuota ? 'Kirim...' : 'Kirim'}
+                                                            {isRequestingQuota ? 'Menambah...' : 'Tambah Sekarang'}
                                                         </button>
                                                         <button
                                                             onClick={() => setShowQuotaInput(false)}

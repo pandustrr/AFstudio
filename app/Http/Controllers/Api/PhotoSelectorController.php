@@ -36,7 +36,7 @@ class PhotoSelectorController extends Controller
         // Get max editing quota from package
         $maxEditingQuota = 0;
         if ($session->booking && $session->booking->items->isNotEmpty()) {
-            $maxEditingQuota = $session->booking->items->first()->package->max_editing_quota ?? 0;
+            $maxEditingQuota = ($session->booking->items->first()->package->max_editing_quota ?? 0) + ($session->extra_editing_quota ?? 0);
         }
 
         // Fetch associated booking info (if any)
@@ -64,6 +64,7 @@ class PhotoSelectorController extends Controller
                 'requested_count' => $requestedCount,
                 'max_editing_quota' => $maxEditingQuota,
                 'quota_request' => $session->quota_request,
+                'extra_editing_quota' => $session->extra_editing_quota,
                 'booking' => $bookingDetail,
             ]
         ]);
@@ -120,7 +121,7 @@ class PhotoSelectorController extends Controller
         // Get max editing quota from package
         $maxEditingQuota = 0;
         if ($session->booking && $session->booking->items->isNotEmpty()) {
-            $maxEditingQuota = $session->booking->items->first()->package->max_editing_quota ?? 0;
+            $maxEditingQuota = ($session->booking->items->first()->package->max_editing_quota ?? 0) + ($session->extra_editing_quota ?? 0);
         }
 
         // Check if editing is allowed (0 = no editing allowed)
@@ -250,18 +251,29 @@ class PhotoSelectorController extends Controller
         }
 
         $validated = $request->validate([
-            'quota_request' => 'required|string|max:255',
+            'quota_request' => 'required|integer|min:1',
         ]);
 
         try {
-            $session->update([
-                'quota_request' => $validated['quota_request'],
-            ]);
+            $session->increment('extra_editing_quota', $validated['quota_request']);
+
+            // Get updated max quota
+            $maxEditingQuota = 0;
+            if ($session->booking && $session->booking->items->isNotEmpty()) {
+                $maxEditingQuota = ($session->booking->items->first()->package->max_editing_quota ?? 0) + $session->extra_editing_quota;
+            }
+
+            // Calculate remaining
+            $requestedCount = $session->editRequests->sum(function ($request) {
+                return count($request->selected_photos ?? []);
+            });
 
             return response()->json([
                 'success' => true,
-                'message' => 'Permintaan kuota telah dikirim ke admin!',
-                'quota_request' => $session->quota_request
+                'message' => 'Kuota editing berhasil ditambahkan!',
+                'extra_editing_quota' => $session->extra_editing_quota,
+                'max_editing_quota' => $maxEditingQuota,
+                'edit_quota_remaining' => max(0, $maxEditingQuota - $requestedCount)
             ]);
         } catch (\Exception $e) {
             return response()->json([
