@@ -29,9 +29,11 @@ class PhotoSelectorController extends Controller
         }
 
         // Calculate total photos already requested
-        $requestedCount = $session->editRequests->sum(function ($request) {
-            return count($request->selected_photos ?? []);
-        });
+        $requestedPhotoIds = $session->editRequests->flatMap(function ($request) {
+            return collect($request->selected_photos)->pluck('id');
+        })->unique()->values()->all();
+
+        $requestedCount = count($requestedPhotoIds);
 
         // Get max editing quota from package
         $maxEditingQuota = 0;
@@ -65,6 +67,7 @@ class PhotoSelectorController extends Controller
                 'max_editing_quota' => $maxEditingQuota,
                 'quota_request' => $session->quota_request,
                 'extra_editing_quota' => $session->extra_editing_quota,
+                'requested_photo_ids' => $requestedPhotoIds,
                 'booking' => $bookingDetail,
             ]
         ]);
