@@ -155,12 +155,12 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         setError(null);
     }, [date, selectedRoom, packageData?.id, packageData?.max_sessions, packageData?.allow_split_session]);
 
-    // Fetch rooms when date changes
+    // Fetch rooms when date or package changes
     useEffect(() => {
         if (date && packageData) {
             fetchRooms();
         }
-    }, [date]);
+    }, [date, packageData?.id]);
 
     const fetchRooms = async () => {
         setIsLoadingRooms(true);
