@@ -68,8 +68,8 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     const [photographerId, setPhotographerId] = useState(null);
     const [photographers, setPhotographers] = useState([]);
     const [selectedSessions, setSelectedSessions] = useState([]);
-    const [maxSessions, setMaxSessions] = useState(1);
     const [startTime, setStartTime] = useState('');
+    const maxSessions = packageData?.max_sessions || 1;
     const [selectedSplitTimes, setSelectedSplitTimes] = useState([]);
     const [availabilityStatus, setAvailabilityStatus] = useState(null);
 
@@ -93,8 +93,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             setError(null);
             setSessionGrid([]);
             setSelectedSplitTimes([]);
-            // Set maxSessions from package data
-            setMaxSessions(packageData?.max_sessions || 1);
+            // Reset selection and initial state
         }
     }, [isOpen, packageData]);
 
@@ -153,7 +152,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         setSelectedSplitTimes([]);
         setAvailabilityStatus(null);
         setError(null);
-    }, [date, selectedRoom]);
+    }, [date, selectedRoom, packageData?.id, packageData?.max_sessions, packageData?.allow_split_session]);
 
     // Fetch rooms when date changes
     useEffect(() => {
