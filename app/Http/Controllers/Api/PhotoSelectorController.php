@@ -317,6 +317,9 @@ class PhotoSelectorController extends Controller
             return response()->json(['error' => 'Permintaan edit tidak ditemukan atau sudah diproses admin.'], 404);
         }
 
+        // Find the target photo details to log it
+        $cancelledPhoto = collect($targetRequest->selected_photos)->firstWhere('id', $photoId);
+
         // Remove the photo from the array
         $updatedPhotos = collect($targetRequest->selected_photos)->filter(function ($p) use ($photoId) {
             return $p['id'] !== $photoId;
@@ -327,6 +330,16 @@ class PhotoSelectorController extends Controller
         } else {
             $targetRequest->update(['selected_photos' => $updatedPhotos]);
         }
+
+        // Log to cancelled_photos in session
+        $currentCancelled = $session->cancelled_photos ?? [];
+        $currentCancelled[] = [
+            'id' => $photoId,
+            'name' => $cancelledPhoto['name'] ?? 'Unnamed',
+            'cancelled_at' => now()->format('Y-m-d H:i:s'),
+            'original_request_id' => $targetRequest->id
+        ];
+        $session->update(['cancelled_photos' => $currentCancelled]);
 
         // Recalculate everything for response
         $session->load('editRequests', 'booking.items.package');

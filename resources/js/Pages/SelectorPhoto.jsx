@@ -690,12 +690,17 @@ export default function SelectorPhoto() {
                                                                 </div>
                                                             )}
                                                             {isRequested && (
-                                                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10 group/cancel">
-                                                                    <div className="bg-brand-black/60 backdrop-blur-md px-2 py-1 rounded-md group-hover/cancel:hidden">
-                                                                        <p className="text-[7px] font-black text-white uppercase tracking-widest">Requested</p>
+                                                                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-10 group/cancel">
+                                                                    {/* Default State: Requested Label */}
+                                                                    <div className="bg-brand-black/80 px-3 py-1.5 rounded-full border border-white/20 shadow-xl group-hover/cancel:scale-0 transition-all duration-300">
+                                                                        <p className="text-[8px] font-black text-white uppercase tracking-widest text-center">Sudah Digunakan</p>
                                                                     </div>
-                                                                    <div className="hidden group-hover/cancel:flex bg-brand-red p-2 rounded-full shadow-lg items-center justify-center scale-110 transition-all">
-                                                                        <XMarkIcon className="w-3 h-3 text-white" />
+
+                                                                    {/* Hover State: Intense Cancel Button */}
+                                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/cancel:opacity-100 transition-all duration-300">
+                                                                        <div className="bg-brand-red text-white p-3 rounded-full shadow-[0_0_20px_rgba(239,68,68,0.5)] transform scale-0 group-hover/cancel:scale-100 transition-all duration-300">
+                                                                            <XMarkIcon className="w-5 h-5 stroke-3" />
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             )}

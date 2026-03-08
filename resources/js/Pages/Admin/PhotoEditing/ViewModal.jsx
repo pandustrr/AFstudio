@@ -96,6 +96,34 @@ export default function ViewModal({ session, onClose }) {
                             <p className="text-brand-black/40 dark:text-brand-white/40 text-xs font-black uppercase tracking-widest">Belum ada request edit.</p>
                         </div>
                     )}
+
+                    {/* Section Pembatalan */}
+                    {(session.cancelled_photos || []).length > 0 && (
+                        <div className="mt-12 pt-8 border-t border-red-500/20">
+                            <h3 className="text-sm font-black text-red-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                                Foto yang Dibatalkan (Client)
+                            </h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {session.cancelled_photos.map((photo, pIdx) => (
+                                    <div key={pIdx} className="bg-red-500/5 p-3 rounded-xl border border-red-500/10 flex flex-col gap-1">
+                                        <p className="text-[10px] font-mono font-bold text-red-500/60 truncate italic line-through">
+                                            {photo.name}
+                                        </p>
+                                        <span className="text-[8px] font-black uppercase text-red-500/30">
+                                            {new Date(photo.cancelled_at).toLocaleDateString('id-ID', {
+                                                day: '2-digit',
+                                                month: 'short'
+                                            })} {new Date(photo.cancelled_at).toLocaleTimeString('id-ID', {
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            }).replace('.', ':')}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
