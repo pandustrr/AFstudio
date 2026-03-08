@@ -563,7 +563,6 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                         return `${String(endH).padStart(2, '0')}.${String(endM).padStart(2, '0')}`;
                                                                     })();
 
-                                                                    // Helper to check if this slot is part of a consecutive selection (traditional)
                                                                     const isPartOfConsecutive = (() => {
                                                                         if (isSplitActive || !startTime) return false;
                                                                         const startIdx = sessionGrid.findIndex(s => s.time === startTime);
@@ -571,18 +570,37 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                         return currentIdx >= startIdx && currentIdx < startIdx + maxSessions;
                                                                     })();
 
+                                                                    // New: Check if this slot *could* be a valid start time
+                                                                    const hasEnoughFutureSlots = (() => {
+                                                                        if (isSplitActive || isBooked || isOff) return true;
+                                                                        // Check from current index to the end of required duration
+                                                                        for (let i = index; i < index + maxSessions; i++) {
+                                                                            if (!sessionGrid[i] || sessionGrid[i].status === 'booked' || sessionGrid[i].status === 'off') {
+                                                                                return false;
+                                                                            }
+                                                                        }
+                                                                        return true;
+                                                                    })();
+
                                                                     const isHighlighted = isSplitActive ? isSelected : isPartOfConsecutive;
                                                                     const isStartSelection = startTime === item.time;
+                                                                    const isDisabled = isBooked || isOff || (!isSplitActive && !hasEnoughFutureSlots && !isHighlighted);
 
                                                                     return (
                                                                         <button
                                                                             key={index}
                                                                             type="button"
-                                                                            disabled={isBooked || isOff}
+                                                                            disabled={isDisabled}
                                                                             onClick={() => {
                                                                                 if (isSplitActive) {
                                                                                     toggleSplitSession(item.time);
                                                                                 } else {
+                                                                                    // Check if there are enough slots remaining for the package duration
+                                                                                    if (!hasEnoughFutureSlots) {
+                                                                                        setError(`Sesi tidak tersedia. Dibutuhkan ${maxSessions} sesi berurutan.`);
+                                                                                        return;
+                                                                                    }
+
                                                                                     if (isStartSelection) {
                                                                                         setStartTime('');
                                                                                         setAvailabilityStatus(null);
@@ -622,9 +640,10 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                             <div className={`text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border mt-1
                                                                                 ${isBooked ? 'bg-red-500/10 text-red-500 border-red-500/20' :
                                                                                     isOff ? 'bg-black/10 text-brand-black/40 border-black/20' :
-                                                                                        isHighlighted ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-brand-gold/10 text-brand-gold border-brand-gold/20'}
+                                                                                        !hasEnoughFutureSlots && !isSplitActive ? 'bg-red-500/5 text-red-500/40 border-red-500/10' :
+                                                                                            isHighlighted ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-brand-gold/10 text-brand-gold border-brand-gold/20'}
                                                                             `}>
-                                                                                {isBooked ? 'TERISI' : isOff ? 'LIBUR' : isHighlighted ? 'FIXED' : 'OPEN'}
+                                                                                {isBooked ? 'TERISI' : isOff ? 'LIBUR' : (!hasEnoughFutureSlots && !isSplitActive) ? 'LIMIT' : isHighlighted ? 'FIXED' : 'OPEN'}
                                                                             </div>
 
                                                                             {isHighlighted && isSplitActive && (
