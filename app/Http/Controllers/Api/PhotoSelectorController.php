@@ -60,8 +60,8 @@ class PhotoSelectorController extends Controller
             'data' => [
                 'uid' => $session->uid,
                 'customer_name' => $session->customer_name,
-                'has_raw' => !empty($session->raw_folder_id),
-                'has_edited' => !empty($session->edited_folder_id),
+                'has_raw' => !empty($session->raw_folder_id) && $session->is_raw_accessible,
+                'has_edited' => !empty($session->edited_folder_id) && $session->is_edited_accessible,
                 'status' => $session->status,
                 'requested_count' => $requestedCount,
                 'max_editing_quota' => $maxEditingQuota,
@@ -88,6 +88,11 @@ class PhotoSelectorController extends Controller
         }
 
         $folderId = ($type === 'edited') ? $session->edited_folder_id : $session->raw_folder_id;
+        $isAccessible = ($type === 'edited') ? $session->is_edited_accessible : $session->is_raw_accessible;
+
+        if (!$isAccessible) {
+            return response()->json(['error' => 'Akses folder ini telah dinonaktifkan oleh admin.'], 403);
+        }
 
         if (!$folderId) {
             return response()->json(['error' => 'Folder ID not set'], 400);

@@ -135,10 +135,13 @@ class PhotoEditingController extends Controller
 
         if (auth()->user()->role === 'photographer') {
             $rules['raw_folder_id'] = 'required|string|max:255';
+            $rules['is_raw_accessible'] = 'boolean';
         } else {
             $rules['customer_name'] = 'required|string|max:255';
             $rules['raw_folder_id'] = 'required|string|max:255';
+            $rules['is_raw_accessible'] = 'boolean';
             $rules['edited_folder_id'] = 'nullable|string|max:255';
+            $rules['is_edited_accessible'] = 'boolean';
         }
 
         $validated = $request->validate($rules);
