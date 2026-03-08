@@ -18,6 +18,17 @@ export default function Index({ categories }) {
     const [packageModal, setPackageModal] = useState({ show: false, pkg: null, subCategoryId: null });
     const [deleteModal, setDeleteModal] = useState({ show: false, type: '', id: null, title: '', message: '' });
 
+    // Expansion State
+    const [expandedPackageIds, setExpandedPackageIds] = useState([]);
+
+    const toggleExpandPackage = (pkgId) => {
+        setExpandedPackageIds(prev =>
+            prev.includes(pkgId)
+                ? prev.filter(id => id !== pkgId)
+                : [...prev, pkgId]
+        );
+    };
+
     // Notification State
     const [showNotif, setShowNotif] = useState(false);
     const [notifMessage, setNotifMessage] = useState('');
@@ -200,7 +211,7 @@ export default function Index({ categories }) {
                                     <div className="p-6">
                                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
                                             {subCategory.packages.map(pkg => (
-                                                <div key={pkg.id} className={`relative p-4 rounded-2xl border transition-all group ${pkg.is_popular
+                                                <div key={pkg.id} className={`relative p-4 rounded-2xl border transition-all h-fit group ${pkg.is_popular
                                                     ? 'bg-brand-black dark:bg-brand-gold border-transparent shadow-xl ring-4 ring-brand-gold/10'
                                                     : 'bg-white dark:bg-white/5 border-black/5 dark:border-white/5 hover:border-brand-gold/50'
                                                     }`}>
@@ -227,7 +238,7 @@ export default function Index({ categories }) {
                                                             min-h-[60px]
                                                         "
                                                     >
-                                                        {(pkg.features || []).slice(0, 4).map((feature, idx) => (
+                                                        {(pkg.features || []).slice(0, expandedPackageIds.includes(pkg.id) ? undefined : 4).map((feature, idx) => (
                                                             <li key={idx} className="flex items-start gap-1.5">
                                                                 <ChevronRightIcon className={`w-2.5 h-2.5 mt-0.5 shrink-0 ${pkg.is_popular ? 'text-white/60 dark:text-brand-black/60' : 'text-brand-black/20 dark:text-brand-white/20'}`} />
                                                                 <span className={`text-[9px] font-bold uppercase tracking-wide leading-tight line-clamp-1 ${pkg.is_popular ? 'text-white/80 dark:text-brand-black/80' : 'text-brand-black/60 dark:text-brand-white/60'}`}>
@@ -236,8 +247,13 @@ export default function Index({ categories }) {
                                                             </li>
                                                         ))}
                                                         {(pkg.features || []).length > 4 && (
-                                                            <li className={`text-[8px] font-black uppercase tracking-widest pl-4 ${pkg.is_popular ? 'text-white/40 dark:text-brand-black/40' : 'text-brand-black/30 dark:text-brand-white/30'}`}>
-                                                                + {(pkg.features || []).length - 4} More
+                                                            <li className="pl-4">
+                                                                <button
+                                                                    onClick={() => toggleExpandPackage(pkg.id)}
+                                                                    className={`text-[8px] font-black uppercase tracking-widest hover:underline transition-all ${pkg.is_popular ? 'text-white/40 dark:text-brand-black/40' : 'text-brand-black/30 dark:text-brand-white/30'}`}
+                                                                >
+                                                                    {expandedPackageIds.includes(pkg.id) ? 'Show Less' : `+ ${(pkg.features || []).length - 4} More`}
+                                                                </button>
                                                             </li>
                                                         )}
                                                     </ul>
