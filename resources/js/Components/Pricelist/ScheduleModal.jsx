@@ -69,7 +69,8 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     const [photographers, setPhotographers] = useState([]);
     const [selectedSessions, setSelectedSessions] = useState([]);
     const [startTime, setStartTime] = useState('');
-    const maxSessions = packageData?.max_sessions || 1;
+    const maxSessions = Number(packageData?.max_sessions || 1);
+    const isSplitActive = !!packageData?.allow_split_session;
     const [selectedSplitTimes, setSelectedSplitTimes] = useState([]);
     const [availabilityStatus, setAvailabilityStatus] = useState(null);
 
@@ -546,7 +547,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                     const isBooked = item.status === 'booked';
                                                                     const isOff = item.status === 'off';
                                                                     const isOpen = item.status === 'open';
-                                                                    const isSplitActive = packageData?.allow_split_session;
+                                                                    const isSplitActive = Boolean(packageData?.allow_split_session);
 
                                                                     // Helper to check if this slot is selected
                                                                     const isSelected = isSplitActive
