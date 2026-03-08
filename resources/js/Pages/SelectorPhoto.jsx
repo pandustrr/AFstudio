@@ -147,7 +147,7 @@ export default function SelectorPhoto() {
             if (isSelected) {
                 return prev.filter(p => p.id !== photo.id);
             } else {
-                return [...prev, { id: photo.id, name: photo.name }];
+                return [...prev, { id: photo.id, name: photo.name, downloadLink: photo.downloadLink }];
             }
         });
     };
@@ -461,31 +461,37 @@ export default function SelectorPhoto() {
         setIsSelectionMode(true);
     };
 
-    const triggerDownload = (id) => {
-        const photoData = drivePhotos.find(p => p.id === id);
-        if (photoData?.downloadLink) {
-            window.open(photoData.downloadLink, '_blank');
-        }
+    const triggerDownload = (downloadLink) => {
+        if (!downloadLink) return;
+
+        // Using a hidden anchor tag and clicking it is often more reliable
+        // but for multiple downloads, we still need a delay between them.
+        const link = document.createElement('a');
+        link.href = downloadLink;
+        link.target = '_blank';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => document.body.removeChild(link), 100);
     };
 
     const handleDownloadAll = () => {
         if (drivePhotos.length === 0) return;
 
         if (confirm(`Download semua ${drivePhotos.length} foto secara individual?`)) {
-            let count = 0;
-            const maxBatch = 5;
+            let index = 0;
 
-            const processBatch = () => {
-                const batch = drivePhotos.slice(count, count + maxBatch);
-                batch.forEach(photo => triggerDownload(photo.id));
-
-                count += maxBatch;
-                if (count < drivePhotos.length) {
-                    setTimeout(processBatch, 1500); // 1.5s delay to avoid browser blocking
+            const nextDownload = () => {
+                if (index < drivePhotos.length) {
+                    const photo = drivePhotos[index];
+                    triggerDownload(photo.downloadLink);
+                    index++;
+                    // Delay 1 second between each download to avoid browser blocking
+                    setTimeout(nextDownload, 1000);
                 }
             };
 
-            processBatch();
+            nextDownload();
             alert(`Memulai download ${drivePhotos.length} foto... Harap izinkan popup jika diminta browser.`);
         }
     };
@@ -493,21 +499,20 @@ export default function SelectorPhoto() {
     const handleDownloadSelected = () => {
         if (selectedPhotos.length === 0) return;
 
-        let count = 0;
-        const maxBatch = 5;
+        let index = 0;
 
-        const processBatch = () => {
-            const batch = selectedPhotos.slice(count, count + maxBatch);
-            batch.forEach(photo => triggerDownload(photo.id));
-
-            count += maxBatch;
-            if (count < selectedPhotos.length) {
-                setTimeout(processBatch, 1500);
+        const nextDownload = () => {
+            if (index < selectedPhotos.length) {
+                const photo = selectedPhotos[index];
+                triggerDownload(photo.downloadLink);
+                index++;
+                // Delay 1 second between each download to avoid browser blocking
+                setTimeout(nextDownload, 1000);
             }
         };
 
-        processBatch();
-        alert(`Mendownload ${selectedPhotos.length} foto... Jika proses terhenti, harap izinkan popup untuk situs ini.`);
+        nextDownload();
+        alert(`Mendownload ${selectedPhotos.length} foto satu per satu... Harap izinkan popup/tab baru jika diminta browser.`);
     };
 
     const handleDriveSelection = (folderType) => {
