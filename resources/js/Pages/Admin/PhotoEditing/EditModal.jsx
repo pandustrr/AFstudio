@@ -6,7 +6,9 @@ export default function EditModal({ session, onClose }) {
     const { data, setData, put, processing, errors, clearErrors } = useForm({
         customer_name: session.customer_name,
         raw_folder_id: session.raw_folder_id,
+        is_raw_accessible: session.is_raw_accessible || false,
         edited_folder_id: session.edited_folder_id || '',
+        is_edited_accessible: session.is_edited_accessible || false,
         status: session.status,
     });
 
@@ -78,18 +80,48 @@ export default function EditModal({ session, onClose }) {
                         {errors.raw_folder_id && <p className="text-red-500 text-[10px] font-bold mt-1 ml-2">{errors.raw_folder_id}</p>}
                     </div>
 
-                    {!window.location.pathname.startsWith('/photographer') && (
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 ml-2">Result Folder (GDrive Link)</label>
-                            <input
-                                type="text"
-                                value={data.edited_folder_id}
-                                onChange={e => setData('edited_folder_id', e.target.value)}
-                                className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl px-6 py-4 font-bold text-sm focus:outline-none focus:border-brand-gold transition-all"
-                                placeholder="Paste full Google Drive folder link"
-                            />
-                            {errors.edited_folder_id && <p className="text-red-500 text-[10px] font-bold mt-1 ml-2">{errors.edited_folder_id}</p>}
+                    <div className="flex items-center justify-between px-2 py-4 bg-black/2 dark:bg-white/2 rounded-2xl border border-black/5 dark:border-white/5">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white">Akses Mentahan</span>
+                            <span className="text-[9px] font-medium text-brand-black/40 dark:text-brand-white/40">Izinkan customer melihat folder mentahan</span>
                         </div>
+                        <button
+                            type="button"
+                            onClick={() => setData('is_raw_accessible', !data.is_raw_accessible)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${data.is_raw_accessible ? 'bg-brand-gold' : 'bg-black/10 dark:bg-white/10'}`}
+                        >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.is_raw_accessible ? 'translate-x-6' : 'translate-x-1'}`} />
+                        </button>
+                    </div>
+
+                    {!window.location.pathname.startsWith('/photographer') && (
+                        <>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 ml-2">Result Folder (GDrive Link)</label>
+                                <input
+                                    type="text"
+                                    value={data.edited_folder_id}
+                                    onChange={e => setData('edited_folder_id', e.target.value)}
+                                    className="w-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl px-6 py-4 font-bold text-sm focus:outline-none focus:border-brand-gold transition-all"
+                                    placeholder="Paste full Google Drive folder link"
+                                />
+                                {errors.edited_folder_id && <p className="text-red-500 text-[10px] font-bold mt-1 ml-2">{errors.edited_folder_id}</p>}
+                            </div>
+
+                            <div className="flex items-center justify-between px-2 py-4 bg-black/2 dark:bg-white/2 rounded-2xl border border-black/5 dark:border-white/5">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white">Akses Result</span>
+                                    <span className="text-[9px] font-medium text-brand-black/40 dark:text-brand-white/40">Izinkan customer melihat folder hasil/editing</span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setData('is_edited_accessible', !data.is_edited_accessible)}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${data.is_edited_accessible ? 'bg-brand-gold' : 'bg-black/10 dark:bg-white/10'}`}
+                                >
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.is_edited_accessible ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </button>
+                            </div>
+                        </>
                     )}
 
                     <div className="pt-4">
