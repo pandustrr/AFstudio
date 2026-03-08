@@ -45,11 +45,7 @@ export default function SelectorPhoto() {
         onConfirm: null,
         variant: 'danger'
     });
-    const [downloadStatus, setDownloadStatus] = useState({
-        isDownloading: false,
-        current: 0,
-        total: 0
-    });
+    const [isDownloading, setIsDownloading] = useState(false);
 
     // Swipe State
     const [touchStart, setTouchStart] = useState(null);
@@ -469,17 +465,25 @@ export default function SelectorPhoto() {
     const triggerDownload = (downloadLink) => {
         if (!downloadLink) return;
 
-        // Using a named window/tab reduces the "multiple tabs" problem
-        // Most browsers will reuse the same tab if it has the same name.
-        // This avoids switching tabs 7 times and satisfies the popup blocker.
-        window.open(downloadLink, 'afstudio_download_target');
+        // Use iframe method for multi-download to avoid multiple tabs and popup blockers
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = downloadLink;
+        document.body.appendChild(iframe);
+
+        // Cleanup iframe after it has likely started the download process
+        setTimeout(() => {
+            if (document.body.contains(iframe)) {
+                document.body.removeChild(iframe);
+            }
+        }, 15000);
     };
 
     const handleDownloadAll = () => {
-        if (drivePhotos.length === 0 || downloadStatus.isDownloading) return;
+        if (drivePhotos.length === 0 || isDownloading) return;
 
         if (confirm(`Download semua ${drivePhotos.length} foto secara individual?`)) {
-            setDownloadStatus({ isDownloading: true, current: 0, total: drivePhotos.length });
+            setIsDownloading(true);
             let index = 0;
 
             const nextDownload = () => {
@@ -487,12 +491,10 @@ export default function SelectorPhoto() {
                     const photo = drivePhotos[index];
                     triggerDownload(photo.downloadLink);
                     index++;
-                    setDownloadStatus(prev => ({ ...prev, current: index }));
-                    // Delay 2 seconds between each download to be safer for browser and Google Drive limits
                     setTimeout(nextDownload, 2000);
                 } else {
                     setTimeout(() => {
-                        setDownloadStatus({ isDownloading: false, current: 0, total: 0 });
+                        setIsDownloading(false);
                         alert(`Selesai! ${drivePhotos.length} foto telah diproses.`);
                     }, 1000);
                 }
@@ -503,9 +505,9 @@ export default function SelectorPhoto() {
     };
 
     const handleDownloadSelected = () => {
-        if (selectedPhotos.length === 0 || downloadStatus.isDownloading) return;
+        if (selectedPhotos.length === 0 || isDownloading) return;
 
-        setDownloadStatus({ isDownloading: true, current: 0, total: selectedPhotos.length });
+        setIsDownloading(true);
         let index = 0;
 
         const nextDownload = () => {
@@ -513,12 +515,10 @@ export default function SelectorPhoto() {
                 const photo = selectedPhotos[index];
                 triggerDownload(photo.downloadLink);
                 index++;
-                setDownloadStatus(prev => ({ ...prev, current: index }));
-                // Delay 2 seconds between each download
                 setTimeout(nextDownload, 2000);
             } else {
                 setTimeout(() => {
-                    setDownloadStatus({ isDownloading: false, current: 0, total: 0 });
+                    setIsDownloading(false);
                     alert(`Selesai! ${selectedPhotos.length} foto telah diproses.`);
                 }, 1000);
             }
@@ -815,29 +815,21 @@ export default function SelectorPhoto() {
                                     </div>
                                 ) : (
                                     <>
-                                        <div className="flex justify-between items-center mb-3 px-1">
-                                            <div className="flex items-center space-x-3">
-                                                <p className="text-[10px] text-brand-black/40 dark:text-brand-white/40 uppercase font-bold tracking-widest">{drivePhotos.length} Foto</p>
+                                        <div className="flex justify-between items-center mb-2 px-1">
+                                            <div className="flex items-center space-x-2">
+                                                <p className="text-[9px] text-brand-black/40 dark:text-brand-white/40 uppercase font-bold tracking-widest">{drivePhotos.length} Foto</p>
                                                 <button
                                                     onClick={() => fetchPhotosFromDrive(driveType, true)}
-                                                    className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-all text-brand-black/20 hover:text-brand-gold active:scale-95"
+                                                    className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-all text-brand-black/20 hover:text-brand-gold"
                                                     title="Refresh dari Drive"
                                                 >
-                                                    <svg className={`w-4 h-4 ${loading ? 'animate-spin text-brand-gold' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <svg className={`w-3 h-3 ${loading ? 'animate-spin text-brand-gold' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                                     </svg>
                                                 </button>
                                             </div>
-                                            {downloadStatus.isDownloading && (
-                                                <div className="flex items-center gap-2 bg-brand-gold/10 px-3 py-1 rounded-full border border-brand-gold/20 animate-pulse">
-                                                    <div className="w-2 h-2 bg-brand-gold rounded-full"></div>
-                                                    <p className="text-[9px] font-black text-brand-gold uppercase tracking-widest">
-                                                        Downloading {downloadStatus.current}/{downloadStatus.total}
-                                                    </p>
-                                                </div>
-                                            )}
                                         </div>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3 mb-6 max-h-[50vh] overflow-y-auto pr-2 scrollbar-thin">
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
                                             {drivePhotos.map((photo, index) => {
                                                 const isSelected = selectedPhotos.some(p => p.id === photo.id);
                                                 const isRequested = previouslySelectedPhotoIds.includes(photo.id);
@@ -899,52 +891,48 @@ export default function SelectorPhoto() {
                                                 );
                                             })}
                                         </div>
-                                        <div className="flex flex-col gap-3 sm:gap-4">
-                                            {/* Action Buttons Row */}
-                                            <div className="flex gap-2 sm:gap-4 h-12">
-                                                <button
-                                                    onClick={() => setStep(2)}
-                                                    className="w-12 h-full flex items-center justify-center text-brand-black/40 dark:text-brand-white/40 border border-black/10 dark:border-white/10 rounded-xl hover:bg-black/5 transition-all shrink-0"
-                                                    title="Kembali"
-                                                >
-                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
-                                                    </svg>
-                                                </button>
+                                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                                            <button
+                                                onClick={() => setStep(2)}
+                                                className="w-full sm:w-11 h-11 flex items-center justify-center text-brand-black/40 dark:text-brand-white/40 border border-black/10 dark:border-white/10 rounded-xl hover:bg-black/5 transition-all"
+                                                title="Kembali"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
+                                                </svg>
+                                            </button>
 
-                                                <button
-                                                    onClick={() => driveType === 'Mentahan' ? handleSendEditRequest() : setStep(4)}
-                                                    disabled={downloadStatus.isDownloading || (driveType === 'Mentahan' && (selectedPhotos.length === 0 || selectedPhotos.length > (maxEditQuota - (sessionData?.requested_count || 0))))}
-                                                    className="flex-1 bg-brand-gold hover:brightness-90 text-brand-black font-black rounded-xl uppercase tracking-widest text-[10px] shadow-xl disabled:opacity-50 transition-all px-4 h-full"
-                                                >
-                                                    {driveType === 'Mentahan' ? (
-                                                        selectedPhotos.length > 0 ? (
-                                                            (selectedPhotos.length > (maxEditQuota - (sessionData?.requested_count || 0)))
-                                                                ? `Kelebihan (${(sessionData?.requested_count || 0) + selectedPhotos.length}/${maxEditQuota})`
-                                                                : `Request Editing (${(sessionData?.requested_count || 0) + selectedPhotos.length}/${maxEditQuota})`
-                                                        ) : `Pilih Foto`
-                                                    ) : `Lanjut ke Ulasan`}
-                                                </button>
-                                            </div>
-
-                                            {/* Download Buttons Row */}
-                                            <div className="grid grid-cols-2 gap-2 h-10">
+                                            <div className="flex gap-2 sm:gap-3 flex-1">
                                                 <button
                                                     onClick={handleDownloadAll}
-                                                    disabled={downloadStatus.isDownloading}
-                                                    className="w-full bg-black/5 dark:bg-white/10 hover:bg-black/10 text-brand-black dark:text-brand-white font-black rounded-lg uppercase tracking-widest text-[8px] sm:text-[9px] border border-black/5 disabled:opacity-50"
+                                                    className="flex-1 bg-black/5 dark:bg-white/10 hover:bg-black/10 text-brand-black dark:text-brand-white font-black py-2.5 rounded-xl uppercase tracking-widest text-[8px] sm:text-[9px] shadow-sm border border-black/5"
                                                 >
                                                     Download Semua
                                                 </button>
 
-                                                <button
-                                                    onClick={handleDownloadSelected}
-                                                    disabled={downloadStatus.isDownloading || selectedPhotos.length === 0}
-                                                    className="w-full bg-black/5 dark:bg-white/10 hover:bg-black/10 text-brand-black dark:text-brand-white font-black rounded-lg uppercase tracking-widest text-[8px] sm:text-[9px] border border-black/5 disabled:opacity-50"
-                                                >
-                                                    Pilihan ({selectedPhotos.length})
-                                                </button>
+                                                {selectedPhotos.length > 0 && (
+                                                    <button
+                                                        onClick={handleDownloadSelected}
+                                                        className="flex-1 bg-black/5 dark:bg-white/10 hover:bg-black/10 text-brand-black dark:text-brand-white font-black py-2.5 rounded-xl uppercase tracking-widest text-[8px] sm:text-[9px] shadow-sm border border-black/5"
+                                                    >
+                                                        Download yang dipilih ({selectedPhotos.length})
+                                                    </button>
+                                                )}
                                             </div>
+
+                                            <button
+                                                onClick={() => driveType === 'Mentahan' ? handleSendEditRequest() : setStep(4)}
+                                                disabled={isDownloading || (driveType === 'Mentahan' && (selectedPhotos.length === 0 || selectedPhotos.length > (maxEditQuota - (sessionData?.requested_count || 0))))}
+                                                className="w-full sm:flex-1 bg-brand-gold hover:brightness-90 text-brand-black font-black py-3 sm:py-2.5 rounded-xl uppercase tracking-widest text-[10px] shadow-xl disabled:opacity-50 transition-all font-black px-6"
+                                            >
+                                                {driveType === 'Mentahan' ? (
+                                                    selectedPhotos.length > 0 ? (
+                                                        (selectedPhotos.length > (maxEditQuota - (sessionData?.requested_count || 0)))
+                                                            ? `Kelebihan (${(sessionData?.requested_count || 0) + selectedPhotos.length} / ${maxEditQuota})`
+                                                            : `Request Editing (${(sessionData?.requested_count || 0) + selectedPhotos.length} / ${maxEditQuota})`
+                                                    ) : `Pilih Foto`
+                                                ) : `Lanjut Review`}
+                                            </button>
                                         </div>
                                     </>
                                 )}
