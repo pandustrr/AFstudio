@@ -59,6 +59,8 @@ Route::prefix('api/photo-selector')->group(function () {
     Route::post('/sessions/{uid}/review', [PhotoSelectorController::class, 'storeReview']);
     Route::post('/sessions/{uid}/quota-request', [PhotoSelectorController::class, 'storeQuotaRequest']);
     Route::post('/sessions/{uid}/cancel-photo', [PhotoSelectorController::class, 'cancelPhoto']);
+    Route::post('/sessions/{uid}/cancel-multiple', [PhotoSelectorController::class, 'cancelMultiplePhotos']);
+    Route::post('/sessions/{uid}/cancel-all', [PhotoSelectorController::class, 'cancelAllPhotos']);
 });
 
 use App\Http\Controllers\Admin\EditorDashboardController;

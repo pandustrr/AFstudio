@@ -4,6 +4,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { StarIcon, XMarkIcon, CameraIcon } from '@heroicons/react/24/solid';
 import { StarIcon as StarOutlineIcon } from '@heroicons/react/24/outline';
 import EditNotif from '@/Components/EditNotif';
+import ConfirmModal from '@/Components/ConfirmModal';
 
 export default function SelectorPhoto() {
     const { props: { settings } } = usePage();
@@ -35,7 +36,15 @@ export default function SelectorPhoto() {
     const [isRequestingQuota, setIsRequestingQuota] = useState(false);
     const [showQuotaInput, setShowQuotaInput] = useState(false);
     const [previouslySelectedPhotoIds, setPreviouslySelectedPhotoIds] = useState([]);
+    const [selectedForCancel, setSelectedForCancel] = useState([]);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: null,
+        variant: 'danger'
+    });
 
     // Swipe State
     const [touchStart, setTouchStart] = useState(null);
@@ -78,8 +87,6 @@ export default function SelectorPhoto() {
             setSessionData(data.data);
             // Set max edit quota from package (default 0 if not available)
             setMaxEditQuota(data.data.max_editing_quota || 0);
-            setEditQuotaRemaining((data.data.max_editing_quota || 0) - (data.data.requested_count || 0));
-            setQuotaRequest(data.data.quota_request || '');
             setPreviouslySelectedPhotoIds(data.data.requested_photo_ids || []);
             setStep(2);
         } catch (err) {
@@ -124,9 +131,14 @@ export default function SelectorPhoto() {
         const isRequested = previouslySelectedPhotoIds.includes(photo.id);
 
         if (isRequested) {
-            if (confirm(`Batalkan permintaan edit untuk foto ${photo.name}?`)) {
-                handleCancelPhoto(photo.id);
-            }
+            setSelectedForCancel(prev => {
+                const isAlreadySelected = prev.includes(photo.id);
+                if (isAlreadySelected) {
+                    return prev.filter(id => id !== photo.id);
+                } else {
+                    return [...prev, photo.id];
+                }
+            });
             return;
         }
 
@@ -171,6 +183,7 @@ export default function SelectorPhoto() {
                 message: 'Permintaan edit dibatalkan!',
                 type: 'success'
             });
+            setSelectedForCancel(prev => prev.filter(id => id !== photoId));
         } catch (err) {
             setNotif({
                 show: true,
@@ -180,6 +193,109 @@ export default function SelectorPhoto() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleCancelMultiple = async () => {
+        if (selectedForCancel.length === 0) return;
+
+        setConfirmModal({
+            isOpen: true,
+            title: 'Batalkan Foto Terpilih',
+            message: `Apakah Anda yakin ingin membatalkan ${selectedForCancel.length} foto yang dipilih?`,
+            variant: 'danger',
+            onConfirm: async () => {
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                setLoading(true);
+                try {
+                    const response = await fetch(`/api/photo-selector/sessions/${uid}/cancel-multiple`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                        },
+                        body: JSON.stringify({ photoIds: selectedForCancel }),
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || 'Gagal membatalkan permintaan');
+
+                    setPreviouslySelectedPhotoIds(data.requested_photo_ids);
+                    setEditQuotaRemaining(data.edit_quota_remaining);
+                    setSelectedForCancel([]);
+
+                    if (sessionData) {
+                        setSessionData({
+                            ...sessionData,
+                            requested_count: data.requested_count
+                        });
+                    }
+
+                    setNotif({
+                        show: true,
+                        message: `${data.message}`,
+                        type: 'success'
+                    });
+                } catch (err) {
+                    setNotif({
+                        show: true,
+                        message: 'Error: ' + err.message,
+                        type: 'error'
+                    });
+                } finally {
+                    setLoading(false);
+                }
+            }
+        });
+    };
+
+    const handleCancelAll = async () => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Batalkan Semua',
+            message: 'Apakah Anda yakin ingin membatalkan SEMUA permintaan edit yang belum diproses?',
+            variant: 'danger',
+            onConfirm: async () => {
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                setLoading(true);
+                try {
+                    const response = await fetch(`/api/photo-selector/sessions/${uid}/cancel-all`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                        },
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || 'Gagal membatalkan semua permintaan');
+
+                    setPreviouslySelectedPhotoIds(data.requested_photo_ids);
+                    setEditQuotaRemaining(data.edit_quota_remaining);
+                    if (sessionData) {
+                        setSessionData({
+                            ...sessionData,
+                            requested_count: data.requested_count
+                        });
+                    }
+
+                    setNotif({
+                        show: true,
+                        message: 'Semua permintaan edit berhasil dibatalkan!',
+                        type: 'success'
+                    });
+                } catch (err) {
+                    setNotif({
+                        show: true,
+                        message: 'Error: ' + err.message,
+                        type: 'error'
+                    });
+                } finally {
+                    setLoading(false);
+                }
+            }
+        });
     };
 
     const handleSendEditRequest = async () => {
@@ -638,13 +754,36 @@ export default function SelectorPhoto() {
                                     <p className="text-brand-black/40 dark:text-brand-white/40 text-xs sm:text-sm font-black uppercase tracking-widest leading-none">
                                         {driveType === 'Mentahan' ? 'Galeri Mentahan' : `Galeri ${driveType}`}
                                     </p>
-                                    {driveType === 'Mentahan' && (
-                                        <div className="bg-brand-gold/10 border-2 border-brand-gold/40 rounded-full px-5 py-1 mt-1 mb-3">
-                                            <p className="text-brand-gold text-[9px] font-black uppercase tracking-widest leading-tight">
-                                                Kuota Editing: {(sessionData?.requested_count || 0) + selectedPhotos.length} / {maxEditQuota} Foto
-                                            </p>
-                                        </div>
-                                    )}
+                                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                                        {driveType === 'Mentahan' && (
+                                            <div className="bg-brand-gold/10 border-2 border-brand-gold/40 rounded-full px-5 py-1">
+                                                <p className="text-brand-gold text-[9px] font-black uppercase tracking-widest leading-tight">
+                                                    Kuota Editing: {(sessionData?.requested_count || 0) + selectedPhotos.length} / {maxEditQuota} Foto
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {driveType === 'Mentahan' && (sessionData?.requested_count > 0) && (
+                                            <div className="flex items-center gap-2">
+                                                {selectedForCancel.length > 0 && (
+                                                    <button
+                                                        onClick={handleCancelMultiple}
+                                                        className="flex items-center gap-2 px-4 py-1.5 bg-red-600 border border-white/20 rounded-full text-[9px] font-black text-white uppercase tracking-widest hover:brightness-110 transition-all active:scale-95 shadow-xl shadow-red-600/20"
+                                                    >
+                                                        <XMarkIcon className="w-3 h-3 stroke-3" />
+                                                        Batalkan ({selectedForCancel.length})
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={handleCancelAll}
+                                                    className="flex items-center gap-2 px-4 py-1.5 bg-red-500/10 border border-red-500/30 rounded-full text-[9px] font-black text-red-500 uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-95 shadow-lg shadow-red-500/10"
+                                                >
+                                                    <XMarkIcon className="w-3 h-3" />
+                                                    Batalkan Semua Request
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {loading ? (
@@ -677,25 +816,44 @@ export default function SelectorPhoto() {
                                             {drivePhotos.map((photo, index) => {
                                                 const isSelected = selectedPhotos.some(p => p.id === photo.id);
                                                 const isRequested = previouslySelectedPhotoIds.includes(photo.id);
+
                                                 return (
                                                     <div key={photo.id} className="group relative aspect-square">
                                                         <div
                                                             onClick={() => togglePhoto(photo)}
-                                                            className={`w-full h-full rounded-lg overflow-hidden transition-all border-2 ${isSelected ? 'border-brand-red ring-2 ring-brand-red/20' : isRequested ? 'border-transparent opacity-40 cursor-not-allowed grayscale' : 'border-transparent hover:border-black/20 dark:hover:border-white/20'}`}
+                                                            className={`w-full h-full rounded-lg overflow-hidden transition-all border-2 ${isSelected
+                                                                ? 'border-brand-red ring-2 ring-brand-red/20'
+                                                                : isRequested
+                                                                    ? `cursor-pointer ${selectedForCancel.includes(photo.id)
+                                                                        ? 'border-red-600 ring-4 ring-red-600/30 opacity-100'
+                                                                        : 'border-transparent opacity-40 grayscale'}`
+                                                                    : 'border-transparent hover:border-black/20 dark:hover:border-white/20'
+                                                                }`}
                                                         >
                                                             <img src={photo.thumbnail?.replace('=s220', '=s300')} alt={photo.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+
                                                             {isSelected && (
                                                                 <div className="absolute top-2 right-2 w-5 h-5 bg-brand-red rounded-full flex items-center justify-center z-10 shadow-lg animate-in zoom-in duration-300">
                                                                     <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>
                                                                 </div>
                                                             )}
+
+                                                            {/* Status Indicator (Persistent for Requested) */}
                                                             {isRequested && (
-                                                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10 group/cancel">
-                                                                    <div className="bg-brand-black/60 backdrop-blur-md px-2 py-1 rounded-md group-hover/cancel:hidden">
-                                                                        <p className="text-[7px] font-black text-white uppercase tracking-widest">Requested</p>
+                                                                <div className={`absolute inset-0 ${selectedForCancel.includes(photo.id) ? 'bg-red-600/10' : 'bg-black/40'} backdrop-blur-[1px] flex flex-col items-center justify-center z-20`}>
+                                                                    <div className={`${selectedForCancel.includes(photo.id) ? 'bg-red-600 ring-4 ring-white/30 scale-110' : 'bg-brand-red'} text-white p-2.5 rounded-full shadow-xl border-2 border-white/20 mb-2 transform transition-all hover:scale-125 active:scale-95 cursor-pointer`}>
+                                                                        {selectedForCancel.includes(photo.id) ? (
+                                                                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" />
+                                                                            </svg>
+                                                                        ) : (
+                                                                            <XMarkIcon className="w-4 h-4 stroke-3" />
+                                                                        )}
                                                                     </div>
-                                                                    <div className="hidden group-hover/cancel:flex bg-brand-red p-2 rounded-full shadow-lg items-center justify-center scale-110 transition-all">
-                                                                        <XMarkIcon className="w-3 h-3 text-white" />
+                                                                    <div className={`${selectedForCancel.includes(photo.id) ? 'bg-red-600' : 'bg-brand-black/80'} px-2 py-0.5 rounded-md border border-white/10 shadow-xl transition-colors`}>
+                                                                        <p className="text-[6px] font-black text-white uppercase tracking-widest text-center whitespace-nowrap">
+                                                                            {selectedForCancel.includes(photo.id) ? 'Dipilih Pembatalan' : 'Batalkan?'}
+                                                                        </p>
                                                                     </div>
                                                                 </div>
                                                             )}
@@ -705,7 +863,7 @@ export default function SelectorPhoto() {
                                                         </div>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); setPreviewIndex(index); }}
-                                                            className="absolute top-2 left-2 w-6 h-6 bg-black/40 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all z-10 hover:bg-brand-red"
+                                                            className="absolute top-2 left-2 w-6 h-6 bg-brand-black/60 backdrop-blur-sm rounded-full flex items-center justify-center transition-all z-30 hover:bg-brand-red shadow-lg border border-white/10"
                                                         >
                                                             <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -977,6 +1135,15 @@ export default function SelectorPhoto() {
                 onClose={() => setNotif({ ...notif, show: false })}
                 message={notif.message}
                 type={notif.type}
+            />
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                variant={confirmModal.variant}
+                processing={loading}
             />
         </GuestLayout>
     );

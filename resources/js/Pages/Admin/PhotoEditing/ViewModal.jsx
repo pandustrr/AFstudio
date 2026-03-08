@@ -93,7 +93,7 @@ export default function ViewModal({ session, onClose }) {
                         })
                     ) : (
                         <div className="py-12 text-center border-2 border-dashed border-black/5 dark:border-white/5 rounded-2xl">
-                            <p className="text-brand-black/40 dark:text-brand-white/40 text-xs font-black uppercase tracking-widest">Belum ada request edit.</p>
+                            <p className="text-brand-black/40 dark:text-brand-white/40 text-xs font-black uppercase tracking-widest text-center">Belum ada request edit.</p>
                         </div>
                     )}
                 </div>
