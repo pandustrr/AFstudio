@@ -68,6 +68,8 @@ class PhotoSelectorController extends Controller
                 'quota_request' => $session->quota_request,
                 'extra_editing_quota' => $session->extra_editing_quota,
                 'requested_photo_ids' => $requestedPhotoIds,
+                'cancelled_photo_ids' => collect($session->cancelled_photos ?? [])->pluck('id')->all(),
+                'edit_quota_remaining' => max(0, $maxEditingQuota - $requestedCount),
                 'booking' => $bookingDetail,
             ]
         ]);
@@ -349,6 +351,7 @@ class PhotoSelectorController extends Controller
         })->unique()->values()->all();
 
         $requestedCount = count($requestedPhotoIds);
+        $cancelledPhotoIds = collect($session->cancelled_photos ?? [])->pluck('id')->all();
 
         $maxEditingQuota = 0;
         if ($session->booking && $session->booking->items->isNotEmpty()) {
@@ -359,6 +362,69 @@ class PhotoSelectorController extends Controller
             'success' => true,
             'message' => 'Permintaan edit dibatalkan.',
             'requested_photo_ids' => $requestedPhotoIds,
+            'cancelled_photo_ids' => $cancelledPhotoIds,
+            'requested_count' => $requestedCount,
+            'edit_quota_remaining' => max(0, $maxEditingQuota - $requestedCount)
+        ]);
+    }
+
+    /**
+     * Cancel all pending edit requests
+     */
+    public function cancelAllPhotos(Request $request, $uid)
+    {
+        $session = PhotoEditing::where('uid', $uid)->first();
+        if (!$session) {
+            return response()->json(['error' => 'Session not found'], 404);
+        }
+
+        // Find all pending edit requests
+        $editRequests = EditRequest::where('photo_session_id', $session->id)
+            ->where('status', 'pending')
+            ->get();
+
+        if ($editRequests->isEmpty()) {
+            return response()->json(['error' => 'Tidak ada permintaan pending untuk dibatalkan.'], 404);
+        }
+
+        $currentCancelled = $session->cancelled_photos ?? [];
+        $cancelledAt = now()->format('Y-m-d H:i:s');
+
+        foreach ($editRequests as $req) {
+            $photos = $req->selected_photos ?? [];
+            foreach ($photos as $photo) {
+                $currentCancelled[] = [
+                    'id' => $photo['id'] ?? null,
+                    'name' => $photo['name'] ?? 'Unnamed',
+                    'cancelled_at' => $cancelledAt,
+                    'original_request_id' => $req->id
+                ];
+            }
+            $req->delete();
+        }
+
+        $session->update(['cancelled_photos' => $currentCancelled]);
+
+        // Recalculate for response
+        $session->load('editRequests', 'booking.items.package');
+
+        $requestedPhotoIds = $session->editRequests->flatMap(function ($request) {
+            return collect($request->selected_photos)->pluck('id');
+        })->unique()->values()->all();
+
+        $requestedCount = count($requestedPhotoIds);
+        $cancelledPhotoIds = collect($session->cancelled_photos ?? [])->pluck('id')->all();
+
+        $maxEditingQuota = 0;
+        if ($session->booking && $session->booking->items->isNotEmpty()) {
+            $maxEditingQuota = ($session->booking->items->first()->package->max_editing_quota ?? 0) + ($session->extra_editing_quota ?? 0);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Semua permintaan edit berhasil dibatalkan.',
+            'requested_photo_ids' => $requestedPhotoIds,
+            'cancelled_photo_ids' => $cancelledPhotoIds,
             'requested_count' => $requestedCount,
             'edit_quota_remaining' => max(0, $maxEditingQuota - $requestedCount)
         ]);
