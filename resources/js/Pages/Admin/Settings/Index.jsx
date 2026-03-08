@@ -9,6 +9,7 @@ import { CheckCircleIcon } from '@heroicons/react/24/outline';
 export default function SettingsIndex({ settings, flash }) {
     const { data, setData, patch, processing, errors } = useForm({
         admin_whatsapp: settings?.admin_whatsapp || '6282232586727',
+        follow_up_template: settings?.follow_up_template || '',
     });
 
     const handleSubmit = (e) => {
@@ -92,6 +93,48 @@ export default function SettingsIndex({ settings, flash }) {
                                             <li>Chat pembayaran di halaman Checkout</li>
                                             <li>Semua link WhatsApp di website</li>
                                         </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* WhatsApp Template Section */}
+                            <div className="space-y-4">
+                                <div>
+                                    <h2 className="text-lg font-black text-brand-black dark:text-brand-white mb-2">
+                                        Template Follow Up
+                                    </h2>
+                                    <p className="text-xs text-brand-black/60 dark:text-brand-white/60 uppercase tracking-wide">
+                                        Template pesan yang akan dikirim ke WhatsApp klien
+                                    </p>
+                                </div>
+
+                                <div className="bg-brand-black/5 dark:bg-brand-white/5 rounded-xl p-6">
+                                    <div>
+                                        <InputLabel value="Template Pesan Follow Up" className="mb-2" />
+                                        <textarea
+                                            value={data.follow_up_template}
+                                            onChange={(e) => setData('follow_up_template', e.target.value)}
+                                            className="w-full h-40 bg-white dark:bg-brand-black/40 border border-brand-black/10 dark:border-brand-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-gold focus:border-brand-gold translation-all scrollbar-thin overflow-y-auto"
+                                            placeholder="Halo [client_name], ..."
+                                        ></textarea>
+                                        <div className="mt-4 p-3 bg-brand-gold/10 border border-brand-gold/20 rounded-lg">
+                                            <p className="text-[10px] text-brand-gold font-bold uppercase tracking-widest mb-2">
+                                                Variabel yang tersedia:
+                                            </p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {['[client_name]', '[booking_code]', '[package_name]', '[scheduled_date]'].map(tag => (
+                                                    <span key={tag} className="px-2 py-1 bg-white dark:bg-brand-black rounded text-[9px] font-mono border border-brand-gold/20 leading-none">
+                                                        {tag}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            <p className="text-[9px] text-brand-black/40 dark:text-brand-white/40 mt-2 italic font-bold">
+                                                * Klik pada variabel untuk menyalin (Coming soon) atau tulis manual.
+                                            </p>
+                                        </div>
+                                        {errors.follow_up_template && (
+                                            <p className="text-red-500 text-xs mt-2">{errors.follow_up_template}</p>
+                                        )}
                                     </div>
                                 </div>
                             </div>

@@ -15,6 +15,10 @@ createInertiaApp({
             import.meta.glob("./Pages/**/*.jsx")
         ),
     setup({ el, App, props }) {
+        if (!el) {
+            console.error("Inertia root element 'el' is missing. Check if @inertia is present in your app.blade.php");
+            return;
+        }
         const root = createRoot(el);
         root.render(
             <ThemeProvider>

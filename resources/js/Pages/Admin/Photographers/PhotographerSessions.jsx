@@ -25,6 +25,42 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
         time: ''
     });
 
+    // Bulk selection state
+    const [selectedTimes, setSelectedTimes] = useState([]);
+
+    const toggleTimeSelection = (time) => {
+        setSelectedTimes(prev =>
+            prev.includes(time)
+                ? prev.filter(t => t !== time)
+                : [...prev, time]
+        );
+    };
+
+    const handleBulkToggle = () => {
+        if (!selectedPhotographerId || selectedTimes.length === 0) return;
+
+        router.post('/admin/photographer-sessions/bulk-toggle', {
+            photographer_id: selectedPhotographerId,
+            date: selectedDate,
+            times: selectedTimes
+        }, {
+            onSuccess: () => setSelectedTimes([]),
+            preserveScroll: true
+        });
+    };
+
+    const selectAllAvailable = () => {
+        const availableTimes = grid
+            .filter(item => item.status !== 'booked')
+            .map(item => item.time_full);
+
+        if (selectedTimes.length === availableTimes.length) {
+            setSelectedTimes([]);
+        } else {
+            setSelectedTimes(availableTimes);
+        }
+    };
+
     const markColors = [
         { name: 'Default', value: null, class: 'bg-black/5 dark:bg-white/10' },
         { name: 'Red', value: '#ef4444', class: 'bg-red-500' },
@@ -318,22 +354,35 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                 {/* Date Header */}
                                 <div className="flex items-center justify-between gap-3 mb-6 bg-white dark:bg-white/5 p-4 rounded-2xl border border-black/5 dark:border-white/10 shadow-sm relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 w-32 h-32 bg-brand-gold/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-                                    <div className="flex items-center gap-4 relative z-10 w-full">
-                                        <div className="p-2.5 rounded-xl bg-brand-gold/10 border border-brand-gold/20 text-brand-gold shrink-0">
-                                            <ClockIcon className="w-5 h-5" />
-                                        </div>
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+                                    <div className="flex items-center justify-between relative z-10 w-full">
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-2.5 rounded-xl bg-brand-gold/10 border border-brand-gold/20 text-brand-gold shrink-0">
+                                                <ClockIcon className="w-5 h-5" />
+                                            </div>
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] font-bold tracking-widest text-brand-black/30 dark:text-brand-white/30 uppercase mb-0.5">Jadwal Sesi</span>
-                                                <span className="block text-base sm:text-lg font-black uppercase tracking-tight text-brand-black dark:text-brand-white leading-tight">
+                                                <span className="block text-sm sm:text-lg font-black uppercase tracking-tight text-brand-black dark:text-brand-white leading-tight">
                                                     {new Date(selectedDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                                                 </span>
                                             </div>
-                                            <div className="flex items-center sm:flex-col sm:items-end">
-                                                <span className="text-[9px] sm:text-[10px] font-bold tracking-widest text-brand-black/40 dark:text-brand-white/40 uppercase bg-black/5 dark:bg-white/10 px-3 py-1.5 rounded-lg border border-black/5 dark:border-white/5 whitespace-nowrap">
-                                                    {grid.filter(i => i.status === 'booked').length} Terisi / {grid.length} Total
-                                                </span>
-                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            {selectedTimes.length > 0 && (
+                                                <button
+                                                    onClick={handleBulkToggle}
+                                                    className="px-4 py-2 bg-brand-black dark:bg-brand-white text-white dark:text-brand-black rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2 border border-brand-gold/20"
+                                                >
+                                                    <ArrowsRightLeftIcon className="w-3.5 h-3.5 text-brand-gold" />
+                                                    Toggle ({selectedTimes.length}) Sesi
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={selectAllAvailable}
+                                                className="px-4 py-2 bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-black/5 dark:hover:bg-white/10 transition-all whitespace-nowrap"
+                                            >
+                                                {selectedTimes.length > 0 ? 'Deselect All' : 'Select All Available'}
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -368,11 +417,22 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                             >
                                                 {/* Sesi & Waktu */}
                                                 <div className="flex items-center gap-4 min-w-[200px]">
-                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-black text-xs
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-black text-xs cursor-pointer transition-all
+                                                        ${selectedTimes.includes(item.time_full) ? 'ring-2 ring-brand-gold ring-offset-2 dark:ring-offset-brand-black ring-offset-white scale-110 shadow-lg' : ''}
                                                         ${isOpen ? 'bg-brand-gold text-brand-black' :
                                                             isBooked ? 'bg-green-500 text-white' : 'bg-black/10 dark:bg-white/10 text-brand-black/40 dark:text-brand-white/40'}
-                                                    `}>
-                                                        {index + 1}
+                                                    `}
+                                                        onClick={() => !isBooked && toggleTimeSelection(item.time_full)}
+                                                    >
+                                                        {selectedTimes.includes(item.time_full) ? (
+                                                            <div className="w-full h-full flex items-center justify-center">
+                                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                                                                </svg>
+                                                            </div>
+                                                        ) : (
+                                                            index + 1
+                                                        )}
                                                     </div>
                                                     <div>
                                                         <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 block">Sesi {index + 1}</span>
