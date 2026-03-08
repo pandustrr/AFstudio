@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import GuestLayout from '../Layouts/GuestLayout';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { StarIcon, XMarkIcon, CameraIcon } from '@heroicons/react/24/solid';
 import { StarIcon as StarOutlineIcon } from '@heroicons/react/24/outline';
 import EditNotif from '@/Components/EditNotif';
 
 export default function SelectorPhoto() {
+    const { props: { settings } } = usePage();
     const [step, setStep] = useState(1);
     const [uid, setUid] = useState('');
 
@@ -823,7 +824,9 @@ export default function SelectorPhoto() {
                             </div>
                             <div>
                                 <p className="text-brand-black/40 dark:text-brand-white/40 text-[8px] font-black uppercase tracking-widest">Butuh Bantuan?</p>
-                                <p className="text-brand-black dark:text-brand-white text-[10px] font-black">WhatsApp Admin: +62 812-3456-7890</p>
+                                <p className="text-brand-black dark:text-brand-white text-[10px] font-black">
+                                    WhatsApp Admin: <a href={`https://wa.me/${settings?.admin_whatsapp?.replace(/[^0-9]/g, '') || '6282232586727'}`} target="_blank" rel="noopener noreferrer" className="hover:text-brand-gold transition-colors">{settings?.admin_whatsapp || '+62 822-3258-6727'}</a>
+                                </p>
                             </div>
                         </div>
 

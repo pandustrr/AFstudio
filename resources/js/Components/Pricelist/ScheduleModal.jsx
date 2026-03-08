@@ -492,6 +492,9 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                     <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
                                                         <HomeIcon className="w-4 h-4" /> Pilih Room
                                                     </label>
+                                                    <p className="text-[10px] text-brand-black/40 dark:text-brand-white/40 font-medium italic -mt-2">
+                                                        Pilih room dibawah untuk melihat ketersediaan Sesi/Jadwal
+                                                    </p>
                                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                                         {isLoadingRooms ? (
                                                             [1, 2, 3].map(i => (
