@@ -20,6 +20,7 @@ class PricelistPackage extends Model
         'max_sessions',
         'max_editing_quota',
         'allow_split_session',
+        'review_template',
     ];
 
     public static function boot()
@@ -50,6 +51,7 @@ class PricelistPackage extends Model
         'is_popular' => 'boolean',
         'allow_split_session' => 'boolean',
         'price_numeric' => 'decimal:2',
+        'review_template' => 'array',
     ];
 
     public function subCategory()

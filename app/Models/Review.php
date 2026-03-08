@@ -9,9 +9,14 @@ class Review extends Model
     protected $fillable = [
         'photo_session_id',
         'review_text',
+        'additional_fields',
         'rating',
         'photo_path',
         'is_visible',
+    ];
+
+    protected $casts = [
+        'additional_fields' => 'array',
     ];
 
     public function photoEditing()

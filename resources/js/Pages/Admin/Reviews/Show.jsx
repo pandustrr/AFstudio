@@ -132,6 +132,31 @@ export default function Show({ review }) {
                                 </div>
                             </div>
 
+                            {/* Additional Custom Fields */}
+                            {review.additional_fields && Object.keys(review.additional_fields).length > 0 && (
+                                <div className="mb-4 pb-4 border-b border-black/5 dark:border-white/5">
+                                    <h3 className="text-[10px] font-black uppercase tracking-wider text-brand-black/40 dark:text-brand-white/40 mb-3">
+                                        Data Tambahan (Dynamic Fields)
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {Object.entries(review.additional_fields).map(([key, value]) => (
+                                            <div key={key} className="p-3 bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5">
+                                                <p className="text-[8px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-1">
+                                                    {key}
+                                                </p>
+                                                <div className="flex items-center gap-2">
+                                                    {key.toLowerCase().includes('instagram') && <span className="text-xs">📸</span>}
+                                                    {key.toLowerCase().includes('tiktok') && <span className="text-xs">🎵</span>}
+                                                    <p className="text-xs font-bold text-brand-black dark:text-brand-white">
+                                                        {value || '-'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Review Photo */}
                             {review.photo_url && (
                                 <div>

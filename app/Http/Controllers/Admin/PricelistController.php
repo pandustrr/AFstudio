@@ -114,6 +114,7 @@ class PricelistController extends Controller
             'max_sessions' => 'required|integer|min:1',
             'max_editing_quota' => 'required|integer|min:0',
             'allow_split_session' => 'boolean',
+            'review_template' => 'nullable|array',
         ]);
 
         // Calculate duration based on max_sessions (1 session = 30 minutes)
@@ -138,6 +139,7 @@ class PricelistController extends Controller
             'max_sessions' => 'required|integer|min:1',
             'max_editing_quota' => 'required|integer|min:0',
             'allow_split_session' => 'boolean',
+            'review_template' => 'nullable|array',
         ]);
 
         Log::info('Validated Data:', $validated);

@@ -52,6 +52,7 @@ class PhotoSelectorController extends Controller
                 'start_time' => $item->start_time,
                 'end_time' => $item->end_time,
                 'room_id' => $item->room_id,
+                'review_template' => $item->package->review_template,
             ];
         }
 
@@ -220,6 +221,7 @@ class PhotoSelectorController extends Controller
             'reviewText' => 'required|string',
             'rating' => 'required|integer|min:1|max:5',
             'photo' => 'nullable|image|max:5120', // Max 5MB
+            'additional_fields' => 'nullable|string', // Sent as JSON string via FormData
         ]);
 
         try {
@@ -228,9 +230,15 @@ class PhotoSelectorController extends Controller
                 $photoPath = $request->file('photo')->store('reviews', 'public');
             }
 
+            $additionalFields = null;
+            if ($request->filled('additional_fields')) {
+                $additionalFields = json_decode($request->additional_fields, true);
+            }
+
             $review = Review::create([
                 'photo_session_id' => $session->id,
                 'review_text' => $validated['reviewText'],
+                'additional_fields' => $additionalFields,
                 'rating' => $validated['rating'],
                 'photo_path' => $photoPath,
             ]);
