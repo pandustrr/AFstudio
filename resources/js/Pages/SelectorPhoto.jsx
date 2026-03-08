@@ -34,6 +34,7 @@ export default function SelectorPhoto() {
     const [quotaRequest, setQuotaRequest] = useState('');
     const [isRequestingQuota, setIsRequestingQuota] = useState(false);
     const [showQuotaInput, setShowQuotaInput] = useState(false);
+    const [previouslySelectedPhotoIds, setPreviouslySelectedPhotoIds] = useState([]);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
 
     // Swipe State
@@ -79,6 +80,7 @@ export default function SelectorPhoto() {
             setMaxEditQuota(data.data.max_editing_quota || 0);
             setEditQuotaRemaining((data.data.max_editing_quota || 0) - (data.data.requested_count || 0));
             setQuotaRequest(data.data.quota_request || '');
+            setPreviouslySelectedPhotoIds(data.data.requested_photo_ids || []);
             setStep(2);
         } catch (err) {
             setError(err.message);
@@ -119,6 +121,9 @@ export default function SelectorPhoto() {
     };
 
     const togglePhoto = (photo) => {
+        // Prevent selecting photos that have already been requested previously
+        if (previouslySelectedPhotoIds.includes(photo.id)) return;
+
         setSelectedPhotos(prev => {
             const isSelected = prev.some(p => p.id === photo.id);
             if (isSelected) {
@@ -167,6 +172,12 @@ export default function SelectorPhoto() {
                     setEditQuotaRemaining(data.session.edit_quota_remaining);
                 }
             }
+
+            // Sync previously selected IDs so they turn grey immediately
+            setPreviouslySelectedPhotoIds(prev => [
+                ...prev,
+                ...selectedPhotos.map(p => p.id)
+            ]);
 
             setSuccessType('request');
             setShowSuccessModal(true);
@@ -613,16 +624,24 @@ export default function SelectorPhoto() {
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
                                             {drivePhotos.map((photo, index) => {
                                                 const isSelected = selectedPhotos.some(p => p.id === photo.id);
+                                                const isRequested = previouslySelectedPhotoIds.includes(photo.id);
                                                 return (
                                                     <div key={photo.id} className="group relative aspect-square">
                                                         <div
                                                             onClick={() => togglePhoto(photo)}
-                                                            className={`w-full h-full rounded-lg overflow-hidden cursor-pointer transition-all border-2 ${isSelected ? 'border-brand-red ring-2 ring-brand-red/20' : 'border-transparent hover:border-black/20 dark:hover:border-white/20'}`}
+                                                            className={`w-full h-full rounded-lg overflow-hidden transition-all border-2 ${isSelected ? 'border-brand-red ring-2 ring-brand-red/20' : isRequested ? 'border-transparent opacity-40 cursor-not-allowed grayscale' : 'border-transparent hover:border-black/20 dark:hover:border-white/20'}`}
                                                         >
                                                             <img src={photo.thumbnail?.replace('=s220', '=s300')} alt={photo.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                                                             {isSelected && (
-                                                                <div className="absolute top-2 right-2 w-5 h-5 bg-brand-red rounded-full flex items-center justify-center z-10">
+                                                                <div className="absolute top-2 right-2 w-5 h-5 bg-brand-red rounded-full flex items-center justify-center z-10 shadow-lg animate-in zoom-in duration-300">
                                                                     <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path></svg>
+                                                                </div>
+                                                            )}
+                                                            {isRequested && (
+                                                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10">
+                                                                    <div className="bg-brand-black/60 backdrop-blur-md px-2 py-1 rounded-md">
+                                                                        <p className="text-[7px] font-black text-white uppercase tracking-widest">Requested</p>
+                                                                    </div>
                                                                 </div>
                                                             )}
                                                             <div className="absolute inset-x-0 bottom-0 p-2 bg-black/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all">
