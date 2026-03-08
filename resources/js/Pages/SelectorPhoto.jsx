@@ -482,7 +482,7 @@ export default function SelectorPhoto() {
     const handleDownloadAll = () => {
         if (drivePhotos.length === 0 || isDownloading) return;
 
-        if (confirm(`Download semua ${drivePhotos.length} foto secara individual?`)) {
+        if (confirm(`Download semua ${drivePhotos.length} foto secara otomatis? \n\nCatatan: Harap klik "IZINKAN/ALLOW" jika browser meminta izin untuk mendownload banyak file agar proses tidak terhenti.`)) {
             setIsDownloading(true);
             let index = 0;
 
@@ -507,24 +507,26 @@ export default function SelectorPhoto() {
     const handleDownloadSelected = () => {
         if (selectedPhotos.length === 0 || isDownloading) return;
 
-        setIsDownloading(true);
-        let index = 0;
+        if (confirm(`Download ${selectedPhotos.length} foto pilihan Anda secara otomatis? \n\nCatatan: Harap klik "IZINKAN/ALLOW" jika browser meminta izin untuk mendownload banyak file agar proses tidak terhenti.`)) {
+            setIsDownloading(true);
+            let index = 0;
 
-        const nextDownload = () => {
-            if (index < selectedPhotos.length) {
-                const photo = selectedPhotos[index];
-                triggerDownload(photo.downloadLink);
-                index++;
-                setTimeout(nextDownload, 2000);
-            } else {
-                setTimeout(() => {
-                    setIsDownloading(false);
-                    alert(`Selesai! ${selectedPhotos.length} foto telah diproses.`);
-                }, 1000);
-            }
-        };
+            const nextDownload = () => {
+                if (index < selectedPhotos.length) {
+                    const photo = selectedPhotos[index];
+                    triggerDownload(photo.downloadLink);
+                    index++;
+                    setTimeout(nextDownload, 2000);
+                } else {
+                    setTimeout(() => {
+                        setIsDownloading(false);
+                        alert(`Selesai! ${selectedPhotos.length} foto telah diproses.`);
+                    }, 1000);
+                }
+            };
 
-        nextDownload();
+            nextDownload();
+        }
     };
 
     const handleDriveSelection = (folderType) => {
@@ -827,6 +829,29 @@ export default function SelectorPhoto() {
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                                     </svg>
                                                 </button>
+                                            </div>
+                                            {isDownloading && (
+                                                <div className="flex items-center gap-2 bg-brand-gold/10 px-3 py-1 rounded-full border border-brand-gold/20 animate-pulse">
+                                                    <div className="w-2 h-2 bg-brand-gold rounded-full"></div>
+                                                    <p className="text-[8px] font-black text-brand-gold uppercase tracking-widest">
+                                                        Proses Download Berjalan...
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Persistent Disclaimer */}
+                                        <div className="mb-6 p-4 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl">
+                                            <div className="flex items-start gap-4">
+                                                <div className="w-10 h-10 bg-brand-gold/10 rounded-full flex items-center justify-center shrink-0">
+                                                    <span className="text-brand-gold text-lg">💡</span>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-brand-gold uppercase tracking-widest mb-1">Tips Download Banyak Foto</p>
+                                                    <p className="text-[9px] font-bold text-brand-black/40 dark:text-brand-white/40 leading-relaxed uppercase tracking-wide">
+                                                        Jika muncul notifikasi di browser, harap klik <span className="text-brand-gold underline underline-offset-2">"Izinkan / Allow"</span> agar sistem bisa mendownload semua foto Anda secara otomatis satu per satu.
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
