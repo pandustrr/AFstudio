@@ -121,8 +121,14 @@ export default function SelectorPhoto() {
     };
 
     const togglePhoto = (photo) => {
-        // Prevent selecting photos that have already been requested previously
-        if (previouslySelectedPhotoIds.includes(photo.id)) return;
+        const isRequested = previouslySelectedPhotoIds.includes(photo.id);
+
+        if (isRequested) {
+            if (confirm(`Batalkan permintaan edit untuk foto ${photo.name}?`)) {
+                handleCancelPhoto(photo.id);
+            }
+            return;
+        }
 
         setSelectedPhotos(prev => {
             const isSelected = prev.some(p => p.id === photo.id);
@@ -132,6 +138,48 @@ export default function SelectorPhoto() {
                 return [...prev, { id: photo.id, name: photo.name }];
             }
         });
+    };
+
+    const handleCancelPhoto = async (photoId) => {
+        setLoading(true);
+        try {
+            const response = await fetch(`/api/photo-selector/sessions/${uid}/cancel-photo`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                },
+                body: JSON.stringify({ photoId }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Gagal membatalkan permintaan');
+
+            // Update local states from response
+            setPreviouslySelectedPhotoIds(data.requested_photo_ids);
+            setEditQuotaRemaining(data.edit_quota_remaining);
+            if (sessionData) {
+                setSessionData({
+                    ...sessionData,
+                    requested_count: data.requested_count
+                });
+            }
+
+            setNotif({
+                show: true,
+                message: 'Permintaan edit dibatalkan!',
+                type: 'success'
+            });
+        } catch (err) {
+            setNotif({
+                show: true,
+                message: 'Error: ' + err.message,
+                type: 'error'
+            });
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSendEditRequest = async () => {
@@ -642,9 +690,12 @@ export default function SelectorPhoto() {
                                                                 </div>
                                                             )}
                                                             {isRequested && (
-                                                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10">
-                                                                    <div className="bg-brand-black/60 backdrop-blur-md px-2 py-1 rounded-md">
+                                                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center z-10 group/cancel">
+                                                                    <div className="bg-brand-black/60 backdrop-blur-md px-2 py-1 rounded-md group-hover/cancel:hidden">
                                                                         <p className="text-[7px] font-black text-white uppercase tracking-widest">Requested</p>
+                                                                    </div>
+                                                                    <div className="hidden group-hover/cancel:flex bg-brand-red p-2 rounded-full shadow-lg items-center justify-center scale-110 transition-all">
+                                                                        <XMarkIcon className="w-3 h-3 text-white" />
                                                                     </div>
                                                                 </div>
                                                             )}
