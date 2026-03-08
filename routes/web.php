@@ -179,6 +179,11 @@ Route::prefix('admin')->group(function () {
             Route::post('/mark', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'updateDateMark'])->name('admin.photographer-sessions.mark');
         });
 
+        // Follow Up Templates
+        Route::resource('follow-up-templates', \App\Http\Controllers\Admin\FollowUpTemplateController::class)
+            ->only(['store', 'update', 'destroy'])
+            ->names('admin.follow-up-templates');
+
         // Referral Codes
         Route::resource('referral-codes', \App\Http\Controllers\Admin\ReferralCodeController::class)
             ->names('admin.referral-codes');

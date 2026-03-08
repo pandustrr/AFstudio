@@ -546,7 +546,8 @@ class PhotographerSessionController extends Controller
         return Inertia::render('Photographer/Reservations', [
             'reservations' => $reservations,
             'allSessions' => $allSessions->isEmpty() ? [] : $allSessions->toArray(),
-            'selectedSessionId' => $uidFilter
+            'selectedSessionId' => $uidFilter,
+            'followUpTemplate' => \App\Models\HomePage::first()?->follow_up_template,
         ]);
     }
     public function updateDateMark(Request $request)
