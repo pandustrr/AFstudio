@@ -19,8 +19,15 @@ class PhotoEditingController extends Controller
         $status = $request->input('status');
 
         // Base Query
-        $query = PhotoEditing::with(['editRequests', 'booking'])
+        $query = PhotoEditing::with(['editRequests', 'booking.items.package'])
             ->withCount(['editRequests', 'reviews']);
+
+        // Photographer Filter: Only show sessions assigned to them
+        if (auth()->user()->role === 'photographer') {
+            $query->whereHas('booking.items', function ($q) {
+                $q->where('photographer_id', auth()->id());
+            });
+        }
 
         // Apply Filters
         if ($year) {
@@ -99,6 +106,9 @@ class PhotoEditingController extends Controller
                 'years' => $availableYears,
                 'months' => $availableMonths,
                 'days' => $availableDays
+            ],
+            'user' => [
+                'role' => auth()->user()->role
             ]
         ]);
     }
@@ -119,12 +129,19 @@ class PhotoEditingController extends Controller
 
     public function update(Request $request, PhotoEditing $photoEditing)
     {
-        $validated = $request->validate([
-            'customer_name' => 'required|string|max:255',
-            'raw_folder_id' => 'required|string|max:255',
-            'edited_folder_id' => 'nullable|string|max:255',
+        $rules = [
             'status' => 'required|in:pending,processing,done,cancelled',
-        ]);
+        ];
+
+        if (auth()->user()->role === 'photographer') {
+            $rules['raw_folder_id'] = 'required|string|max:255';
+        } else {
+            $rules['customer_name'] = 'required|string|max:255';
+            $rules['raw_folder_id'] = 'required|string|max:255';
+            $rules['edited_folder_id'] = 'nullable|string|max:255';
+        }
+
+        $validated = $request->validate($rules);
 
         $photoEditing->update($validated);
 

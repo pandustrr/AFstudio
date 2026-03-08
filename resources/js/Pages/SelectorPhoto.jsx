@@ -490,7 +490,7 @@ export default function SelectorPhoto() {
                                             {!showQuotaInput ? (
                                                 <button
                                                     onClick={() => setShowQuotaInput(true)}
-                                                    className="text-[9px] font-black uppercase tracking-[0.2em] text-brand-gold hover:brightness-110 transition-all"
+                                                    className="px-5 py-1.5 bg-brand-gold/5 border border-brand-gold/20 rounded-full text-[9px] font-black uppercase tracking-[0.2em] text-brand-gold hover:bg-brand-gold/10 hover:border-brand-gold/40 transition-all active:scale-95"
                                                 >
                                                     {sessionData?.quota_request ? 'Update Request Kuota' : '+ Request Tambah Kuota'}
                                                 </button>

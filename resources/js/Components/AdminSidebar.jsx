@@ -141,6 +141,7 @@ export default function AdminSidebar({ isOpen, toggleSidebar }) {
                         <div className="space-y-1">
                             {renderMenuItem({ label: 'Jadwal Sesi', href: `/photographer/sessions`, icon: CalendarDaysIcon })}
                             {renderMenuItem({ label: 'List Booking', href: `/photographer/reservations`, icon: CalendarDaysIcon })}
+                            {renderMenuItem({ label: 'Upload Mentahan', href: `/photographer/photo-editing`, icon: CameraIcon })}
                         </div>
                     )}
 
