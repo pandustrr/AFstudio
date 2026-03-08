@@ -36,6 +36,7 @@ export default function SelectorPhoto() {
     const [isRequestingQuota, setIsRequestingQuota] = useState(false);
     const [showQuotaInput, setShowQuotaInput] = useState(false);
     const [previouslySelectedPhotoIds, setPreviouslySelectedPhotoIds] = useState([]);
+    const [selectedForCancel, setSelectedForCancel] = useState([]);
     const [notif, setNotif] = useState({ show: false, message: '', type: 'success' });
     const [confirmModal, setConfirmModal] = useState({
         isOpen: false,
@@ -130,14 +131,12 @@ export default function SelectorPhoto() {
         const isRequested = previouslySelectedPhotoIds.includes(photo.id);
 
         if (isRequested) {
-            setConfirmModal({
-                isOpen: true,
-                title: 'Batalkan Foto',
-                message: `Batalkan permintaan edit untuk foto ${photo.name}? Foto ini akan bisa dipilih kembali.`,
-                variant: 'danger',
-                onConfirm: () => {
-                    handleCancelPhoto(photo.id);
-                    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            setSelectedForCancel(prev => {
+                const isAlreadySelected = prev.includes(photo.id);
+                if (isAlreadySelected) {
+                    return prev.filter(id => id !== photo.id);
+                } else {
+                    return [...prev, photo.id];
                 }
             });
             return;
@@ -184,6 +183,7 @@ export default function SelectorPhoto() {
                 message: 'Permintaan edit dibatalkan!',
                 type: 'success'
             });
+            setSelectedForCancel(prev => prev.filter(id => id !== photoId));
         } catch (err) {
             setNotif({
                 show: true,
@@ -193,6 +193,60 @@ export default function SelectorPhoto() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleCancelMultiple = async () => {
+        if (selectedForCancel.length === 0) return;
+
+        setConfirmModal({
+            isOpen: true,
+            title: 'Batalkan Foto Terpilih',
+            message: `Apakah Anda yakin ingin membatalkan ${selectedForCancel.length} foto yang dipilih?`,
+            variant: 'danger',
+            onConfirm: async () => {
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                setLoading(true);
+                try {
+                    const response = await fetch(`/api/photo-selector/sessions/${uid}/cancel-multiple`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                        },
+                        body: JSON.stringify({ photoIds: selectedForCancel }),
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || 'Gagal membatalkan permintaan');
+
+                    setPreviouslySelectedPhotoIds(data.requested_photo_ids);
+                    setEditQuotaRemaining(data.edit_quota_remaining);
+                    setSelectedForCancel([]);
+
+                    if (sessionData) {
+                        setSessionData({
+                            ...sessionData,
+                            requested_count: data.requested_count
+                        });
+                    }
+
+                    setNotif({
+                        show: true,
+                        message: `${data.message}`,
+                        type: 'success'
+                    });
+                } catch (err) {
+                    setNotif({
+                        show: true,
+                        message: 'Error: ' + err.message,
+                        type: 'error'
+                    });
+                } finally {
+                    setLoading(false);
+                }
+            }
+        });
     };
 
     const handleCancelAll = async () => {
@@ -710,13 +764,24 @@ export default function SelectorPhoto() {
                                         )}
 
                                         {driveType === 'Mentahan' && (sessionData?.requested_count > 0) && (
-                                            <button
-                                                onClick={handleCancelAll}
-                                                className="flex items-center gap-2 px-4 py-1.5 bg-red-500/10 border border-red-500/30 rounded-full text-[9px] font-black text-red-500 uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-95 shadow-lg shadow-red-500/10"
-                                            >
-                                                <XMarkIcon className="w-3 h-3" />
-                                                Batalkan Semua Request
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                {selectedForCancel.length > 0 && (
+                                                    <button
+                                                        onClick={handleCancelMultiple}
+                                                        className="flex items-center gap-2 px-4 py-1.5 bg-red-600 border border-white/20 rounded-full text-[9px] font-black text-white uppercase tracking-widest hover:brightness-110 transition-all active:scale-95 shadow-xl shadow-red-600/20"
+                                                    >
+                                                        <XMarkIcon className="w-3 h-3 stroke-3" />
+                                                        Batalkan ({selectedForCancel.length})
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={handleCancelAll}
+                                                    className="flex items-center gap-2 px-4 py-1.5 bg-red-500/10 border border-red-500/30 rounded-full text-[9px] font-black text-red-500 uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all active:scale-95 shadow-lg shadow-red-500/10"
+                                                >
+                                                    <XMarkIcon className="w-3 h-3" />
+                                                    Batalkan Semua Request
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -759,7 +824,9 @@ export default function SelectorPhoto() {
                                                             className={`w-full h-full rounded-lg overflow-hidden transition-all border-2 ${isSelected
                                                                 ? 'border-brand-red ring-2 ring-brand-red/20'
                                                                 : isRequested
-                                                                    ? 'border-transparent opacity-40 cursor-pointer grayscale'
+                                                                    ? `cursor-pointer ${selectedForCancel.includes(photo.id)
+                                                                        ? 'border-red-600 ring-4 ring-red-600/30 opacity-100'
+                                                                        : 'border-transparent opacity-40 grayscale'}`
                                                                     : 'border-transparent hover:border-black/20 dark:hover:border-white/20'
                                                                 }`}
                                                         >
@@ -773,13 +840,19 @@ export default function SelectorPhoto() {
 
                                                             {/* Status Indicator (Persistent for Requested) */}
                                                             {isRequested && (
-                                                                <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] flex flex-col items-center justify-center z-20">
-                                                                    <div className="bg-brand-red text-white p-2.5 rounded-full shadow-xl border-2 border-white/20 mb-2 transform transition-all hover:scale-110 active:scale-95 cursor-pointer">
-                                                                        <XMarkIcon className="w-4 h-4 stroke-3" />
+                                                                <div className={`absolute inset-0 ${selectedForCancel.includes(photo.id) ? 'bg-red-600/10' : 'bg-black/40'} backdrop-blur-[1px] flex flex-col items-center justify-center z-20`}>
+                                                                    <div className={`${selectedForCancel.includes(photo.id) ? 'bg-red-600 ring-4 ring-white/30 scale-110' : 'bg-brand-red'} text-white p-2.5 rounded-full shadow-xl border-2 border-white/20 mb-2 transform transition-all hover:scale-125 active:scale-95 cursor-pointer`}>
+                                                                        {selectedForCancel.includes(photo.id) ? (
+                                                                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" />
+                                                                            </svg>
+                                                                        ) : (
+                                                                            <XMarkIcon className="w-4 h-4 stroke-3" />
+                                                                        )}
                                                                     </div>
-                                                                    <div className="bg-brand-black/80 px-2 py-0.5 rounded-md border border-white/10 shadow-xl">
-                                                                        <p className="text-[6px] font-black text-white uppercase tracking-widest text-center">
-                                                                            Batalkan?
+                                                                    <div className={`${selectedForCancel.includes(photo.id) ? 'bg-red-600' : 'bg-brand-black/80'} px-2 py-0.5 rounded-md border border-white/10 shadow-xl transition-colors`}>
+                                                                        <p className="text-[6px] font-black text-white uppercase tracking-widest text-center whitespace-nowrap">
+                                                                            {selectedForCancel.includes(photo.id) ? 'Dipilih Pembatalan' : 'Batalkan?'}
                                                                         </p>
                                                                     </div>
                                                                 </div>
@@ -790,7 +863,7 @@ export default function SelectorPhoto() {
                                                         </div>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); setPreviewIndex(index); }}
-                                                            className="absolute top-2 left-2 w-6 h-6 bg-black/40 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all z-10 hover:bg-brand-red"
+                                                            className="absolute top-2 left-2 w-6 h-6 bg-brand-black/60 backdrop-blur-sm rounded-full flex items-center justify-center transition-all z-30 hover:bg-brand-red shadow-lg border border-white/10"
                                                         >
                                                             <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />

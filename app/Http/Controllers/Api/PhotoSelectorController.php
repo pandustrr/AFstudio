@@ -369,6 +369,72 @@ class PhotoSelectorController extends Controller
     }
 
     /**
+     * Cancel multiple specific photo edit requests
+     */
+    public function cancelMultiplePhotos(Request $request, $uid)
+    {
+        $session = PhotoEditing::where('uid', $uid)->with(['editRequests', 'booking.items.package'])->firstOrFail();
+        $photoIds = (array) $request->input('photoIds', []);
+
+        if (empty($photoIds)) {
+            return response()->json(['success' => false, 'message' => 'Tidak ada foto yang dipilih untuk dibatalkan.']);
+        }
+
+        $allRequests = EditRequest::where('photo_session_id', $session->id)
+            ->where('status', 'pending')
+            ->get();
+
+        $currentCancelled = $session->cancelled_photos ?? [];
+        $affectedCount = 0;
+
+        foreach ($photoIds as $photoId) {
+            foreach ($allRequests as $targetRequest) {
+                $photos = collect($targetRequest->selected_photos);
+                $found = $photos->firstWhere('id', $photoId);
+
+                if ($found) {
+                    $updated = $photos->filter(fn($p) => $p['id'] !== $photoId)->values()->all();
+
+                    if (empty($updated)) {
+                        $targetRequest->delete();
+                    } else {
+                        $targetRequest->update(['selected_photos' => $updated]);
+                    }
+
+                    $currentCancelled[] = [
+                        'id' => $photoId,
+                        'name' => $found['name'] ?? 'Unnamed',
+                        'cancelled_at' => now()->format('Y-m-d H:i:s'),
+                        'original_request_id' => $targetRequest->id
+                    ];
+                    $affectedCount++;
+                    break;
+                }
+            }
+        }
+
+        if ($affectedCount > 0) {
+            $session->update(['cancelled_photos' => $currentCancelled]);
+        }
+
+        $session->load('editRequests');
+        $requestedPhotoIds = $session->editRequests->flatMap(fn($r) => collect($r->selected_photos)->pluck('id'))->unique()->values()->all();
+        $requestedCount = count($requestedPhotoIds);
+        $maxEditingQuota = 0;
+        if ($session->booking && $session->booking->items->isNotEmpty()) {
+            $maxEditingQuota = ($session->booking->items->first()->package->max_editing_quota ?? 0) + ($session->extra_editing_quota ?? 0);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$affectedCount} foto berhasil dibatalkan.",
+            'requested_photo_ids' => $requestedPhotoIds,
+            'requested_count' => $requestedCount,
+            'edit_quota_remaining' => max(0, $maxEditingQuota - $requestedCount)
+        ]);
+    }
+
+    /**
      * Cancel all pending edit requests
      */
     public function cancelAllPhotos(Request $request, $uid)
