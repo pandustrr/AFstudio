@@ -217,7 +217,7 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
                                     onChange={(e) => setData('is_popular', e.target.checked)}
                                     className="w-5 h-5 rounded border-0 bg-black/10 dark:bg-white/10 text-brand-gold focus:ring-brand-gold"
                                 />
-                                <label htmlFor="is_popular" className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white cursor-pointer select-none">Populer</label>
+                                <label htmlFor="is_popular" className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white cursor-pointer select-none">Best Seller</label>
                             </div>
                         </div>
 
