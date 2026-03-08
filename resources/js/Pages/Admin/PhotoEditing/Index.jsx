@@ -28,7 +28,8 @@ export default function Index({ sessions, filters, options }) {
         "Juli", "Agustus", "September", "Oktober", "November", "Desember"
     ];
 
-    const prefix = window.location.pathname.startsWith('/editor') ? '/editor' : '/admin';
+    const path = window.location.pathname;
+    const prefix = path.startsWith('/editor') ? '/editor' : (path.startsWith('/photographer') ? '/photographer' : '/admin');
 
     const handleFilter = (type, value) => {
         const newFilters = { ...filters, [type]: value };
@@ -88,8 +89,12 @@ export default function Index({ sessions, filters, options }) {
             <div className="pt-8 lg:pt-16 pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
                 <div className="flex flex-col gap-5 mb-6">
                     <div>
-                        <h1 className="text-4xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-2">Daftar Request</h1>
-                        <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest">Kelola akses gallery dan request user.</p>
+                        <h1 className="text-4xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-2">
+                            {window.location.pathname.startsWith('/photographer') ? 'Daftar Sesi Foto' : 'Daftar Request'}
+                        </h1>
+                        <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest">
+                            {window.location.pathname.startsWith('/photographer') ? 'Kelola folder mentahan untuk setiap sesi.' : 'Kelola akses gallery dan request user.'}
+                        </p>
                     </div>
 
                     <div className="flex flex-col lg:flex-row lg:items-center gap-4">
@@ -223,20 +228,22 @@ export default function Index({ sessions, filters, options }) {
                                                     <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/20 dark:text-brand-white/20">Mentahan: Belum diset</span>
                                                 )}
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <span className={`w-2 h-2 rounded-full shrink-0 ${session.edited_folder_id ? 'bg-blue-500' : 'bg-black/10 dark:bg-white/10'}`}></span>
-                                                {session.edited_folder_id ? (
-                                                    <a
-                                                        href={session.edited_folder_id.startsWith('http') ? session.edited_folder_id : `https://drive.google.com/drive/folders/${session.edited_folder_id}`}
-                                                        target="_blank"
-                                                        className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white hover:text-brand-gold transition-all"
-                                                    >
-                                                        Editing: OPEN LINK
-                                                    </a>
-                                                ) : (
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/20 dark:text-brand-white/20">Editing: Belum diset</span>
-                                                )}
-                                            </div>
+                                            {!window.location.pathname.startsWith('/photographer') && (
+                                                <div className="flex items-center gap-3">
+                                                    <span className={`w-2 h-2 rounded-full shrink-0 ${session.edited_folder_id ? 'bg-blue-500' : 'bg-black/10 dark:bg-white/10'}`}></span>
+                                                    {session.edited_folder_id ? (
+                                                        <a
+                                                            href={session.edited_folder_id.startsWith('http') ? session.edited_folder_id : `https://drive.google.com/drive/folders/${session.edited_folder_id}`}
+                                                            target="_blank"
+                                                            className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white hover:text-brand-gold transition-all"
+                                                        >
+                                                            Editing: OPEN LINK
+                                                        </a>
+                                                    ) : (
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/20 dark:text-brand-white/20">Editing: Belum diset</span>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">
@@ -263,13 +270,15 @@ export default function Index({ sessions, filters, options }) {
                                             >
                                                 <PencilSquareIcon className="w-4 h-4" />
                                             </button>
-                                            <button
-                                                onClick={() => setDeleteSession(session)}
-                                                className="p-3 bg-black/5 dark:bg-white/5 hover:bg-brand-red hover:text-white rounded-lg transition-all"
-                                                title="Hapus"
-                                            >
-                                                <TrashIcon className="w-4 h-4" />
-                                            </button>
+                                            {!window.location.pathname.startsWith('/photographer') && (
+                                                <button
+                                                    onClick={() => setDeleteSession(session)}
+                                                    className="p-3 bg-black/5 dark:bg-white/5 hover:bg-brand-red hover:text-white rounded-lg transition-all"
+                                                    title="Hapus"
+                                                >
+                                                    <TrashIcon className="w-4 h-4" />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

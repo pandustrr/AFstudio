@@ -92,6 +92,7 @@ Route::prefix('photographer')->group(function () {
         Route::post('/sessions/mark', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'updateDateMark'])->name('photographer.sessions.mark');
 
         Route::get('/reservations', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'reservations'])->name('photographer.reservations');
+        Route::resource('photo-editing', PhotoEditingController::class)->only(['index', 'update'])->names('photographer.photo-editing');
         Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('photographer.profile.edit');
         Route::post('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('photographer.profile.update');
     });
