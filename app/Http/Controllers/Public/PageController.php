@@ -25,9 +25,19 @@ class PageController extends Controller
             $query->with(['category', 'packages']);
         }])->get();
         $rooms = \App\Models\Room::all();
+
+        $locked = null;
+        if (session('unlocked_access')) {
+            $locked = [
+                'type' => 'all',
+                'name' => 'Full Pricelist (Unlocked)',
+            ];
+        }
+
         return Inertia::render('Pricelist', [
             'categories' => $categories,
-            'rooms' => $rooms
+            'rooms' => $rooms,
+            'locked' => $locked
         ]);
     }
 }

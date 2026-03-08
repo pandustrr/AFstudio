@@ -105,6 +105,42 @@ export default function SettingsIndex({ settings, flash }) {
                         </form>
                     </div>
 
+                    {/* Magic Link Section */}
+                    <div className="mt-8 bg-white dark:bg-brand-black/40 border border-brand-black/10 dark:border-brand-white/10 rounded-2xl p-8">
+                        <div className="mb-6">
+                            <h2 className="text-lg font-black text-brand-black dark:text-brand-white mb-2">
+                                Akses Khusus (Magic Link)
+                            </h2>
+                            <p className="text-xs text-brand-black/60 dark:text-brand-white/60 uppercase tracking-wide">
+                                Bagikan link ini untuk membuka akses penuh pricelist tanpa login
+                            </p>
+                        </div>
+
+                        <div className="bg-brand-black/5 dark:bg-brand-white/5 rounded-xl p-6 border border-dashed border-brand-black/10">
+                            <div className="flex flex-col sm:flex-row gap-4 items-center">
+                                <div className="flex-1 w-full">
+                                    <div className="bg-white dark:bg-brand-black px-4 py-3 rounded-lg text-xs font-mono text-brand-black/60 dark:text-brand-white/60 break-all border border-black/5">
+                                        {window.location.origin}/open-access/afstudio-unlock
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const url = `${window.location.origin}/open-access/afstudio-unlock`;
+                                        navigator.clipboard.writeText(url);
+                                        alert('Magic Link berhasil disalin!');
+                                    }}
+                                    className="w-full sm:w-auto shrink-0 px-6 py-3 bg-brand-black dark:bg-brand-gold text-white dark:text-brand-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg"
+                                >
+                                    Salin Link
+                                </button>
+                            </div>
+                            <p className="text-[10px] text-brand-gold font-bold mt-4 uppercase tracking-tighter">
+                                💡 Tip: Kirim link ini ke customer lewat WhatsApp.
+                            </p>
+                        </div>
+                    </div>
+
                     {/* Additional Info */}
                     <div className="mt-8 p-6 bg-brand-black/5 dark:bg-brand-white/5 rounded-lg border border-brand-black/10 dark:border-brand-white/10">
                         <h3 className="text-sm font-black text-brand-black dark:text-brand-white mb-2">
