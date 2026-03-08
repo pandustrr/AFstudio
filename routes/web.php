@@ -90,6 +90,7 @@ Route::prefix('photographer')->group(function () {
 
         Route::get('/sessions', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'index'])->name('photographer.sessions.index');
         Route::post('/sessions/toggle', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'toggle'])->name('photographer.sessions.toggle');
+        Route::post('/sessions/bulk-toggle', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'bulkToggle'])->name('photographer.sessions.bulk-toggle');
         Route::post('/sessions/mark', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'updateDateMark'])->name('photographer.sessions.mark');
 
         Route::get('/reservations', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'reservations'])->name('photographer.reservations');

@@ -17,6 +17,22 @@ import {
 export default function Dashboard({ stats, recentBookings, recentReviews }) {
     const { auth } = usePage().props;
 
+    // Calculate dates for filter links
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+
+    const formatDateForLink = (date) => {
+        return {
+            year: date.getFullYear(),
+            month: date.getMonth() + 1,
+            day: date.getDate()
+        };
+    };
+
+    const dToday = formatDateForLink(today);
+    const dTomorrow = formatDateForLink(tomorrow);
+
     const formatPrice = (price) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -73,7 +89,7 @@ export default function Dashboard({ stats, recentBookings, recentReviews }) {
                             icon: CameraIcon,
                             color: 'text-brand-red',
                             bg: 'bg-brand-red/10',
-                            href: '/admin/photographer-sessions'
+                            href: `/admin/photographer-sessions?year=${dToday.year}&month=${dToday.month}&day=${dToday.day}`
                         },
                         {
                             label: 'Booking Besok',
@@ -82,7 +98,7 @@ export default function Dashboard({ stats, recentBookings, recentReviews }) {
                             icon: CalendarIcon,
                             color: 'text-brand-gold',
                             bg: 'bg-brand-gold/10',
-                            href: '/admin/photographer-sessions'
+                            href: `/admin/photographer-sessions?year=${dTomorrow.year}&month=${dTomorrow.month}&day=${dTomorrow.day}`
                         },
                         {
                             label: 'Total Pending',

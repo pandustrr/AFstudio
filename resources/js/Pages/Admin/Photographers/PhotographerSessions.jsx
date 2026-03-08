@@ -143,7 +143,9 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                     >
                                         <option value="" className="bg-white dark:bg-brand-black font-sans capitalize">-- Pilih Fotografer --</option>
                                         {photographers.map(fg => (
-                                            <option key={fg.id} value={fg.id} className="bg-white dark:bg-brand-black font-sans capitalize">{fg.name}</option>
+                                            <option key={fg.id} value={fg.id} className="bg-white dark:bg-brand-black font-sans capitalize">
+                                                {fg.name} {fg.sessions_count > 0 ? `(${fg.sessions_count} Acara)` : ''}
+                                            </option>
                                         ))}
                                     </select>
                                     <ChevronDownIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />

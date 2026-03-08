@@ -144,7 +144,15 @@ class PhotographerSessionController extends Controller
             $day = $day ?: $carbonDate->day;
         }
 
-        $photographers = \App\Models\User::where('role', 'photographer')->get();
+        $photographers = \App\Models\User::where('role', 'photographer')
+            ->withCount(['sessions' => function ($query) use ($date) {
+                $query->where('date', $date)
+                    ->where('status', 'booked')
+                    ->whereHas('bookingItem.booking', function ($q) {
+                        $q->where('status', 'confirmed');
+                    });
+            }])
+            ->get();
 
         $sessions = [];
         if ($photographerId) {
@@ -399,6 +407,43 @@ class PhotographerSessionController extends Controller
         }
 
         return back();
+    }
+
+    public function bulkToggle(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date',
+            'start_times' => 'required|array',
+            'status' => 'required|in:open,off',
+        ]);
+
+        $photographerId = Auth::id();
+        $date = $request->date;
+        $startTimes = $request->start_times;
+        $newStatus = $request->status;
+
+        foreach ($startTimes as $startTime) {
+            $session = PhotographerSession::where('photographer_id', $photographerId)
+                ->where('date', $date)
+                ->where('start_time', $startTime)
+                ->first();
+
+            if ($session) {
+                // Jangan toggle jika sudah booked
+                if ($session->status === 'booked') continue;
+                $session->update(['status' => $newStatus]);
+            } else {
+                // Buat record baru jika belum ada
+                PhotographerSession::create([
+                    'photographer_id' => $photographerId,
+                    'date' => $date,
+                    'start_time' => $startTime,
+                    'status' => $newStatus,
+                ]);
+            }
+        }
+
+        return back()->with('success', 'Status sesi berhasil diperbarui secara massal');
     }
 
     private function generateSessionGrid($date, $existingSessions)
