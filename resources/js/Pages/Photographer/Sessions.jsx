@@ -6,10 +6,15 @@ import {
     CheckCircleIcon,
     XCircleIcon,
     InformationCircleIcon,
+    CursorArrowRaysIcon,
+    TrashIcon,
 } from '@heroicons/react/24/outline';
 import CalendarWidget from '../../Components/CalendarWidget';
 
 export default function Sessions({ grid, selectedDate, filters, options, monthlyStats, dateMarks }) {
+    const [selectedTimes, setSelectedTimes] = useState([]);
+    const [isBulkLoading, setIsBulkLoading] = useState(false);
+
     const markColors = [
         { name: 'Default', value: null, class: 'bg-black/5 dark:bg-white/10' },
         { name: 'Red', value: '#ef4444', class: 'bg-red-500' },
@@ -48,6 +53,61 @@ export default function Sessions({ grid, selectedDate, filters, options, monthly
 
         router.post('/photographer/sessions/toggle', params, {
             preserveScroll: true
+        });
+    };
+
+    const handleBulkToggle = (status) => {
+        if (selectedTimes.length === 0) return;
+        setIsBulkLoading(true);
+
+        router.post('/photographer/sessions/bulk-toggle', {
+            date: selectedDate,
+            start_times: selectedTimes,
+            status: status
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setSelectedTimes([]);
+                setIsBulkLoading(false);
+            },
+            onFinish: () => setIsBulkLoading(false)
+        });
+    };
+
+    const toggleAll = () => {
+        const checkableSessions = grid.filter(s => s.status !== 'booked');
+        if (selectedTimes.length === checkableSessions.length) {
+            setSelectedTimes([]);
+        } else {
+            setSelectedTimes(checkableSessions.map(s => s.time_full));
+        }
+    };
+
+    const handleSelectSession = (time) => {
+        setSelectedTimes(prev =>
+            prev.includes(time)
+                ? prev.filter(t => t !== time)
+                : [...prev, time]
+        );
+    };
+
+    const closeAllToday = () => {
+        if (!confirm('Tutup semua sesi yang tersedia untuk hari ini?')) return;
+        const openSessions = grid.filter(s => s.status === 'open').map(s => s.time_full);
+        if (openSessions.length === 0) {
+            alert('Tidak ada sesi terbuka yang bisa ditutup.');
+            return;
+        }
+
+        setIsBulkLoading(true);
+        router.post('/photographer/sessions/bulk-toggle', {
+            date: selectedDate,
+            start_times: openSessions,
+            status: 'off'
+        }, {
+            preserveScroll: true,
+            onSuccess: () => setIsBulkLoading(false),
+            onFinish: () => setIsBulkLoading(false)
         });
     };
 
@@ -227,28 +287,67 @@ export default function Sessions({ grid, selectedDate, filters, options, monthly
                     {/* Session Grid Section */}
                     <div className="lg:col-span-2">
                         {/* Date Header */}
-                        <div className="flex items-center justify-between gap-3 mb-6 bg-white dark:bg-white/5 p-4 rounded-2xl border border-black/5 dark:border-white/10 shadow-sm relative overflow-hidden group">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 bg-white dark:bg-white/5 p-4 rounded-2xl border border-black/5 dark:border-white/10 shadow-sm relative overflow-hidden group">
                             {/* Decorative glow */}
                             <div className="absolute top-0 right-0 w-32 h-32 bg-brand-gold/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
 
-                            <div className="flex items-center gap-4 relative z-10 w-full">
+                            <div className="flex items-center gap-4 relative z-10">
                                 <div className="p-2.5 rounded-xl bg-brand-gold/10 border border-brand-gold/20 text-brand-gold shrink-0">
                                     <ClockIcon className="w-5 h-5" />
                                 </div>
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-bold tracking-widest text-brand-black/30 dark:text-brand-white/30 uppercase mb-0.5">Jadwal Sesi</span>
-                                        <span className="block text-base sm:text-lg font-black uppercase tracking-tight text-brand-black dark:text-brand-white leading-tight">
-                                            {new Date(selectedDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center sm:flex-col sm:items-end">
-                                        <span className="text-[9px] sm:text-[10px] font-bold tracking-widest text-brand-black/40 dark:text-brand-white/40 uppercase bg-black/5 dark:bg-white/10 px-3 py-1.5 rounded-lg border border-black/5 dark:border-white/5 whitespace-nowrap">
-                                            {grid.filter(i => i.status === 'booked').length} Terisi / {grid.length} Total
-                                        </span>
-                                    </div>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold tracking-widest text-brand-black/30 dark:text-brand-white/30 uppercase mb-0.5">Jadwal Sesi</span>
+                                    <span className="block text-base sm:text-lg font-black uppercase tracking-tight text-brand-black dark:text-brand-white leading-tight">
+                                        {new Date(selectedDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                                    </span>
                                 </div>
                             </div>
+
+                            <div className="flex items-center gap-2 relative z-10">
+                                <button
+                                    onClick={closeAllToday}
+                                    className="flex items-center gap-2 px-4 py-2 bg-brand-red/10 hover:bg-brand-red text-brand-red hover:text-white border border-brand-red/20 rounded-xl transition-all group/btn"
+                                >
+                                    <XCircleIcon className="w-4 h-4" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Tutup Semua</span>
+                                </button>
+                                <span className="text-[9px] sm:text-[10px] font-bold tracking-widest text-brand-black/40 dark:text-brand-white/40 uppercase bg-black/5 dark:bg-white/10 px-3 py-1.5 rounded-lg border border-black/5 dark:border-white/5 whitespace-nowrap">
+                                    {grid.filter(i => i.status === 'booked').length} Terisi / {grid.length} Total
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Bulk Actions Header */}
+                        <div className="flex items-center justify-between px-2 mb-4">
+                            <button
+                                onClick={toggleAll}
+                                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 hover:text-brand-gold transition-colors"
+                            >
+                                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${selectedTimes.length > 0 && selectedTimes.length === grid.filter(s => s.status !== 'booked').length ? 'bg-brand-gold border-brand-gold' : 'border-black/10 dark:border-white/10'}`}>
+                                    {selectedTimes.length > 0 && selectedTimes.length === grid.filter(s => s.status !== 'booked').length && <div className="w-1.5 h-1.5 bg-brand-black rounded-sm" />}
+                                </div>
+                                {selectedTimes.length === grid.filter(s => s.status !== 'booked').length ? 'Batal Pilih' : 'Pilih Semua'}
+                            </button>
+
+                            {selectedTimes.length > 0 && (
+                                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
+                                    <span className="text-[9px] font-bold uppercase tracking-widest text-brand-gold mr-2">{selectedTimes.length} Sesi Terpilih</span>
+                                    <button
+                                        onClick={() => handleBulkToggle('open')}
+                                        disabled={isBulkLoading}
+                                        className="px-4 py-2 bg-green-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-green-500/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                                    >
+                                        Buka
+                                    </button>
+                                    <button
+                                        onClick={() => handleBulkToggle('off')}
+                                        disabled={isBulkLoading}
+                                        className="px-4 py-2 bg-brand-black text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-black/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                                    >
+                                        Tutup
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Sessions List (List View) */}
@@ -269,80 +368,99 @@ export default function Sessions({ grid, selectedDate, filters, options, monthly
                                 const isOpen = item.status === 'open';
 
                                 return (
-                                    <button
+                                    <div
                                         key={index}
-                                        onClick={() => handleToggle(item.time_full, item.status)}
-                                        disabled={isBooked}
-                                        className={`w-full flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border transition-all gap-4 text-left
+                                        className={`w-full flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border transition-all gap-4 text-left relative
                                             ${isOpen
-                                                ? 'bg-brand-gold/5 border-brand-gold/30 hover:bg-brand-gold/10'
+                                                ? (selectedTimes.includes(item.time_full) ? 'bg-brand-gold/20 border-brand-gold' : 'bg-brand-gold/5 border-brand-gold/30 hover:bg-brand-gold/10')
                                                 : isBooked
                                                     ? 'bg-green-500/5 border-green-500/20 cursor-not-allowed'
-                                                    : 'bg-white dark:bg-white/3 border-black/5 dark:border-white/5 opacity-50 hover:opacity-100 hover:border-brand-gold/50'
+                                                    : (selectedTimes.includes(item.time_full) ? 'bg-brand-black/20 border-brand-black opacity-100' : 'bg-white dark:bg-white/3 border-black/5 dark:border-white/5 opacity-50 hover:opacity-100 hover:border-brand-gold/50')
                                             }`}
                                     >
-                                        {/* Sesi & Waktu */}
-                                        <div className="flex items-center gap-4 min-w-[200px]">
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-black text-xs
-                                                ${isOpen ? 'bg-brand-gold text-brand-black' :
-                                                    isBooked ? 'bg-green-500 text-white' : 'bg-black/10 dark:bg-white/10 text-brand-black/40 dark:text-brand-white/40'}
-                                            `}>
-                                                {index + 1}
-                                            </div>
-                                            <div>
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 block">Sesi {index + 1}</span>
-                                                <div className="flex items-center gap-2">
-                                                    <h3 className="text-sm font-black text-brand-black dark:text-brand-white tracking-widest uppercase">
-                                                        Jam {startTime} - {endTime}
-                                                    </h3>
-                                                    {item.cumulative_offset !== 0 && (
-                                                        <span className="text-[10px] font-bold text-brand-red italic">
-                                                            ({item.cumulative_offset > 0 ? '+' : ''}{item.cumulative_offset}m)
-                                                        </span>
-                                                    )}
+                                        {/* Selection Checkbox */}
+                                        {!isBooked && (
+                                            <div
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleSelectSession(item.time_full);
+                                                }}
+                                                className="absolute top-4 right-4 sm:static shrink-0 cursor-pointer group/check"
+                                            >
+                                                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${selectedTimes.includes(item.time_full) ? 'bg-brand-gold border-brand-gold scale-110' : 'border-black/10 dark:border-white/10 group-hover/check:border-brand-gold/50'}`}>
+                                                    {selectedTimes.includes(item.time_full) && <CheckCircleIcon className="w-4 h-4 text-brand-black" />}
                                                 </div>
                                             </div>
-                                        </div>
+                                        )}
 
-                                        {/* Informasi Status / Customer */}
-                                        <div className="flex-1">
-                                            {isBooked ? (
-                                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                                                    <div className="flex items-center gap-1.5 px-3 py-1 bg-green-500/10 text-green-500 rounded-full w-fit">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                                        <span className="text-[10px] font-black uppercase tracking-widest">TERISI</span>
+                                        {/* Main Content (Clickable to Toggle single) */}
+                                        <div
+                                            onClick={() => handleToggle(item.time_full, item.status)}
+                                            className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer"
+                                        >
+                                            {/* Sesi & Waktu */}
+                                            <div className="flex items-center gap-4 min-w-[200px]">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-black text-xs
+                                                    ${isOpen ? 'bg-brand-gold text-brand-black' :
+                                                        isBooked ? 'bg-green-500 text-white' : 'bg-black/10 dark:bg-white/10 text-brand-black/40 dark:text-brand-white/40'}
+                                                `}>
+                                                    {index + 1}
+                                                </div>
+                                                <div>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 block">Sesi {index + 1}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="text-sm font-black text-brand-black dark:text-brand-white tracking-widest uppercase">
+                                                            Jam {startTime} - {endTime}
+                                                        </h3>
+                                                        {item.cumulative_offset !== 0 && (
+                                                            <span className="text-[10px] font-bold text-brand-red italic">
+                                                                ({item.cumulative_offset > 0 ? '+' : ''}{item.cumulative_offset}m)
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                    {item.booking_info && (
-                                                        <div className="flex flex-col">
-                                                            <p className="text-xs font-black text-brand-black dark:text-brand-white uppercase leading-none">
-                                                                {item.booking_info.customer_name}
-                                                            </p>
-                                                            <p className="text-[9px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase mt-0.5">
-                                                                {item.booking_info.package_name}
-                                                            </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Informasi Status / Customer */}
+                                            <div className="flex-1">
+                                                {isBooked ? (
+                                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                                        <div className="flex items-center gap-1.5 px-3 py-1 bg-green-500/10 text-green-500 rounded-full w-fit">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">TERISI</span>
                                                         </div>
-                                                    )}
-                                                </div>
-                                            ) : isOff ? (
-                                                <div className="flex items-center gap-1.5 px-3 py-1 bg-black/5 dark:bg-white/5 text-brand-black/30 dark:text-brand-white/30 rounded-full w-fit">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-current" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">KOSONG / OFF</span>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-1.5 px-3 py-1 bg-brand-gold/10 text-brand-gold rounded-full w-fit border border-brand-gold/20">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest">TERSEDIA / OPEN</span>
+                                                        {item.booking_info && (
+                                                            <div className="flex flex-col">
+                                                                <p className="text-xs font-black text-brand-black dark:text-brand-white uppercase leading-none">
+                                                                    {item.booking_info.customer_name}
+                                                                </p>
+                                                                <p className="text-[9px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase mt-0.5">
+                                                                    {item.booking_info.package_name}
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : isOff ? (
+                                                    <div className="flex items-center gap-1.5 px-3 py-1 bg-black/5 dark:bg-white/5 text-brand-black/30 dark:text-brand-white/30 rounded-full w-fit">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">KOSONG / OFF</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-1.5 px-3 py-1 bg-brand-gold/10 text-brand-gold rounded-full w-fit border border-brand-gold/20">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">TERSEDIA / OPEN</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Hint Aksi */}
+                                            {!isBooked && (
+                                                <div className="text-[9px] font-black uppercase tracking-widest text-brand-black/20 dark:text-brand-white/20 italic">
+                                                    Klik untuk {isOpen ? 'Tutup (Off)' : 'Buka (Open)'}
                                                 </div>
                                             )}
                                         </div>
-
-                                        {/* Hint Aksi */}
-                                        {!isBooked && (
-                                            <div className="text-[9px] font-black uppercase tracking-widest text-brand-black/20 dark:text-brand-white/20 italic">
-                                                Klik untuk {isOpen ? 'Tutup (Off)' : 'Buka (Open)'}
-                                            </div>
-                                        )}
-                                    </button>
+                                    </div>
                                 );
                             })}
                         </div>
