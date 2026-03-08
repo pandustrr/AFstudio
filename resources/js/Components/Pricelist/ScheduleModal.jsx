@@ -155,12 +155,12 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         setError(null);
     }, [date, selectedRoom, packageData?.id, packageData?.max_sessions, packageData?.allow_split_session]);
 
-    // Fetch rooms when date or package changes
+    // Fetch rooms when date, package, or mode changes
     useEffect(() => {
         if (date && packageData) {
             fetchRooms();
         }
-    }, [date, packageData?.id]);
+    }, [date, packageData?.id, mode]);
 
     const fetchRooms = async () => {
         setIsLoadingRooms(true);
@@ -584,7 +584,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
 
                                                                     const isHighlighted = isSplitActive ? isSelected : isPartOfConsecutive;
                                                                     const isStartSelection = startTime === item.time;
-                                                                    const isDisabled = isBooked || isOff || (!isSplitActive && !hasEnoughFutureSlots && !isHighlighted);
+                                                                    const isDisabled = isBooked || isOff;
 
                                                                     return (
                                                                         <button
@@ -640,10 +640,9 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                             <div className={`text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border mt-1
                                                                                 ${isBooked ? 'bg-red-500/10 text-red-500 border-red-500/20' :
                                                                                     isOff ? 'bg-black/10 text-brand-black/40 border-black/20' :
-                                                                                        !hasEnoughFutureSlots && !isSplitActive ? 'bg-red-500/5 text-red-500/40 border-red-500/10' :
-                                                                                            isHighlighted ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-brand-gold/10 text-brand-gold border-brand-gold/20'}
+                                                                                        isHighlighted ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-brand-gold/10 text-brand-gold border-brand-gold/20'}
                                                                             `}>
-                                                                                {isBooked ? 'TERISI' : isOff ? 'LIBUR' : (!hasEnoughFutureSlots && !isSplitActive) ? 'LIMIT' : isHighlighted ? 'FIXED' : 'OPEN'}
+                                                                                {isBooked ? 'TERISI' : isOff ? 'LIBUR' : isHighlighted ? 'FIXED' : 'OPEN'}
                                                                             </div>
 
                                                                             {isHighlighted && isSplitActive && (
