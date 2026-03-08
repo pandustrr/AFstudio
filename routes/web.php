@@ -18,6 +18,7 @@ Route::get('/selector-photo', function () {
 
 Route::get('/about', [\App\Http\Controllers\Public\PageController::class, 'about'])->name('about');
 Route::get('/price-list', [\App\Http\Controllers\Public\PageController::class, 'pricelist'])->name('price-list');
+Route::get('/open-access/{token}', [\App\Http\Controllers\Public\AccessController::class, 'unlock'])->name('open-access');
 Route::get('/review', [\App\Http\Controllers\PublicReviewController::class, 'index']);
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
