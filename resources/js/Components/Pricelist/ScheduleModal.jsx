@@ -69,7 +69,8 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     const [photographers, setPhotographers] = useState([]);
     const [selectedSessions, setSelectedSessions] = useState([]);
     const [startTime, setStartTime] = useState('');
-    const maxSessions = packageData?.max_sessions || 1;
+    const maxSessions = Number(packageData?.max_sessions || 1);
+    const isSplitActive = !!packageData?.allow_split_session;
     const [selectedSplitTimes, setSelectedSplitTimes] = useState([]);
     const [availabilityStatus, setAvailabilityStatus] = useState(null);
 
@@ -154,12 +155,12 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         setError(null);
     }, [date, selectedRoom, packageData?.id, packageData?.max_sessions, packageData?.allow_split_session]);
 
-    // Fetch rooms when date changes
+    // Fetch rooms when date, package, or mode changes
     useEffect(() => {
         if (date && packageData) {
             fetchRooms();
         }
-    }, [date]);
+    }, [date, packageData?.id, mode]);
 
     const fetchRooms = async () => {
         setIsLoadingRooms(true);
@@ -491,6 +492,9 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                     <label className="text-xs font-bold uppercase tracking-widest text-brand-black/60 dark:text-brand-white/60 flex items-center gap-2">
                                                         <HomeIcon className="w-4 h-4" /> Pilih Room
                                                     </label>
+                                                    <p className="text-[10px] text-brand-black/40 dark:text-brand-white/40 font-medium italic -mt-2">
+                                                        Pilih room dibawah untuk melihat ketersediaan Sesi/Jadwal
+                                                    </p>
                                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                                         {isLoadingRooms ? (
                                                             [1, 2, 3].map(i => (
@@ -546,7 +550,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                     const isBooked = item.status === 'booked';
                                                                     const isOff = item.status === 'off';
                                                                     const isOpen = item.status === 'open';
-                                                                    const isSplitActive = packageData?.allow_split_session;
+                                                                    const isSplitActive = Boolean(packageData?.allow_split_session);
 
                                                                     // Helper to check if this slot is selected
                                                                     const isSelected = isSplitActive
@@ -562,7 +566,6 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                         return `${String(endH).padStart(2, '0')}.${String(endM).padStart(2, '0')}`;
                                                                     })();
 
-                                                                    // Helper to check if this slot is part of a consecutive selection (traditional)
                                                                     const isPartOfConsecutive = (() => {
                                                                         if (isSplitActive || !startTime) return false;
                                                                         const startIdx = sessionGrid.findIndex(s => s.time === startTime);
@@ -570,18 +573,37 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                         return currentIdx >= startIdx && currentIdx < startIdx + maxSessions;
                                                                     })();
 
+                                                                    // New: Check if this slot *could* be a valid start time
+                                                                    const hasEnoughFutureSlots = (() => {
+                                                                        if (isSplitActive || isBooked || isOff) return true;
+                                                                        // Check from current index to the end of required duration
+                                                                        for (let i = index; i < index + maxSessions; i++) {
+                                                                            if (!sessionGrid[i] || sessionGrid[i].status === 'booked' || sessionGrid[i].status === 'off') {
+                                                                                return false;
+                                                                            }
+                                                                        }
+                                                                        return true;
+                                                                    })();
+
                                                                     const isHighlighted = isSplitActive ? isSelected : isPartOfConsecutive;
                                                                     const isStartSelection = startTime === item.time;
+                                                                    const isDisabled = isBooked || isOff;
 
                                                                     return (
                                                                         <button
                                                                             key={index}
                                                                             type="button"
-                                                                            disabled={isBooked || isOff}
+                                                                            disabled={isDisabled}
                                                                             onClick={() => {
                                                                                 if (isSplitActive) {
                                                                                     toggleSplitSession(item.time);
                                                                                 } else {
+                                                                                    // Check if there are enough slots remaining for the package duration
+                                                                                    if (!hasEnoughFutureSlots) {
+                                                                                        setError(`Sesi tidak tersedia. Dibutuhkan ${maxSessions} sesi berurutan.`);
+                                                                                        return;
+                                                                                    }
+
                                                                                     if (isStartSelection) {
                                                                                         setStartTime('');
                                                                                         setAvailabilityStatus(null);

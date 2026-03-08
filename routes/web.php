@@ -142,6 +142,7 @@ Route::prefix('admin')->group(function () {
         Route::post('/bookings-bulk-delete-proofs', [\App\Http\Controllers\Admin\BookingController::class, 'bulkDeleteProofs'])->name('admin.bookings.bulk-delete-proofs');
         Route::patch('/booking-items/{item}', [\App\Http\Controllers\Admin\BookingController::class, 'updateItem'])->name('admin.booking-items.update');
 
+        Route::post('photographers/reorder', [\App\Http\Controllers\Admin\PhotographerController::class, 'reorder'])->name('admin.photographers.reorder');
         Route::resource('photographers', \App\Http\Controllers\Admin\PhotographerController::class)
             ->only(['index', 'store', 'update', 'destroy'])
             ->names('admin.photographers');

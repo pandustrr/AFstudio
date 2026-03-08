@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useForm, router } from '@inertiajs/react';
-import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PlusIcon, TrashIcon, PencilSquareIcon, CheckIcon, Bars3Icon } from '@heroicons/react/24/outline';
 
 export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSuccess }) {
     const { data, setData, post, put, processing, errors, reset } = useForm({
@@ -38,6 +38,9 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
     };
 
     const [newFeature, setNewFeature] = useState('');
+    const [editingIndex, setEditingIndex] = useState(null);
+    const [editingValue, setEditingValue] = useState('');
+    const [draggedItemIndex, setDraggedItemIndex] = useState(null);
 
     useEffect(() => {
         if (pkg) {
@@ -74,6 +77,42 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
         const updated = [...data.features];
         updated.splice(index, 1);
         setData('features', updated);
+    };
+
+    const startEditing = (index) => {
+        setEditingIndex(index);
+        setEditingValue(data.features[index]);
+    };
+
+    const saveEditing = () => {
+        if (editingValue.trim()) {
+            const updated = [...data.features];
+            updated[editingIndex] = editingValue.trim();
+            setData('features', updated);
+            setEditingIndex(null);
+        }
+    };
+
+    const handleDragStart = (e, index) => {
+        setDraggedItemIndex(index);
+        e.dataTransfer.effectAllowed = 'move';
+        // Add a ghost image or styling if needed
+    };
+
+    const handleDragOver = (e, index) => {
+        e.preventDefault();
+        if (draggedItemIndex === null || draggedItemIndex === index) return;
+
+        const updated = [...data.features];
+        const itemToMove = updated[draggedItemIndex];
+        updated.splice(draggedItemIndex, 1);
+        updated.splice(index, 0, itemToMove);
+        setDraggedItemIndex(index);
+        setData('features', updated);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedItemIndex(null);
     };
 
     const submit = (e) => {
@@ -217,7 +256,7 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
                                     onChange={(e) => setData('is_popular', e.target.checked)}
                                     className="w-5 h-5 rounded border-0 bg-black/10 dark:bg-white/10 text-brand-gold focus:ring-brand-gold"
                                 />
-                                <label htmlFor="is_popular" className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white cursor-pointer select-none">Populer</label>
+                                <label htmlFor="is_popular" className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white cursor-pointer select-none">Best Seller</label>
                             </div>
                         </div>
 
@@ -261,15 +300,66 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
                         </div>
                         <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                             {data.features.map((feature, index) => (
-                                <div key={index} className="flex items-center justify-between p-3 bg-black/2 dark:bg-white/2 border border-black/5 dark:border-white/5 rounded-xl group transition-all hover:border-brand-gold/30">
-                                    <span className="text-[10px] font-bold text-brand-black dark:text-brand-white uppercase tracking-wide">{feature}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeFeature(index)}
-                                        className="p-1 text-brand-black/20 dark:text-brand-white/20 hover:text-brand-red transition-all"
-                                    >
-                                        <TrashIcon className="w-4 h-4" />
-                                    </button>
+                                <div
+                                    key={index}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, index)}
+                                    onDragOver={(e) => handleDragOver(e, index)}
+                                    onDragEnd={handleDragEnd}
+                                    className={`flex items-center gap-3 p-3 bg-black/2 dark:bg-white/2 border border-black/5 dark:border-white/5 rounded-xl group transition-all hover:border-brand-gold/30 ${draggedItemIndex === index ? 'opacity-50 border-brand-gold bg-brand-gold/5' : ''}`}
+                                >
+                                    <div className="cursor-move text-brand-black/20 dark:text-brand-white/20 hover:text-brand-gold transition-colors">
+                                        <Bars3Icon className="w-4 h-4" />
+                                    </div>
+
+                                    {editingIndex === index ? (
+                                        <div className="flex-1 flex gap-2">
+                                            <input
+                                                type="text"
+                                                autoFocus
+                                                value={editingValue}
+                                                onChange={(e) => setEditingValue(e.target.value)}
+                                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), saveEditing())}
+                                                className="flex-1 bg-white dark:bg-black/20 border border-brand-gold/30 rounded-lg px-2 py-1 text-[10px] font-bold text-brand-black dark:text-brand-white focus:ring-1 focus:ring-brand-gold outline-none"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={saveEditing}
+                                                className="p-1 text-green-500 hover:scale-110 transition-all"
+                                            >
+                                                <CheckIcon className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setEditingIndex(null)}
+                                                className="p-1 text-brand-red hover:scale-110 transition-all"
+                                            >
+                                                <XMarkIcon className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <span className="flex-1 text-[10px] font-bold text-brand-black dark:text-brand-white uppercase tracking-wide">{feature}</span>
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => startEditing(index)}
+                                                    className="p-1 text-brand-black/20 dark:text-brand-white/20 hover:text-brand-gold transition-all"
+                                                    title="Edit feature"
+                                                >
+                                                    <PencilSquareIcon className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeFeature(index)}
+                                                    className="p-1 text-brand-black/20 dark:text-brand-white/20 hover:text-brand-red transition-all"
+                                                    title="Remove feature"
+                                                >
+                                                    <TrashIcon className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             ))}
                             {data.features.length === 0 && (
