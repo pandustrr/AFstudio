@@ -135,17 +135,6 @@ class PhotoSelectorController extends Controller
             ], 403);
         }
 
-        // Calculate total edit requests already made
-        $totalEditRequestsMade = $session->editRequests->count();
-
-        // Check if quota exceeded
-        if ($totalEditRequestsMade >= $maxEditingQuota) {
-            return response()->json([
-                'success' => false,
-                'message' => "Anda sudah mencapai batas maksimal editing ({$maxEditingQuota}x). Tidak bisa membuat permintaan edit baru."
-            ], 403);
-        }
-
         // Calculate total photos already requested
         $previousRequestedCount = $session->editRequests->sum(function ($request) {
             return count($request->selected_photos ?? []);
@@ -154,13 +143,21 @@ class PhotoSelectorController extends Controller
         $newCount = count($validated['selectedPhotos']);
         $totalCount = $previousRequestedCount + $newCount;
 
+        // Check if photo quota exceeded
+        if ($totalCount > $maxEditingQuota) {
+            return response()->json([
+                'success' => false,
+                'message' => "Kuota Anda tidak mencukupi. Anda mencoba mengajukan {$newCount} foto, tetapi sisa kuota Anda hanya " . ($maxEditingQuota - $previousRequestedCount) . " foto."
+            ], 403);
+        }
+
 
         try {
             // Debugging: Log the incoming photo data
             \Illuminate\Support\Facades\Log::info("Incoming Edit Request for Session: {$session->uid}", [
                 'photos_count' => $newCount,
                 'total_new_count' => $totalCount,
-                'edit_quota_remaining' => ($maxEditingQuota - $totalEditRequestsMade - 1)
+                'max_quota' => $maxEditingQuota
             ]);
 
             $editRequest = EditRequest::create([
@@ -188,7 +185,8 @@ class PhotoSelectorController extends Controller
                 'session' => [
                     'requested_count' => $refreshedRequestedCount,
                     'edit_requests_made' => $editRequestsCount,
-                    'edit_quota_remaining' => max(0, $maxEditingQuota - $editRequestsCount),
+                    'max_editing_quota' => $maxEditingQuota,
+                    'edit_quota_remaining' => max(0, $maxEditingQuota - $refreshedRequestedCount),
                     'status' => $session->status,
                 ]
             ]);

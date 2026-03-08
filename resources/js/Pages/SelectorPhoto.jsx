@@ -171,6 +171,10 @@ export default function SelectorPhoto() {
                 if (data.session.edit_quota_remaining !== undefined) {
                     setEditQuotaRemaining(data.session.edit_quota_remaining);
                 }
+                // Update max quota if it changed
+                if (data.session.max_editing_quota !== undefined) {
+                    setMaxEditQuota(data.session.max_editing_quota);
+                }
             }
 
             // Sync previously selected IDs so they turn grey immediately
@@ -495,7 +499,7 @@ export default function SelectorPhoto() {
                                         <div className="flex flex-col items-center gap-2 mt-2 w-full">
                                             <div className="bg-brand-gold/10 border-2 border-brand-gold/40 rounded-full px-6 py-1.5 animate-pulse-subtle">
                                                 <p className="text-brand-gold text-[10px] font-black uppercase tracking-widest">
-                                                    Kuota Editing: {editQuotaRemaining} / {maxEditQuota} Foto
+                                                    Kuota Editing: {sessionData?.requested_count || 0} / {maxEditQuota} Foto
                                                 </p>
                                             </div>
 
@@ -589,7 +593,7 @@ export default function SelectorPhoto() {
                                     {driveType === 'Mentahan' && (
                                         <div className="bg-brand-gold/10 border-2 border-brand-gold/40 rounded-full px-5 py-1 mt-1 mb-3">
                                             <p className="text-brand-gold text-[9px] font-black uppercase tracking-widest leading-tight">
-                                                Kuota Editing: {sessionData?.requested_count || 0} / {maxEditQuota} Foto
+                                                Kuota Editing: {(sessionData?.requested_count || 0) + selectedPhotos.length} / {maxEditQuota} Foto
                                             </p>
                                         </div>
                                     )}
