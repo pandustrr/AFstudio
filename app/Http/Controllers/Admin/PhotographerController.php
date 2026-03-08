@@ -15,9 +15,25 @@ class PhotographerController extends Controller
     {
         return Inertia::render('Admin/Photographers/Index', [
             'photographers' => User::where('role', 'photographer')
-                ->select('id', 'name', 'username', 'phone', 'plain_password', 'room_name', 'inactive_dates')
+                ->select('id', 'name', 'username', 'phone', 'plain_password', 'room_name', 'inactive_dates', 'sort_order')
+                ->orderBy('sort_order', 'asc')
+                ->orderBy('id', 'asc')
                 ->get(),
         ]);
+    }
+
+    public function reorder(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:users,id',
+        ]);
+
+        foreach ($validated['ids'] as $index => $id) {
+            User::where('id', $id)->update(['sort_order' => $index]);
+        }
+
+        return back()->with('success', 'Order updated successfully');
     }
 
     public function store(Request $request)
@@ -77,7 +93,7 @@ class PhotographerController extends Controller
         // Sync Inactive Dates
         // Validasi inactive_dates sebagai array (bisa kosong jika semua diaktifkan kembali)
         $newInactiveDates = $request->input('inactive_dates', []);
-        
+
         // 1. Ambil semua sesi fotografer yang ada
         $sessions = \App\Models\PhotographerSession::where('photographer_id', $photographer->id)
             ->where('status', '!=', 'booked')
