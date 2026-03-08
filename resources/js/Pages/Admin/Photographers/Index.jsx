@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Link, Head, router } from '@inertiajs/react';
-import { PlusIcon, PencilSquareIcon, TrashIcon, CalendarDaysIcon, UserIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilSquareIcon, TrashIcon, CalendarDaysIcon, UserIcon, Bars3Icon, CheckIcon } from '@heroicons/react/24/outline';
 import ConfirmModal from '@/Components/ConfirmModal';
 import EditNotif from '@/Components/EditNotif';
 import Edit from './Edit';
@@ -12,6 +12,15 @@ export default function Index({ photographers, rooms }) {
     const [deleteFG, setDeleteFG] = useState(null);
     const [processing, setProcessing] = useState(false);
     const [showSuccessNotif, setShowSuccessNotif] = useState(false);
+    const [localPhotographers, setLocalPhotographers] = useState(photographers);
+    const [draggedIndex, setDraggedIndex] = useState(null);
+    const [isReordering, setIsReordering] = useState(false);
+    const [hasOrderChanged, setHasOrderChanged] = useState(false);
+
+    // Update local state when props change
+    React.useEffect(() => {
+        setLocalPhotographers(photographers);
+    }, [photographers]);
 
     const openModal = (fg = null) => {
         setEditingFG(fg);
@@ -35,6 +44,45 @@ export default function Index({ photographers, rooms }) {
         });
     };
 
+    const handleDragStart = (e, index) => {
+        setDraggedIndex(index);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e, index) => {
+        e.preventDefault();
+        if (draggedIndex === null || draggedIndex === index) return;
+
+        const updated = [...localPhotographers];
+        const itemToMove = updated[draggedIndex];
+        updated.splice(draggedIndex, 1);
+        updated.splice(index, 0, itemToMove);
+        setDraggedIndex(index);
+        setLocalPhotographers(updated);
+        setHasOrderChanged(true);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedIndex(null);
+    };
+
+    const saveOrder = () => {
+        setIsReordering(true);
+        router.post('/admin/photographers/reorder', {
+            ids: localPhotographers.map(p => p.id)
+        }, {
+            onSuccess: () => {
+                setIsReordering(false);
+                setHasOrderChanged(false);
+                setShowSuccessNotif(true);
+            },
+            onError: () => {
+                setIsReordering(false);
+                alert("Gagal memperbarui urutan.");
+            }
+        });
+    };
+
     return (
         <AdminLayout>
             <Head title="Manage Photographers" />
@@ -46,23 +94,42 @@ export default function Index({ photographers, rooms }) {
                         <p className="text-brand-black/40 dark:text-brand-white/40 text-[9px] font-black uppercase tracking-widest leading-none">Kelola akun dan daftar fotografer aktif.</p>
                     </div>
 
-                    <button
-                        onClick={() => openModal()}
-                        className="w-full sm:w-auto bg-brand-black dark:bg-brand-gold text-brand-white dark:text-brand-black px-4 py-2.5 rounded-xl flex items-center justify-center sm:justify-start gap-2 transition-all shadow-lg hover:scale-105 active:scale-100"
-                    >
-                        <PlusIcon className="w-4 h-4" />
-                        <span className="font-black uppercase text-[9px] tracking-widest">Tambah Fotografer</span>
-                    </button>
+                    <div className="flex items-center gap-3">
+                        {hasOrderChanged && (
+                            <button
+                                onClick={saveOrder}
+                                disabled={isReordering}
+                                className="bg-green-500 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:scale-105 active:scale-100 disabled:opacity-50"
+                            >
+                                <CheckIcon className="w-4 h-4" />
+                                <span className="font-black uppercase text-[9px] tracking-widest">{isReordering ? 'Menyimpan...' : 'Simpan Urutan'}</span>
+                            </button>
+                        )}
+                        <button
+                            onClick={() => openModal()}
+                            className="bg-brand-black dark:bg-brand-gold text-brand-white dark:text-brand-black px-4 py-2.5 rounded-xl flex items-center justify-center sm:justify-start gap-2 transition-all shadow-lg hover:scale-105 active:scale-100"
+                        >
+                            <PlusIcon className="w-4 h-4" />
+                            <span className="font-black uppercase text-[9px] tracking-widest">Tambah Fotografer</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div className="grid gap-3 sm:gap-4">
-                    {photographers.map((fg) => (
+                    {localPhotographers.map((fg, index) => (
                         <div
                             key={fg.id}
-                            className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm hover:shadow-md transition-all group"
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, index)}
+                            onDragOver={(e) => handleDragOver(e, index)}
+                            onDragEnd={handleDragEnd}
+                            className={`bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm hover:shadow-md transition-all group ${draggedIndex === index ? 'opacity-50 border-brand-gold' : ''}`}
                         >
                             <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 dark:bg-black/20 rounded-2xl flex-shrink-0 flex items-center justify-center border border-black/5 dark:border-white/5 group-hover:border-brand-gold/50 transition-colors">
+                                <div className="cursor-move p-1 text-brand-black/20 dark:text-brand-white/20 hover:text-brand-gold transition-colors hidden sm:block">
+                                    <Bars3Icon className="w-5 h-5" />
+                                </div>
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-50 dark:bg-black/20 rounded-2xl shrink-0 flex items-center justify-center border border-black/5 dark:border-white/5 group-hover:border-brand-gold/50 transition-colors">
                                     <UserIcon className="w-5 h-5 sm:w-6 sm:h-6 text-brand-gold" />
                                 </div>
                                 <div className="min-w-0 flex-1">
@@ -92,7 +159,7 @@ export default function Index({ photographers, rooms }) {
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2 justify-end sm:justify-start flex-shrink-0">
+                            <div className="flex items-center gap-2 justify-end sm:justify-start shrink-0">
                                 <Link
                                     href={`/admin/photographer-sessions?photographer_id=${fg.id}`}
                                     className="p-2.5 sm:p-3 bg-brand-gold/10 text-brand-gold rounded-xl hover:bg-brand-gold hover:text-brand-black transition-all group/btn"
