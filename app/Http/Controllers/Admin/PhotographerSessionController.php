@@ -547,7 +547,7 @@ class PhotographerSessionController extends Controller
             'reservations' => $reservations,
             'allSessions' => $allSessions->isEmpty() ? [] : $allSessions->toArray(),
             'selectedSessionId' => $uidFilter,
-            'followUpTemplate' => \App\Models\HomePage::first()?->follow_up_template,
+            'followUpTemplates' => \App\Models\FollowUpTemplate::orderBy('name')->get(),
         ]);
     }
     public function updateDateMark(Request $request)
