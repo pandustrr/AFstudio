@@ -191,19 +191,19 @@ Terima kasih!`;
             </section>
 
             {/* Scrolling Banner */}
-            <div className="py-6 bg-white overflow-hidden border-y border-black/5 relative z-20">
+            <div className="py-4 bg-white overflow-hidden border-y border-black/5 relative z-20">
                 <div className="flex whitespace-nowrap animate-marquee">
                     {[1, 2, 3, 4].map((iteration) => (
-                        <div key={iteration} className="flex items-center gap-12 px-6">
+                        <div key={iteration} className="flex items-center gap-10 px-4">
                             {(homePage?.running_text
                                 ? homePage.running_text.split('|').map(t => t.trim()).filter(Boolean)
                                 : ['Visi Artistik', 'Jiwa Sinematik', 'Bingkai Abadi']
                             ).map((text, idx) => (
                                 <React.Fragment key={idx}>
-                                    <span className="text-brand-gold text-2xl lg:text-4xl font-black uppercase tracking-[0.3em] italic">
+                                    <span className="text-brand-gold text-lg lg:text-2xl font-black uppercase tracking-[0.2em] italic">
                                         {text}
                                     </span>
-                                    <div className={`w-2 h-2 rounded-full ${idx % 2 === 0 ? 'bg-brand-gold/20' : 'bg-brand-red'}`}></div>
+                                    <div className={`w-1.5 h-1.5 rounded-full ${idx % 2 === 0 ? 'bg-brand-gold/20' : 'bg-brand-red'}`}></div>
                                 </React.Fragment>
                             ))}
                         </div>
@@ -220,31 +220,34 @@ Terima kasih!`;
                             { label: homePage?.stat2_label || 'Pilihan Paket', val: homePage?.stat2_value || '1+', icon: UserGroupIcon, desc: homePage?.stat2_desc || 'Pilihan paket menarik yang kami sediakan.' },
                             { label: homePage?.stat3_label || 'Rating Klien', val: homePage?.stat3_value || '5', icon: TrophyIcon, isRating: true, desc: homePage?.stat3_desc || 'Hasil akhir yang memuaskan dari para klien.' },
                         ].map((stat, i) => (
-                            <div key={i} className="group p-10 rounded-[2.5rem] bg-white dark:bg-white/[0.03] border border-black/5 dark:border-white/10 shadow-2xl shadow-black/[0.02] dark:shadow-none hover:border-brand-gold/50 transition-all duration-700 hover:-translate-y-2 relative overflow-hidden">
+                            <div key={i} className="group p-5 lg:p-10 rounded-4xl bg-white dark:bg-white/[0.03] border border-black/5 dark:border-white/10 shadow-2xl shadow-black/[0.02] dark:shadow-none hover:border-brand-gold/50 transition-all duration-700 hover:-translate-y-2 relative overflow-hidden flex flex-row lg:flex-col items-center lg:items-start gap-4 lg:gap-0">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-brand-gold/5 blur-3xl -translate-y-16 translate-x-16 group-hover:bg-brand-gold/10 transition-colors"></div>
-                                <stat.icon className="w-8 h-8 text-[#7C9A8E] mb-8 group-hover:scale-110 group-hover:text-brand-gold transition-all duration-500" />
-                                {stat.isRating ? (
-                                    <div className="flex items-center gap-4 mb-3">
-                                        <div className="text-4xl lg:text-6xl font-black text-brand-black dark:text-brand-white tracking-tighter italic">
-                                            {stat.val}
-                                        </div>
-                                        <div className="flex gap-1.5">
+                                
+                                {/* Status Left/Top Section */}
+                                <div className="flex flex-row lg:flex-col items-center lg:items-start shrink-0 gap-3 lg:gap-0 min-w-[80px] lg:min-w-0">
+                                    <stat.icon className="w-5 h-5 lg:w-8 lg:h-8 text-[#7C9A8E] lg:mb-8 group-hover:scale-110 group-hover:text-brand-gold transition-all duration-500" />
+                                    <div className="text-2xl lg:text-6xl font-black text-brand-black dark:text-brand-white tracking-tighter italic leading-none">{stat.val}</div>
+                                </div>
+
+                                {/* Divider for Mobile */}
+                                <div className="w-px h-10 bg-black/5 dark:bg-white/10 lg:hidden"></div>
+
+                                {/* Text Content Section */}
+                                <div className="flex flex-col lg:mt-3">
+                                    {stat.isRating && (
+                                        <div className="flex gap-1 mb-1.5">
                                             {[1, 2, 3, 4, 5].map((star) => (
                                                 <StarIconSolid
                                                     key={star}
-                                                    className={`w-4 h-4 lg:w-5 lg:h-5 ${star <= Math.round(Number(stat.val)) ? 'text-brand-gold' : 'text-black/10 dark:text-white/10'}`}
+                                                    className={`w-2.5 h-2.5 lg:w-5 lg:h-5 ${star <= Math.round(Number(stat.val)) ? 'text-brand-gold' : 'text-black/10 dark:text-white/10'}`}
                                                 />
                                             ))}
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-4xl lg:text-6xl font-black text-brand-black dark:text-brand-white mb-3 tracking-tighter italic">{stat.val}</div>
-                                )}
-                                <div className="flex flex-row items-baseline gap-2 flex-wrap sm:flex-col sm:items-start sm:gap-1">
-                                    <div className="text-[11px] font-black uppercase tracking-[0.3em] text-brand-black/80 dark:text-brand-white/80">{stat.label}</div>
-                                    <div className="sm:hidden text-brand-gold/30 font-black">•</div>
-                                    <p className="text-[9px] lg:text-[10px] font-bold text-[#7C9A8E] uppercase tracking-[0.1em] leading-relaxed italic">{stat.desc}</p>
+                                    )}
+                                    <div className="text-[9px] lg:text-[11px] font-black uppercase tracking-[0.2em] lg:tracking-[0.3em] text-brand-black/80 dark:text-brand-white/80 mb-1 lg:mb-2">{stat.label}</div>
+                                    <p className="text-[8px] lg:text-[10px] font-bold text-[#7C9A8E] uppercase tracking-[0.1em] leading-relaxed italic max-w-[160px] lg:max-w-none">{stat.desc}</p>
                                 </div>
+
                                 <div className="absolute bottom-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-brand-gold/20 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700"></div>
                             </div>
                         ))}
@@ -255,8 +258,8 @@ Terima kasih!`;
             {/* Services Showcase - Dynamic Categories from DB */}
             <section className="py-20 lg:py-32 px-6 bg-brand-white dark:bg-brand-black relative">
                 <div className="max-w-7xl mx-auto">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-20 items-end mb-16 lg:mb-24">
-                        <div className="lg:col-span-8 space-y-4 lg:space-y-6">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-10 lg:gap-20 mb-16 lg:mb-24">
+                        <div className="lg:max-w-2xl space-y-4 lg:space-y-6">
                             <div className="flex items-center gap-4">
                                 <div className="h-px w-10 lg:w-12 bg-brand-red"></div>
                                 <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.4em] text-brand-red">
@@ -278,7 +281,7 @@ Terima kasih!`;
                                 )}
                             </h2>
                         </div>
-                        <div className="lg:col-span-4 pb-0 lg:pb-4 border-l-2 lg:border-l border-brand-gold/30 pl-6 lg:pl-8">
+                        <div className="lg:max-w-md pb-0 lg:pb-4 border-l-2 lg:border-l border-brand-gold/30 pl-6 lg:pl-8">
                             <p className="text-[#7C9A8E] text-xs lg:text-sm font-bold uppercase tracking-widest leading-relaxed transition-colors">
                                 {homePage?.services_description || 'Setiap momen memiliki jiwanya sendiri. Kami hadir untuk menangkap esensi terdalam melalui lensa profesional kami.'}
                             </p>
@@ -288,11 +291,11 @@ Terima kasih!`;
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
                         {categories.length > 0 ? (
                             categories.map((cat, i) => (
-                                <Link key={cat.id} href="/price-list" className="group block relative aspect-4/5 rounded-4xl overflow-hidden bg-black/5 dark:bg-white/5 shadow-xl transition-all duration-1000">
+                                <Link key={cat.id} href="/price-list" className="group block relative aspect-4/5 rounded-4xl overflow-hidden bg-black/5 dark:bg-white/5 shadow-xl transition-all duration-1000 border border-transparent hover:border-brand-gold/30">
                                     <img
                                         src={cat.background_image ? `/storage/${cat.background_image}` : "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&q=80"}
                                         alt={cat.name}
-                                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000 opacity-80 group-hover:opacity-100"
+                                        className="w-full h-full object-cover transition-all duration-1000 opacity-90 group-hover:opacity-100 group-hover:scale-110"
                                     />
                                     <div className="absolute inset-0 bg-linear-to-t from-brand-black/90 via-transparent to-transparent p-8 lg:p-10 flex flex-col justify-end">
                                         <div className="translate-y-4 group-hover:translate-y-0 transition-transform duration-700">
@@ -313,13 +316,13 @@ Terima kasih!`;
                                 { title: 'Personal Brand', slug: 'karakter-unik', img: 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&q=80' },
                                 { title: 'Artistic Space', slug: 'visual-bisnis', img: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?auto=format&fit=crop&q=80' },
                             ].map((serv, i) => (
-                                <Link key={i} href="/price-list" className="group block relative aspect-4/5 rounded-4xl overflow-hidden bg-black/5 dark:bg-white/5 shadow-xl transition-all duration-1000">
-                                    <img src={serv.img} alt={serv.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000 opacity-80 group-hover:opacity-100" />
+                                <Link key={i} href="/price-list" className="group block relative aspect-4/5 rounded-4xl overflow-hidden bg-black/5 dark:bg-white/5 shadow-xl transition-all duration-1000 border border-transparent hover:border-brand-gold/30">
+                                    <img src={serv.img} alt={serv.title} className="w-full h-full object-cover transition-all duration-1000 opacity-90 group-hover:opacity-100 group-hover:scale-110" />
                                     <div className="absolute inset-0 bg-linear-to-t from-brand-black/90 via-transparent to-transparent p-8 lg:p-10 flex flex-col justify-end">
                                         <div className="translate-y-4 group-hover:translate-y-0 transition-transform duration-700">
                                             <SparklesIcon className="w-6 h-6 lg:w-8 lg:h-8 text-brand-gold mb-3 lg:mb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-700 delay-100" />
                                             <h3 className="text-xl lg:text-2xl font-black text-brand-white uppercase mb-1.5 group-hover:text-brand-gold transition-colors tracking-tight">{serv.title}</h3>
-                                            <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em]">{serv.slug}</p>
+                                            <p className="text-[9px] font-black text-[#7C9A8E] uppercase tracking-[0.3em]">{serv.slug}</p>
                                         </div>
                                     </div>
                                 </Link>
@@ -348,7 +351,7 @@ Terima kasih!`;
                             <div key={gallery.id} className="min-w-[300px] md:min-w-[450px] aspect-3/4 rounded-4xl overflow-hidden relative group shadow-2xl">
                                 <img
                                     src={`/storage/${gallery.image_path}`}
-                                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000 opacity-80 group-hover:opacity-100"
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-all duration-1000 opacity-90 group-hover:opacity-100"
                                     alt={gallery.title || `Work ${i + 1}`}
                                     onError={(e) => {
                                         e.target.src = 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80';
@@ -366,7 +369,7 @@ Terima kasih!`;
                             <div key={`dup-${gallery.id}`} className="min-w-[300px] md:min-w-[450px] aspect-3/4 rounded-4xl overflow-hidden relative group shadow-2xl">
                                 <img
                                     src={`/storage/${gallery.image_path}`}
-                                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000 opacity-80 group-hover:opacity-100"
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-all duration-1000 opacity-90 group-hover:opacity-100"
                                     alt={gallery.title || `Work duplicate ${i + 1}`}
                                     onError={(e) => {
                                         e.target.src = 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80';
@@ -386,7 +389,7 @@ Terima kasih!`;
                             'https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&q=80',
                         ].map((img, i) => (
                             <div key={i} className="min-w-[300px] md:min-w-[450px] aspect-3/4 rounded-4xl overflow-hidden relative group shadow-2xl">
-                                <img src={img} className="w-full h-full object-cover grayscale transition-all duration-1000 group-hover:grayscale-0 group-hover:scale-110" alt="Work Preview" />
+                                <img src={img} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-1000 opacity-90 group-hover:opacity-100" alt="Work Preview" />
                                 <div className="absolute inset-x-0 bottom-0 p-8 bg-linear-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                                     <span className="text-brand-gold text-[9px] font-black uppercase tracking-[0.4em] mb-2 block">Sesi Premium</span>
                                     <h4 className="text-white text-xl font-black uppercase tracking-tight">Arsip Studio Vol. {i + 1}</h4>
@@ -399,7 +402,7 @@ Terima kasih!`;
                             'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80',
                         ].map((img, i) => (
                             <div key={`dup-${i}`} className="min-w-[300px] md:min-w-[450px] aspect-3/4 rounded-4xl overflow-hidden relative group shadow-2xl">
-                                <img src={img} className="w-full h-full object-cover grayscale transition-all duration-1000 group-hover:grayscale-0 group-hover:scale-110" alt="Work Preview duplicate" />
+                                <img src={img} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-1000 opacity-90 group-hover:opacity-100" alt="Work Preview duplicate" />
                             </div>
                         ))}
                     </div>
@@ -619,14 +622,24 @@ Terima kasih!`;
                     100% { transform: translateX(-50%); }
                 }
                 .animate-marquee {
-                    animation: marquee 20s linear infinite;
+                    animation: marquee 15s linear infinite;
+                }
+                @media (max-width: 768px) {
+                    .animate-marquee {
+                        animation-duration: 7s;
+                    }
                 }
                 @keyframes marquee-fast {
                     0% { transform: translateX(0); }
                     100% { transform: translateX(-50%); }
                 }
                 .animate-marquee-fast {
-                    animation: marquee-fast 20s linear infinite;
+                    animation: marquee-fast 15s linear infinite;
+                }
+                @media (max-width: 768px) {
+                    .animate-marquee-fast {
+                        animation-duration: 7s;
+                    }
                 }
                 .hover\\:pause:hover {
                     animation-play-state: paused;
