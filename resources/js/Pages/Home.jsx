@@ -126,7 +126,7 @@ Terima kasih!`;
                         )}
                     </h1>
 
-                    <p className="text-[#7C9A8E] text-[10px] sm:text-xs lg:text-base max-w-2xl mx-auto mb-10 lg:mb-12 font-bold uppercase tracking-[0.2em] leading-relaxed animate-fade-in delay-200">
+                    <p className="text-[#7C9A8E] text-[10px] sm:text-xs lg:text-base max-w-2xl mx-auto mb-10 lg:mb-12 font-bold uppercase tracking-[0.2em] leading-relaxed animate-fade-in delay-200 drop-shadow-[0_0_15px_rgba(255,255,255,1)]">
                         {homePage?.hero_description || 'Mari abadikan setiap penggalan cerita Anda dengan sentuhan estetik yang tidak lekang oleh waktu.'}
                         {!homePage?.hero_description && (
                             <>
