@@ -60,6 +60,15 @@ export default function Index({ homePage, galleries, journeySteps }) {
         contact_button_text: homePage?.contact_button_text || 'Kirim Pesan Sekarang',
         admin_whatsapp: homePage?.admin_whatsapp || '6281230487469',
         hero_image: null,
+        stat1_value: homePage?.stat1_value || '2+',
+        stat1_label: homePage?.stat1_label || 'Total Booking',
+        stat1_desc: homePage?.stat1_desc || 'Momen berharga yang telah kami abadikan.',
+        stat2_value: homePage?.stat2_value || '1+',
+        stat2_label: homePage?.stat2_label || 'Pilihan Paket',
+        stat2_desc: homePage?.stat2_desc || 'Pilihan paket menarik yang kami sediakan.',
+        stat3_value: homePage?.stat3_value || '5',
+        stat3_label: homePage?.stat3_label || 'Rating Klien',
+        stat3_desc: homePage?.stat3_desc || 'Hasil akhir yang memuaskan dari para klien.',
     });
 
     // Gallery form state
@@ -294,6 +303,15 @@ export default function Index({ homePage, galleries, journeySteps }) {
             formData.append('hero_subtitle', data.hero_subtitle);
             formData.append('hero_description', data.hero_description);
             formData.append('running_text', runningTextItems.join('|'));
+            formData.append('stat1_value', data.stat1_value);
+            formData.append('stat1_label', data.stat1_label);
+            formData.append('stat1_desc', data.stat1_desc);
+            formData.append('stat2_value', data.stat2_value);
+            formData.append('stat2_label', data.stat2_label);
+            formData.append('stat2_desc', data.stat2_desc);
+            formData.append('stat3_value', data.stat3_value);
+            formData.append('stat3_label', data.stat3_label);
+            formData.append('stat3_desc', data.stat3_desc);
             if (data.hero_image instanceof File) {
                 formData.append('hero_image', data.hero_image);
             }

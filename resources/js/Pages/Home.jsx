@@ -94,28 +94,39 @@ Terima kasih!`;
                         <span className="text-[8px] lg:text-[9px] font-black text-brand-black/60 dark:text-brand-white/60 uppercase tracking-[0.3em]">Mengabadikan Momen Berharga</span>
                     </div>
 
-                    <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-[100px] font-black text-brand-black dark:text-brand-white mb-6 lg:mb-8 tracking-[-0.05em] uppercase leading-[0.9] animate-fade-in-up">
+                    <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-[100px] font-black text-brand-black dark:text-brand-white mb-6 lg:mb-8 tracking-[-0.05em] uppercase leading-[0.9] animate-fade-in-up whitespace-pre-line">
                         {homePage?.hero_title ? (
                             <>
-                                {homePage.hero_title.split(' ').map((word, idx) => (
-                                    idx === homePage.hero_title.split(' ').length - 1 ? (
-                                        <span key={idx} className="text-brand-red">{word}</span>
-                                    ) : (
-                                        <span key={idx}>{word} </span>
-                                    )
-                                ))}
+                                {homePage.hero_title.includes('\n') ? (
+                                    homePage.hero_title.split('\n').map((line, lIdx) => (
+                                        <React.Fragment key={lIdx}>
+                                            <span className={lIdx > 0 ? 'text-brand-gold' : ''}>
+                                                {line}
+                                            </span>
+                                            {lIdx < homePage.hero_title.split('\n').length - 1 && <br />}
+                                        </React.Fragment>
+                                    ))
+                                ) : (
+                                    homePage.hero_title.split(' ').map((word, idx) => (
+                                        idx === homePage.hero_title.split(' ').length - 1 ? (
+                                            <span key={idx} className="text-brand-gold">{word}</span>
+                                        ) : (
+                                            <span key={idx}>{word} </span>
+                                        )
+                                    ))
+                                )}
                                 <br />
                                 <span className="italic font-light text-brand-gold lowercase tracking-tight font-serif">{homePage.hero_subtitle}</span>
                             </>
                         ) : (
                             <>
-                                MELAMPAUI <span className="text-brand-red">MOMEN.</span> <br />
+                                MELAMPAUI <span className="text-brand-gold">MOMEN.</span> <br />
                                 <span className="italic font-light text-brand-gold lowercase tracking-tight font-serif">keanggunan</span> ARTISTIK
                             </>
                         )}
                     </h1>
 
-                    <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] sm:text-xs lg:text-base max-w-2xl mx-auto mb-10 lg:mb-12 font-bold uppercase tracking-[0.2em] leading-relaxed animate-fade-in delay-200">
+                    <p className="text-[#7C9A8E] text-[10px] sm:text-xs lg:text-base max-w-2xl mx-auto mb-10 lg:mb-12 font-bold uppercase tracking-[0.2em] leading-relaxed animate-fade-in delay-200">
                         {homePage?.hero_description || 'Mari abadikan setiap penggalan cerita Anda dengan sentuhan estetik yang tidak lekang oleh waktu.'}
                         {!homePage?.hero_description && (
                             <>
@@ -146,12 +157,20 @@ Terima kasih!`;
                             <span className="font-black uppercase tracking-[0.2em] text-[8px] lg:text-[10px] group-hover:text-brand-gold transition-colors underline decoration-brand-gold/30 underline-offset-8">{homePage?.about_button_text || 'Mengenal Kami'}</span>
                         </Link>
                     </div>
+
+                    <div className="mt-8 lg:mt-12 flex items-center justify-center gap-4 animate-fade-in delay-500 opacity-40">
+                        <div className="h-px w-8 bg-brand-gold/30"></div>
+                        <p className="text-[7px] lg:text-[9px] font-black uppercase tracking-[0.4em] text-brand-black dark:text-brand-white">
+                            Slot Terbatas • Booking Sekarang • Hasil Premium
+                        </p>
+                        <div className="h-px w-8 bg-brand-gold/30"></div>
+                    </div>
                 </div>
 
                 {/* Floating Navigation/Status */}
                 <div className="absolute bottom-8 lg:bottom-12 inset-x-0 px-6 lg:px-10 flex justify-between items-end select-none">
-                    <div className="hidden lg:flex items-center gap-8 -rotate-90 origin-left translate-y-[-50%] opacity-20 dark:opacity-40 whitespace-nowrap">
-                        <span className="text-[9px] font-black uppercase tracking-[0.5em] text-brand-black dark:text-brand-white">EST 2019 — COLREG 2024</span>
+                    <div className="hidden lg:flex items-center gap-8 -rotate-90 origin-left translate-y-[-50%] opacity-40 dark:opacity-60 whitespace-nowrap">
+                        <span className="text-[9px] font-black uppercase tracking-[0.5em] text-[#7C9A8E]">EST 2019 — COLREG 2024</span>
                         <div className="h-px w-16 bg-brand-gold"></div>
                     </div>
 
@@ -162,7 +181,7 @@ Terima kasih!`;
                         <span className="text-[7px] lg:text-[8px] font-black uppercase tracking-[0.3em] text-brand-gold group-hover:translate-y-1 transition-transform">Eksplorasi</span>
                     </div>
 
-                    <div className="hidden lg:flex flex-col gap-4 text-brand-black dark:text-brand-white opacity-20 dark:opacity-40">
+                    <div className="hidden lg:flex flex-col gap-4 text-[#7C9A8E] opacity-40 dark:opacity-60">
                         <div className="text-[9px] font-black text-right tracking-[0.2em] hover:opacity-100 transition-opacity cursor-default">
                             AFSTUDIO STUDIO <br />
                             JEMBER — JAWA TIMUR
@@ -172,7 +191,7 @@ Terima kasih!`;
             </section>
 
             {/* Scrolling Banner */}
-            <div className="py-6 bg-brand-black dark:bg-white/5 overflow-hidden border-y border-white/5 relative z-20">
+            <div className="py-6 bg-white overflow-hidden border-y border-black/5 relative z-20">
                 <div className="flex whitespace-nowrap animate-marquee">
                     {[1, 2, 3, 4].map((iteration) => (
                         <div key={iteration} className="flex items-center gap-12 px-6">
@@ -181,10 +200,10 @@ Terima kasih!`;
                                 : ['Visi Artistik', 'Jiwa Sinematik', 'Bingkai Abadi']
                             ).map((text, idx) => (
                                 <React.Fragment key={idx}>
-                                    <span className="text-white/20 dark:text-white/10 text-2xl lg:text-4xl font-black uppercase tracking-[0.3em] italic">
+                                    <span className="text-brand-gold text-2xl lg:text-4xl font-black uppercase tracking-[0.3em] italic">
                                         {text}
                                     </span>
-                                    <div className={`w-2 h-2 rounded-full ${idx % 2 === 0 ? 'bg-brand-gold' : 'bg-brand-red'}`}></div>
+                                    <div className={`w-2 h-2 rounded-full ${idx % 2 === 0 ? 'bg-brand-gold/20' : 'bg-brand-red'}`}></div>
                                 </React.Fragment>
                             ))}
                         </div>
@@ -197,30 +216,36 @@ Terima kasih!`;
                 <div className="max-w-7xl mx-auto px-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
                         {[
-                            { label: 'Total Booking', val: `${stats?.booking_count || 0}+`, icon: CameraIcon },
-                            { label: 'Pilihan Paket', val: `${stats?.package_count || 0}+`, icon: UserGroupIcon },
-                            { label: 'Rating Klien', val: stats?.rating || 5, icon: TrophyIcon, isRating: true },
+                            { label: homePage?.stat1_label || 'Total Booking', val: homePage?.stat1_value || '2+', icon: CameraIcon, desc: homePage?.stat1_desc || 'Momen berharga yang telah kami abadikan.' },
+                            { label: homePage?.stat2_label || 'Pilihan Paket', val: homePage?.stat2_value || '1+', icon: UserGroupIcon, desc: homePage?.stat2_desc || 'Pilihan paket menarik yang kami sediakan.' },
+                            { label: homePage?.stat3_label || 'Rating Klien', val: homePage?.stat3_value || '5', icon: TrophyIcon, isRating: true, desc: homePage?.stat3_desc || 'Hasil akhir yang memuaskan dari para klien.' },
                         ].map((stat, i) => (
-                            <div key={i} className="group p-8 rounded-4xl bg-black/2 dark:bg-white/2 border border-black/5 dark:border-white/5 hover:border-brand-gold/30 transition-all duration-700">
-                                <stat.icon className="w-6 h-6 text-brand-red mb-6 group-hover:scale-110 transition-transform" />
+                            <div key={i} className="group p-10 rounded-[2.5rem] bg-white dark:bg-white/[0.03] border border-black/5 dark:border-white/10 shadow-2xl shadow-black/[0.02] dark:shadow-none hover:border-brand-gold/50 transition-all duration-700 hover:-translate-y-2 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-brand-gold/5 blur-3xl -translate-y-16 translate-x-16 group-hover:bg-brand-gold/10 transition-colors"></div>
+                                <stat.icon className="w-8 h-8 text-[#7C9A8E] mb-8 group-hover:scale-110 group-hover:text-brand-gold transition-all duration-500" />
                                 {stat.isRating ? (
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className="text-3xl lg:text-5xl font-black text-brand-black dark:text-brand-white tracking-tighter italic">
+                                    <div className="flex items-center gap-4 mb-3">
+                                        <div className="text-4xl lg:text-6xl font-black text-brand-black dark:text-brand-white tracking-tighter italic">
                                             {stat.val}
                                         </div>
-                                        <div className="flex gap-1">
+                                        <div className="flex gap-1.5">
                                             {[1, 2, 3, 4, 5].map((star) => (
                                                 <StarIconSolid
                                                     key={star}
-                                                    className={`w-3 h-3 lg:w-4 lg:h-4 ${star <= Math.round(Number(stat.val)) ? 'text-brand-gold' : 'text-black/10 dark:text-white/10'}`}
+                                                    className={`w-4 h-4 lg:w-5 lg:h-5 ${star <= Math.round(Number(stat.val)) ? 'text-brand-gold' : 'text-black/10 dark:text-white/10'}`}
                                                 />
                                             ))}
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="text-3xl lg:text-5xl font-black text-brand-black dark:text-brand-white mb-2 tracking-tighter italic">{stat.val}</div>
+                                    <div className="text-4xl lg:text-6xl font-black text-brand-black dark:text-brand-white mb-3 tracking-tighter italic">{stat.val}</div>
                                 )}
-                                <div className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.3em] text-brand-black/40 dark:text-brand-white/40">{stat.label}</div>
+                                <div className="flex flex-row items-baseline gap-2 flex-wrap sm:flex-col sm:items-start sm:gap-1">
+                                    <div className="text-[11px] font-black uppercase tracking-[0.3em] text-brand-black/80 dark:text-brand-white/80">{stat.label}</div>
+                                    <div className="sm:hidden text-brand-gold/30 font-black">•</div>
+                                    <p className="text-[9px] lg:text-[10px] font-bold text-[#7C9A8E] uppercase tracking-[0.1em] leading-relaxed italic">{stat.desc}</p>
+                                </div>
+                                <div className="absolute bottom-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-brand-gold/20 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700"></div>
                             </div>
                         ))}
                     </div>
@@ -254,7 +279,7 @@ Terima kasih!`;
                             </h2>
                         </div>
                         <div className="lg:col-span-4 pb-0 lg:pb-4 border-l-2 lg:border-l border-brand-gold/30 pl-6 lg:pl-8">
-                            <p className="text-brand-black/40 dark:text-brand-white/40 text-xs lg:text-sm font-bold uppercase tracking-widest leading-relaxed transition-colors">
+                            <p className="text-[#7C9A8E] text-xs lg:text-sm font-bold uppercase tracking-widest leading-relaxed transition-colors">
                                 {homePage?.services_description || 'Setiap momen memiliki jiwanya sendiri. Kami hadir untuk menangkap esensi terdalam melalui lensa profesional kami.'}
                             </p>
                         </div>
@@ -401,7 +426,7 @@ Terima kasih!`;
                                         <span className="text-2xl font-black text-brand-gold italic">{step.step_number}</span>
                                     </div>
                                     <h3 className="text-2xl font-black text-white uppercase mb-4 tracking-tight group-hover:text-brand-gold transition-colors">{step.title}</h3>
-                                    <p className="text-white/40 text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.2em] leading-relaxed max-w-xs mx-auto lg:mx-0">{step.description}</p>
+                                    <p className="text-[#7C9A8E] text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.2em] leading-relaxed max-w-xs mx-auto lg:mx-0">{step.description}</p>
                                 </div>
                             ))
                         ) : (
@@ -415,7 +440,7 @@ Terima kasih!`;
                                         <span className="text-2xl font-black text-brand-gold italic">{item.step_number}</span>
                                     </div>
                                     <h3 className="text-2xl font-black text-white uppercase mb-4 tracking-tight group-hover:text-brand-gold transition-colors">{item.title}</h3>
-                                    <p className="text-white/40 text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.2em] leading-relaxed max-w-xs mx-auto lg:mx-0">{item.description}</p>
+                                    <p className="text-[#7C9A8E] text-[11px] lg:text-[13px] font-bold uppercase tracking-[0.2em] leading-relaxed max-w-xs mx-auto lg:mx-0">{item.description}</p>
                                 </div>
                             ))
                         )}
@@ -434,7 +459,7 @@ Terima kasih!`;
                                 <h2 className="text-4xl lg:text-7xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter leading-[0.9] italic">
                                     {homePage?.contact_title || 'HADIRKAN'} <br /><span className="text-brand-gold">{homePage?.contact_title?.includes('VISI') ? 'VISI ANDA.' : 'ANDA.'}</span>
                                 </h2>
-                                <p className="text-brand-black/50 dark:text-brand-white/40 text-sm font-bold uppercase tracking-widest leading-relaxed max-w-md">
+                                <p className="text-[#7C9A8E] text-sm font-bold uppercase tracking-widest leading-relaxed max-w-md">
                                     {homePage?.contact_description || 'Punya pertanyaan atau ide gila untuk sesi Anda? Kirimkan pesan, mari kita diskusikan mahakarya selanjutnya.'}
                                 </p>
                             </div>
@@ -443,12 +468,12 @@ Terima kasih!`;
                                 <div className="space-y-2">
                                     <div className="text-[10px] font-black text-brand-gold uppercase tracking-widest">{homePage?.operation_title || 'Waktu Operasional'}</div>
                                     <div className="text-sm font-bold text-brand-black dark:text-brand-white uppercase">{homePage?.operation_days || 'Senin — Minggu'}</div>
-                                    <div className="text-[10px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-widest">{homePage?.operation_hours || '09:00 — 21:00 WIB'}</div>
+                                    <div className="text-[10px] font-black text-[#7C9A8E] uppercase tracking-widest">{homePage?.operation_hours || '09:00 — 21:00 WIB'}</div>
                                 </div>
                                 <div className="space-y-2">
                                     <div className="text-[10px] font-black text-brand-gold uppercase tracking-widest">{homePage?.response_title || 'Respon Cepat'}</div>
                                     <div className="text-sm font-bold text-brand-black dark:text-brand-white uppercase">{homePage?.response_method || 'WhatsApp Priority'}</div>
-                                    <div className="text-[10px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-widest">{homePage?.response_time || 'Rata-rata < 15 Menit'}</div>
+                                    <div className="text-[10px] font-black text-[#7C9A8E] uppercase tracking-widest">{homePage?.response_time || 'Rata-rata < 15 Menit'}</div>
                                 </div>
                             </div>
                         </div>
@@ -485,9 +510,9 @@ Terima kasih!`;
                                         value={data.service_category}
                                         onChange={(e) => setData('service_category', e.target.value)}
                                         className="w-full bg-black/5 dark:bg-white/5 border-none rounded-2xl px-6 py-4 text-brand-black dark:text-brand-white text-sm font-bold focus:ring-2 focus:ring-brand-gold transition-all appearance-none cursor-pointer">
-                                        <option value="">Pilih Kategori...</option>
+                                        <option value="" className="bg-white dark:bg-[#1a1a1a]">Pilih Kategori...</option>
                                         {categories.map(cat => (
-                                            <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                            <option key={cat.id} value={cat.name} className="bg-white dark:bg-[#1a1a1a]">{cat.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -528,7 +553,7 @@ Terima kasih!`;
                         JADILAH BAGIAN <br /> DARI <span className="text-brand-gold italic font-serif normal-case font-light">legasi</span> KAMI.
                     </h2>
 
-                    <p className="text-brand-black/50 dark:text-brand-white/40 text-[10px] sm:text-xs lg:text-sm max-w-xl mx-auto mb-12 lg:mb-16 font-bold uppercase tracking-[0.3em] leading-relaxed transition-colors">
+                    <p className="text-[#7C9A8E] text-[10px] sm:text-xs lg:text-sm max-w-xl mx-auto mb-12 lg:mb-16 font-bold uppercase tracking-[0.3em] leading-relaxed transition-colors">
                         Kami mengundang Anda untuk merasakan pengalaman fotografi yang benar-benar berbeda. Sesi Anda, cerita Anda, karya seni Anda.
                     </p>
 
