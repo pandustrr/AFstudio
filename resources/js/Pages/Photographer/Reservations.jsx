@@ -72,7 +72,7 @@ export default function Reservations({ reservations, allSessions, filters, follo
     const customerGroups = Object.values(groupedReservations);
 
     const handleFilterStatus = (status) => {
-        get(route('photographer.reservations', { status }), {
+        get(`/photographer/reservations?status=${status}`, {
             preserveState: true,
             preserveScroll: true
         });
