@@ -28,14 +28,16 @@ export default function Home({ categories = [], homePage, galleries = [], journe
         e.preventDefault();
 
         // Build WhatsApp message
-        const message = `*Pesan dari AFStudio Website*
+        const message = `*Pesan Baru dari Website*
 
 Nama: ${data.full_name}
-Kontak: ${data.email_whatsapp}
+Kontak (WA/Email): ${data.email_whatsapp}
 Layanan: ${data.service_category || '-'}
 
 Pesan:
-${data.message}`;
+"${data.message}"
+
+Terima kasih!`;
 
         // Encode message for URL
         const encodedMessage = encodeURIComponent(message);

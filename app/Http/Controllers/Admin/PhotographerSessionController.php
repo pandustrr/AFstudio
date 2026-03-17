@@ -183,32 +183,35 @@ class PhotographerSessionController extends Controller
         $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
         $availableDays = range(1, $daysInMonth);
 
-        // Get Monthly Stats for Calendar Indicators if photographer is selected
+        // Get Monthly Stats for Calendar Indicators
+        $currentViewYear = $year ?: Carbon::today()->year;
+        $currentViewMonth = $month ?: Carbon::today()->month;
         $monthlyStats = [];
-        if ($photographerId) {
-            $currentViewYear = $year ?: Carbon::today()->year;
-            $currentViewMonth = $month ?: Carbon::today()->month;
+        $dateMarks = [];
 
-            $monthlyStats = PhotographerSession::where('photographer_id', $photographerId)
-                ->whereYear('date', $currentViewYear)
-                ->whereMonth('date', $currentViewMonth)
-                ->where('status', 'booked')
-                ->whereHas('bookingItem.booking', function ($q) {
-                    $q->where('status', 'confirmed');
-                })
+        $statsQuery = PhotographerSession::whereYear('date', $currentViewYear)
+            ->whereMonth('date', $currentViewMonth)
+            ->where('status', 'booked')
+            ->whereHas('bookingItem.booking', function ($q) {
+                $q->where('status', 'confirmed');
+            });
+
+        if ($photographerId) {
+            $monthlyStats = (clone $statsQuery)->where('photographer_id', $photographerId)
                 ->selectRaw('date, count(*) as count')
                 ->groupBy('date')
                 ->pluck('count', 'date');
-        }
 
-        // Get Monthly Marks
-        $dateMarks = [];
-        if ($photographerId) {
             $dateMarks = PhotographerDateMark::where('photographer_id', $photographerId)
                 ->whereYear('date', $currentViewYear)
                 ->whereMonth('date', $currentViewMonth)
                 ->get()
                 ->keyBy('date');
+        } else {
+            // Global stats for all photographers
+            $monthlyStats = $statsQuery->selectRaw('date, count(*) as count')
+                ->groupBy('date')
+                ->pluck('count', 'date');
         }
 
         return Inertia::render('Admin/Photographers/PhotographerSessions', [

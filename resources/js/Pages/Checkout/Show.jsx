@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
-import { CheckCircleIcon, QrCodeIcon, DocumentIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, QrCodeIcon, DocumentIcon, CheckIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { PhoneIcon } from '@heroicons/react/24/solid';
 
 export default function CheckoutShow({ booking, rooms = [], homePage = {} }) {
@@ -62,19 +62,23 @@ export default function CheckoutShow({ booking, rooms = [], homePage = {} }) {
         itemsMessage += `${index + 1}. ${item.package.name}\n   Tanggal: ${item.scheduled_date}\n   Studio: ${item.room_name || getRoomLabel(item.room_id)}\n   Jadwal: ${scheduleStr}\n`;
     });
 
-    const message = `Halo Admin AF Studio, saya sudah melakukan booking dan pembayaran DP.
+    const message = `Halo Admin! Saya sudah melakukan booking dan pembayaran DP.
 
-No. Booking: *${booking.booking_code}*
+*No. Booking: ${booking.booking_code}*
+
 Nama: ${booking.name}
 Lokasi/Venue: ${booking.location}${booking.venue_name ? ` (${booking.venue_name})` : ''}
 
-Detail Paket:
+*Detail Paket:*
 ${itemsMessage}
 
-Total Biaya: ${formatPrice(booking.total_price)}
-DP yang ditransfer: *${formatPrice(booking.down_payment)}*
+*Rincian Pembayaran:*
+- Total Paket: ${formatPrice(booking.total_price)}
+${booking.discount_amount > 0 ? `- Diskon: -${formatPrice(booking.discount_amount)}${booking.referral_code ? ` (Kode: ${booking.referral_code.code})` : ''}\n` : ''}- Total Biaya: ${formatPrice(booking.total_price - booking.discount_amount)}
+- DP yang ditransfer: *${formatPrice(booking.down_payment)}*
+- Sisa Pelunasan: *${formatPrice((booking.total_price - booking.discount_amount) - booking.down_payment)}*
 
-Mohon konfirmasinya. Terima kasih!`;
+Mohon konfirmasinya ya min. Terima kasih!`;
 
     const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
 
@@ -140,8 +144,15 @@ Mohon konfirmasinya. Terima kasih!`;
                         </div>
 
                         {/* QRIS Payment Code */}
-                        <div className="bg-white p-4 rounded-xl mb-6 mx-auto w-56 h-auto flex items-center justify-center border border-black/10">
+                        <div className="bg-white p-4 rounded-xl mb-6 mx-auto w-64 h-auto flex flex-col items-center justify-center border border-black/10">
                             <img src="/images/qris-afstudio.jpeg" alt="QRIS Payment AF Studio" className="w-full h-auto object-contain rounded-lg" />
+                            <a
+                                href="/images/qris-afstudio.jpeg"
+                                download="QRIS-AFSTUDIO.jpeg"
+                                className="flex items-center justify-center gap-2 w-full mt-4 py-3 bg-brand-gold text-brand-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-brand-gold/20"
+                            >
+                                <ArrowDownTrayIcon className="w-4 h-4" /> Download QRIS
+                            </a>
                         </div>
 
                         {/* Booking Details Summary */}

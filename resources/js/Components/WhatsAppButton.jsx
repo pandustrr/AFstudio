@@ -16,12 +16,13 @@ export default function WhatsAppButton() {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        const text = `Halo AFstudio!
+        const text = `Halo Admin! 
 
 Nama: ${formData.name}
-Pesan: ${formData.message}
+Pesan:
+${formData.message}
 
-Saya ingin tanya-tanya lebih lanjut.`;
+Saya ingin bertanya lebih lanjut mengenai layanan di AFstudio.`;
 
         const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(text)}`;
         window.open(whatsappUrl, '_blank');

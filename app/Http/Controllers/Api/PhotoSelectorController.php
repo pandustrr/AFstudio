@@ -47,7 +47,8 @@ class PhotoSelectorController extends Controller
         if ($booking && $booking->items->isNotEmpty()) {
             $item = $booking->items->first();
             $bookingDetail = [
-                'package_name' => $item->package->name,
+                'booking_code' => $booking->booking_code,
+            'package_name' => $item->package->name,
                 'scheduled_date' => $item->scheduled_date, // Raw string YYYY-MM-DD
                 'start_time' => $item->start_time,
                 'end_time' => $item->end_time,

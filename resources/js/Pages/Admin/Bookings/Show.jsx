@@ -265,7 +265,20 @@ export default function BookingShow({ booking, photographers = [] }) {
                                                             <DocumentIcon className="w-5 h-5" /> Lihat Invoice
                                                         </a>
                                                         <a
-                                                            href={`https://wa.me/${booking.phone.startsWith('0') ? '62' + booking.phone.substring(1) : booking.phone}?text=${encodeURIComponent(`Halo ${booking.name}! ${String.fromCodePoint(0x1F44B)} Terima kasih sudah booking di AFstudio. Booking kamu sudah kami konfirmasi, nih! ${String.fromCodePoint(0x1F60A)}\n\nSilakan klik link di bawah untuk melihat rincian invoice kamu:\n${window.location.origin}/pdf/booking/${booking.booking_code}\n\nSampai jumpa di sesi nanti! Jika ada pertanyaan, langsung kabari kami, ya. ${String.fromCodePoint(0x2728)}`)}`}
+                                                            href={`https://wa.me/${booking.phone.startsWith('0') ? '62' + booking.phone.substring(1) : booking.phone}?text=${encodeURIComponent(`Halo ${booking.name}! 
+
+Terima kasih sudah booking. Booking kamu sudah kami konfirmasi, nih! 
+
+Silakan klik link di bawah untuk melihat rincian invoice kamu:
+
+${window.location.origin}/pdf/booking/${booking.booking_code}
+
+(Catatan: Jika link di atas belum bisa diklik, mohon balas pesan ini terlebih dahulu ya agar link-nya aktif)
+
+${booking.items.some(i => i.photographer)
+                                                                    ? `Info Photographer(s):\n${[...new Set(booking.items.filter(i => i.photographer).map(i => `- ${i.photographer.name}: ${i.photographer.phone}`))].join('\n')}\n\n`
+                                                                    : ''
+                                                                }Sampai jumpa di sesi nanti! Jika ada pertanyaan, langsung kabari kami, ya.`)}`}
                                                             target="_blank"
                                                             className="flex items-center gap-2 px-8 py-4 bg-green-500 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-green-500/20"
                                                         >

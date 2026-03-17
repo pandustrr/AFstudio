@@ -676,8 +676,20 @@ export default function SelectorPhoto() {
                                                                 <h4 className="text-[10px] font-black text-brand-red uppercase tracking-widest mb-1">Detail Jadwal</h4>
                                                                 <p className="text-xs font-black text-brand-black dark:text-brand-white uppercase truncate">{sessionData.booking.package_name}</p>
                                                             </div>
-                                                            <div className="bg-brand-gold/10 px-2 py-1 rounded-md">
-                                                                <p className="text-[9px] font-black text-brand-gold uppercase tracking-tighter">Room {sessionData.booking.room_id}</p>
+                                                            <div className="flex items-center gap-2">
+                                                                {sessionData.booking.booking_code && (
+                                                                    <a
+                                                                        href={`/pdf/booking/${sessionData.booking.booking_code}`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="px-2 py-1 bg-brand-red text-white text-[8px] font-black uppercase tracking-widest rounded-md hover:brightness-110 transition-all"
+                                                                    >
+                                                                        Lihat Invoice
+                                                                    </a>
+                                                                )}
+                                                                <div className="bg-brand-gold/10 px-2 py-1 rounded-md">
+                                                                    <p className="text-[9px] font-black text-brand-gold uppercase tracking-tighter">Room {sessionData.booking.room_id}</p>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                         <div className="grid grid-cols-2 gap-4">

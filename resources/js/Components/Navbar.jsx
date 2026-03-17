@@ -143,7 +143,7 @@ export default function Navbar() {
                             className={`p-2 rounded-lg transition-all duration-300 ${!scrolled && (url === '/about' || url === '/review')
                                 ? 'text-white hover:bg-white/10 active:scale-90'
                                 : 'text-brand-black/70 dark:text-brand-white/70 hover:bg-black/5 dark:hover:bg-white/5'
-                            } hover:text-brand-gold`}
+                                } hover:text-brand-gold`}
                             title="Cart"
                         >
                             <ShoppingCartIcon className="w-5 h-5" />

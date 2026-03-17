@@ -48,6 +48,14 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         return `${hours}h ${minutes}m`;
     };
 
+    const getTimeWithOffset = (baseTime, offset) => {
+        if (!baseTime) return '';
+        const [h, m] = baseTime.split(':').map(Number);
+        const d = new Date();
+        d.setHours(h, m + (offset || 0));
+        return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }).replace(':', '.');
+    };
+
     const getSlotDisplay = (startTime) => {
         if (!packageData?.duration) return startTime;
 
@@ -557,14 +565,9 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                         ? selectedSplitTimes.includes(item.time)
                                                                         : startTime === item.time;
 
-                                                                    // End time calculation for the 30min slot
-                                                                    const slotEndTime = (() => {
-                                                                        const [h, m] = item.time.split(':').map(Number);
-                                                                        const totalMin = h * 60 + m + 30;
-                                                                        const endH = Math.floor(totalMin / 60);
-                                                                        const endM = totalMin % 60;
-                                                                        return `${String(endH).padStart(2, '0')}.${String(endM).padStart(2, '0')}`;
-                                                                    })();
+                                                                    // Time calculation for the 30min slot with offset
+                                                                    const startTimeWithOffset = getTimeWithOffset(item.time, item.cumulative_offset);
+                                                                    const slotEndTime = getTimeWithOffset(item.time, (item.cumulative_offset || 0) + 30);
 
                                                                     const isPartOfConsecutive = (() => {
                                                                         if (isSplitActive || !startTime) return false;
@@ -637,7 +640,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                             <h3 className={`text-[11px] font-black tracking-tighter uppercase mb-0.5
                                                                                 ${isHighlighted ? 'text-brand-gold' : 'text-brand-black dark:text-brand-white'}
                                                                             `}>
-                                                                                {item.time.replace(':', '.')}-{slotEndTime}
+                                                                                {startTimeWithOffset}-{slotEndTime}
                                                                             </h3>
 
                                                                             <div className={`text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md border mt-1
@@ -680,13 +683,14 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                             <div className="grid grid-cols-1 gap-2">
                                                                 {packageData?.allow_split_session ? (
                                                                     selectedSplitTimes.sort().map((t, i) => {
-                                                                        const [h, m] = t.split(':').map(Number);
-                                                                        const totalMin = h * 60 + m + 30;
-                                                                        const endT = `${String(Math.floor(totalMin / 60)).padStart(2, '0')}.${String(totalMin % 60).padStart(2, '0')}`;
+                                                                        const gridItem = sessionGrid.find(s => s.time === t);
+                                                                        const offset = gridItem?.cumulative_offset || 0;
+                                                                        const startTimeWithOffset = getTimeWithOffset(t, offset);
+                                                                        const endTimeWithOffset = getTimeWithOffset(t, offset + 30);
                                                                         return (
                                                                             <div key={i} className="flex items-center justify-between text-xs font-bold text-brand-black dark:text-brand-white bg-white/50 dark:bg-black/20 px-3 py-2 rounded-xl">
                                                                                 <span>Sesi {i + 1}</span>
-                                                                                <span className="font-black italic">{t.replace(':', '.')}-{endT}</span>
+                                                                                <span className="font-black italic">{startTimeWithOffset}-{endTimeWithOffset}</span>
                                                                             </div>
                                                                         );
                                                                     })
@@ -694,13 +698,17 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                     Array.from({ length: maxSessions }).map((_, i) => {
                                                                         const [h, m] = startTime.split(':').map(Number);
                                                                         const startMin = h * 60 + m + (i * 30);
-                                                                        const endMin = startMin + 30;
-                                                                        const startT = `${String(Math.floor(startMin / 60)).padStart(2, '0')}.${String(startMin % 60).padStart(2, '0')}`;
-                                                                        const endT = `${String(Math.floor(endMin / 60)).padStart(2, '0')}.${String(endMin % 60).padStart(2, '0')}`;
+                                                                        const timeStr = `${String(Math.floor(startMin / 60)).padStart(2, '0')}:${String(startMin % 60).padStart(2, '0')}:00`;
+                                                                        const gridItem = sessionGrid.find(s => s.time_full === timeStr);
+                                                                        const offset = gridItem?.cumulative_offset || 0;
+
+                                                                        const startTimeWithOffset = getTimeWithOffset(timeStr.substring(0, 5), offset);
+                                                                        const endTimeWithOffset = getTimeWithOffset(timeStr.substring(0, 5), offset + 30);
+
                                                                         return (
                                                                             <div key={i} className="flex items-center justify-between text-xs font-bold text-brand-black dark:text-brand-white bg-white/50 dark:bg-black/20 px-3 py-2 rounded-xl">
                                                                                 <span>Sesi {i + 1}</span>
-                                                                                <span className="font-black italic">{startT}-{endT}</span>
+                                                                                <span className="font-black italic">{startTimeWithOffset}-{endTimeWithOffset}</span>
                                                                             </div>
                                                                         );
                                                                     })

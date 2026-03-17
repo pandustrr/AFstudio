@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
-import { ShieldCheckIcon, CalendarIcon, MapPinIcon, PhoneIcon, UserIcon, ChatBubbleBottomCenterTextIcon, ClockIcon, HomeIcon, ShoppingCartIcon, TicketIcon, QrCodeIcon, DocumentIcon, CheckIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { ShieldCheckIcon, CalendarIcon, MapPinIcon, PhoneIcon, UserIcon, ChatBubbleBottomCenterTextIcon, ClockIcon, HomeIcon, ShoppingCartIcon, TicketIcon, QrCodeIcon, DocumentIcon, CheckIcon, CheckCircleIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 export default function CheckoutCreate({ carts = [], rooms = [], photographers = [] }) {
     const { auth, settings, homePage } = usePage().props;
@@ -34,7 +34,7 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
     const cartItemIdsFromUrl = urlParams.get('cart_item_ids');
 
     const { data, setData, post, processing, errors } = useForm({
-        name: user.name || localStorage.getItem('afstudio_customer_name') || '',
+        name: '',
         university: '',
         domicile: '',
         phone: '',
@@ -198,19 +198,23 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                         if (item.room_name) itemsMessage += `   Studio: ${item.room_name}\n`;
                     });
 
-                    const message = `Halo Admin AF Studio, saya sudah melakukan booking dan pembayaran DP.
+                    const message = `Halo Admin! Saya sudah melakukan booking dan pembayaran DP.
 
-No. Booking: *${b.booking_code}*
+*No. Booking: ${b.booking_code}*
+
 Nama: ${b.name}
 Lokasi/Venue: ${b.location}${b.venue_name ? ` (${b.venue_name})` : ''}
 
-Detail Paket:
+*Detail Paket:*
 ${itemsMessage}
 
-Total Biaya: ${formatPrice(b.total_price)}
-DP yang ditransfer: *${formatPrice(b.down_payment)}*
+*Rincian Pembayaran:*
+- Total Paket: ${formatPrice(b.total_price)}
+${b.discount_amount > 0 ? `- Diskon: -${formatPrice(b.discount_amount)}${b.referral_code ? ` (Kode: ${b.referral_code.code})` : ''}\n` : ''}- Total Biaya: ${formatPrice(b.total_price - b.discount_amount)}
+- DP yang ditransfer: *${formatPrice(b.down_payment)}*
+- Sisa Pelunasan: *${formatPrice((b.total_price - b.discount_amount) - b.down_payment)}*
 
-Mohon konfirmasinya. Terima kasih!`;
+Mohon konfirmasinya ya min. Terima kasih!`;
 
                     window.location.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
                 }
@@ -581,8 +585,15 @@ Mohon konfirmasinya. Terima kasih!`;
                                         </h2>
                                     </div>
 
-                                    <div className="bg-white p-4 rounded-xl mb-6 mx-auto w-full flex items-center justify-center border border-black/10 shadow-inner">
+                                    <div className="bg-white p-4 rounded-xl mb-6 mx-auto w-full flex flex-col items-center justify-center border border-black/10 shadow-inner">
                                         <img src="/images/qris-afstudio.jpeg" alt="QRIS AF Studio" className="w-full h-auto object-contain rounded-lg shadow-sm" />
+                                        <a
+                                            href="/images/qris-afstudio.jpeg"
+                                            download="QRIS-AFSTUDIO.jpeg"
+                                            className="flex items-center justify-center gap-2 w-full mt-4 py-3 bg-brand-gold text-brand-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-brand-gold/20"
+                                        >
+                                            <ArrowDownTrayIcon className="w-4 h-4" /> Download QRIS
+                                        </a>
                                     </div>
 
                                     <div className="p-4 bg-brand-red/5 rounded-2xl border border-brand-red/20 text-center mb-6">

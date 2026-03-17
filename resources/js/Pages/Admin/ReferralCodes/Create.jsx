@@ -163,14 +163,30 @@ export default function VoucherCodeCreate() {
                             <label className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-brand-black/70 dark:text-brand-white/70">
                                 Max Usage (leave empty for unlimited)
                             </label>
-                            <input
-                                type="number"
-                                min="1"
-                                value={data.max_usage}
-                                onChange={e => setData('max_usage', e.target.value)}
-                                placeholder="e.g., 100"
-                                className="w-full bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white"
-                            />
+                            <div className="flex gap-2">
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={data.max_usage}
+                                    onChange={e => setData('max_usage', e.target.value)}
+                                    placeholder={!data.max_usage ? '∞ Unlimited' : 'e.g., 100'}
+                                    disabled={!data.max_usage}
+                                    className={`flex-1 bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-brand-gold focus:border-brand-gold transition-all text-brand-black dark:text-brand-white
+                                        ${!data.max_usage ? 'opacity-50 cursor-not-allowed bg-black/5 dark:bg-white/5' : ''}
+                                    `}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setData('max_usage', data.max_usage === '' ? '100' : '')}
+                                    className={`px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all border
+                                        ${!data.max_usage
+                                            ? 'bg-brand-gold border-brand-gold text-brand-black shadow-lg shadow-brand-gold/20'
+                                            : 'bg-white dark:bg-white/5 border-black/10 dark:border-white/10 text-brand-black/40 dark:text-brand-white/40 hover:border-brand-gold hover:text-brand-gold'
+                                        }`}
+                                >
+                                    Unlimited
+                                </button>
+                            </div>
                             {errors.max_usage && <p className="text-red-500 text-xs font-bold">{errors.max_usage}</p>}
                         </div>
 
