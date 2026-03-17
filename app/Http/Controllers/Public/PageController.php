@@ -21,8 +21,10 @@ class PageController extends Controller
 
     public function pricelist()
     {
-        $categories = \App\Models\PricelistCategory::with(['subCategories' => function ($query) {
-            $query->with(['category', 'packages']);
+        $categories = \App\Models\PricelistCategory::whereHas('subCategories', function ($query) {
+            $query->where('is_active', true);
+        })->with(['subCategories' => function ($query) {
+            $query->where('is_active', true)->with(['category', 'packages']);
         }])->get();
         $rooms = \App\Models\Room::all();
 
