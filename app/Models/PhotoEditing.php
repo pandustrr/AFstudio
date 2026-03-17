@@ -23,6 +23,8 @@ class PhotoEditing extends Model
 
     protected $casts = [
         'cancelled_photos' => 'array',
+        'is_raw_accessible' => 'boolean',
+        'is_edited_accessible' => 'boolean',
     ];
 
     public function editRequests()
