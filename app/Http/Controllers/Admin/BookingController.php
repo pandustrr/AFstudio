@@ -49,9 +49,10 @@ class BookingController extends Controller
                 $q->where('status', $status);
             });
         } else {
-            // Default: hide cancelled bookings when viewing all
+            // Default: hide cancelled and request_edit bookings when viewing all (or as per project preference)
+            // But let's show request_edit in 'all' if needed.
             $query->whereHas('booking', function ($q) {
-                $q->where('status', '!=', 'cancelled');
+                $q->whereNotIn('status', ['cancelled']);
             });
         }
 
