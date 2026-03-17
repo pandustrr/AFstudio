@@ -31,8 +31,62 @@ export default function ViewModal({ session, onClose }) {
                 </div>
 
 
+                <div className="px-8 mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-4 bg-black/2 dark:bg-white/2 border border-black/5 dark:border-white/5 rounded-2xl">
+                        <h4 className="text-[10px] font-black text-brand-black dark:text-brand-white uppercase tracking-widest mb-2">Folder Mentahan</h4>
+                        <div className="flex flex-col gap-2">
+                            {session.raw_folder_id ? (
+                                <>
+                                    <a
+                                        href={session.raw_folder_id.startsWith('http') ? session.raw_folder_id : `https://drive.google.com/drive/folders/${session.raw_folder_id}`}
+                                        target="_blank"
+                                        className="text-[10px] font-black uppercase text-brand-gold hover:underline truncate"
+                                    >
+                                        Open GDrive Link
+                                    </a>
+                                    {!window.location.pathname.startsWith('/photographer') && (
+                                        <div className="flex items-center gap-2">
+                                            <span className={`w-2 h-2 rounded-full ${session.is_raw_accessible ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
+                                            <span className="text-[9px] font-bold text-brand-black/60 dark:text-brand-white/60 uppercase tracking-widest">
+                                                {session.is_raw_accessible ? 'Akses Dibuka' : 'Akses Dikunci'}
+                                            </span>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <p className="text-[10px] font-bold text-brand-black/20 dark:text-brand-white/20 uppercase tracking-widest">Belum diset</p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="p-4 bg-black/2 dark:bg-white/2 border border-black/5 dark:border-white/5 rounded-2xl">
+                        <h4 className="text-[10px] font-black text-brand-black dark:text-brand-white uppercase tracking-widest mb-2">Folder Hasil/Editing</h4>
+                        <div className="flex flex-col gap-2">
+                            {session.edited_folder_id ? (
+                                <>
+                                    <a
+                                        href={session.edited_folder_id.startsWith('http') ? session.edited_folder_id : `https://drive.google.com/drive/folders/${session.edited_folder_id}`}
+                                        target="_blank"
+                                        className="text-[10px] font-black uppercase text-brand-gold hover:underline truncate"
+                                    >
+                                        Open GDrive Link
+                                    </a>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`w-2 h-2 rounded-full ${session.is_edited_accessible ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
+                                        <span className="text-[9px] font-bold text-brand-black/60 dark:text-brand-white/60 uppercase tracking-widest">
+                                            {session.is_edited_accessible ? 'Akses Dibuka' : 'Akses Dikunci'}
+                                        </span>
+                                    </div>
+                                </>
+                            ) : (
+                                <p className="text-[10px] font-bold text-brand-black/20 dark:text-brand-white/20 uppercase tracking-widest">Belum diset</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
                 {session.extra_editing_quota > 0 && (
-                    <div className="mx-8 mt-6 p-4 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-between gap-4">
+                    <div className="mx-8 mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center shrink-0">
                                 <ChartBarIcon className="w-6 h-6 text-green-500" />

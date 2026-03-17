@@ -19,6 +19,7 @@ export default function Index({ sessions, filters, options }) {
         { id: 'all', label: 'Semua', color: 'bg-black/5' },
         { id: 'pending', label: 'Pending', color: 'bg-yellow-500/10 text-yellow-600' },
         { id: 'processing', label: 'Processing', color: 'bg-blue-500/10 text-blue-600' },
+        { id: 'request_edit', label: 'Req Edit', color: 'bg-purple-500/10 text-purple-600' },
         { id: 'done', label: 'Done', color: 'bg-green-500/10 text-green-600' },
         { id: 'cancelled', label: 'Cancelled', color: 'bg-red-500/10 text-red-600' },
     ];
@@ -181,7 +182,7 @@ export default function Index({ sessions, filters, options }) {
                                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">UID / Customer</th>
                                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Tanggal</th>
                                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Drive Status</th>
-                                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Progress</th>
+                                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Status</th>
                                 <th className="px-8 py-6 text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 text-right">Aksi</th>
                             </tr>
                         </thead>
@@ -215,30 +216,42 @@ export default function Index({ sessions, filters, options }) {
                                     <td className="px-8 py-6">
                                         <div className="flex flex-col space-y-3">
                                             <div className="flex items-center gap-3">
-                                                <span className={`w-2 h-2 rounded-full shrink-0 ${session.raw_folder_id ? 'bg-green-500' : 'bg-black/10 dark:bg-white/10'}`}></span>
+                                                <span className={`w-2 h-2 rounded-full shrink-0 ${session.raw_folder_id ? (session.is_raw_accessible ? 'bg-green-500' : 'bg-yellow-500') : 'bg-black/10 dark:bg-white/10'}`}></span>
                                                 {session.raw_folder_id ? (
-                                                    <a
-                                                        href={session.raw_folder_id.startsWith('http') ? session.raw_folder_id : `https://drive.google.com/drive/folders/${session.raw_folder_id}`}
-                                                        target="_blank"
-                                                        className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white hover:text-brand-gold transition-all"
-                                                    >
-                                                        Mentahan: OPEN LINK
-                                                    </a>
+                                                    <div className="flex flex-col">
+                                                        <a
+                                                            href={session.raw_folder_id.startsWith('http') ? session.raw_folder_id : `https://drive.google.com/drive/folders/${session.raw_folder_id}`}
+                                                            target="_blank"
+                                                            className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white hover:text-brand-gold transition-all"
+                                                        >
+                                                            Mentahan: OPEN LINK
+                                                        </a>
+                                                        {!window.location.pathname.startsWith('/photographer') && (
+                                                            <span className={`text-[8px] font-black uppercase tracking-widest ${session.is_raw_accessible ? 'text-green-500' : 'text-yellow-600'}`}>
+                                                                {session.is_raw_accessible ? '• Akses Dibuka' : '• Akses Dikunci'}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 ) : (
                                                     <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/20 dark:text-brand-white/20">Mentahan: Belum diset</span>
                                                 )}
                                             </div>
                                             {!window.location.pathname.startsWith('/photographer') && (
                                                 <div className="flex items-center gap-3">
-                                                    <span className={`w-2 h-2 rounded-full shrink-0 ${session.edited_folder_id ? 'bg-blue-500' : 'bg-black/10 dark:bg-white/10'}`}></span>
+                                                    <span className={`w-2 h-2 rounded-full shrink-0 ${session.edited_folder_id ? (session.is_edited_accessible ? 'bg-blue-500' : 'bg-yellow-500') : 'bg-black/10 dark:bg-white/10'}`}></span>
                                                     {session.edited_folder_id ? (
-                                                        <a
-                                                            href={session.edited_folder_id.startsWith('http') ? session.edited_folder_id : `https://drive.google.com/drive/folders/${session.edited_folder_id}`}
-                                                            target="_blank"
-                                                            className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white hover:text-brand-gold transition-all"
-                                                        >
-                                                            Editing: OPEN LINK
-                                                        </a>
+                                                        <div className="flex flex-col">
+                                                            <a
+                                                                href={session.edited_folder_id.startsWith('http') ? session.edited_folder_id : `https://drive.google.com/drive/folders/${session.edited_folder_id}`}
+                                                                target="_blank"
+                                                                className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white hover:text-brand-gold transition-all"
+                                                            >
+                                                                Editing: OPEN LINK
+                                                            </a>
+                                                            <span className={`text-[8px] font-black uppercase tracking-widest ${session.is_edited_accessible ? 'text-blue-500' : 'text-yellow-600'}`}>
+                                                                {session.is_edited_accessible ? '• Akses Dibuka' : '• Akses Dikunci'}
+                                                            </span>
+                                                        </div>
                                                     ) : (
                                                         <span className="text-[10px] font-black uppercase tracking-widest text-brand-black/20 dark:text-brand-white/20">Editing: Belum diset</span>
                                                     )}
@@ -247,12 +260,23 @@ export default function Index({ sessions, filters, options }) {
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">
-                                        <span className={`inline-block px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest ${session.status === 'done' ? 'bg-green-100 text-green-700' :
-                                            session.status === 'processing' ? 'bg-brand-gold/20 text-brand-gold' :
-                                                'bg-black/5 dark:bg-white/5 text-brand-black/40 dark:text-brand-white/40'
-                                            }`}>
-                                            {session.status}
-                                        </span>
+                                        {(() => {
+                                            const s = session.booking?.status || session.status;
+                                            const colors = {
+                                                'done': 'bg-green-100 text-green-700',
+                                                'completed': 'bg-green-100 text-green-700',
+                                                'processing': 'bg-brand-gold/20 text-brand-gold',
+                                                'request_edit': 'bg-purple-100 text-purple-700',
+                                                'confirmed': 'bg-blue-100 text-blue-700',
+                                                'pending': 'bg-black/5 dark:bg-white/5 text-brand-black/40 dark:text-brand-white/40'
+                                            };
+                                            const label = s === 'processing' || s === 'request_edit' ? 'Request Edit' : (s === 'completed' || s === 'done' ? 'Done' : s);
+                                            return (
+                                                <span className={`inline-block px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest ${colors[s] || 'bg-gray-100'}`}>
+                                                    {label}
+                                                </span>
+                                            );
+                                        })()}
                                     </td>
                                     <td className="px-8 py-6 text-right">
                                         <div className="flex justify-end space-x-2">

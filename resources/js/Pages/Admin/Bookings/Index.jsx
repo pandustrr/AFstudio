@@ -218,6 +218,7 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
             case 'pending': return 'bg-yellow-100 text-yellow-800';
             case 'confirmed': return 'bg-blue-100 text-blue-800';
             case 'completed': return 'bg-green-100 text-green-800';
+            case 'request_edit': return 'bg-purple-100 text-purple-800';
             case 'cancelled': return 'bg-red-100 text-red-800';
             default: return 'bg-gray-100 text-gray-800';
         }
@@ -253,6 +254,7 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
         { id: 'all', label: 'Semua' },
         { id: 'pending', label: 'Pending' },
         { id: 'confirmed', label: 'Confirmed' },
+        { id: 'request_edit', label: 'Req Edit' },
         { id: 'completed', label: 'Done' },
         { id: 'cancelled', label: 'Cancelled' },
     ];

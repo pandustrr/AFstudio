@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use App\Models\PhotoEditing;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
+
 
 class PhotoEditingController extends Controller
 {
@@ -23,9 +25,9 @@ class PhotoEditingController extends Controller
             ->withCount(['editRequests', 'reviews']);
 
         // Photographer Filter: Only show sessions assigned to them
-        if (auth()->user()->role === 'photographer') {
+        if (Auth::user()->role === 'photographer') {
             $query->whereHas('booking.items', function ($q) {
-                $q->where('photographer_id', auth()->id());
+                $q->where('photographer_id', Auth::id());
             });
         }
 
@@ -108,7 +110,7 @@ class PhotoEditingController extends Controller
                 'days' => $availableDays
             ],
             'user' => [
-                'role' => auth()->user()->role
+                'role' => Auth::user()->role
             ]
         ]);
     }
@@ -133,7 +135,7 @@ class PhotoEditingController extends Controller
             'status' => 'required|in:pending,processing,done,cancelled',
         ];
 
-        if (auth()->user()->role === 'photographer') {
+        if (Auth::user()->role === 'photographer') {
             $rules['raw_folder_id'] = 'required|string|max:255';
             $rules['is_raw_accessible'] = 'boolean';
         } else {
@@ -146,7 +148,24 @@ class PhotoEditingController extends Controller
 
         $validated = $request->validate($rules);
 
+        // Automate status based on folder presence
+        if (!empty($validated['edited_folder_id'])) {
+            $validated['status'] = 'done';
+        } elseif (!empty($validated['raw_folder_id'])) {
+            $validated['status'] = 'processing';
+        }
+
         $photoEditing->update($validated);
+
+        // SYNC with Booking status
+        $booking = \App\Models\Booking::where('guest_uid', $photoEditing->uid)->first();
+        if ($booking) {
+            if ($photoEditing->status === 'done') {
+                $booking->update(['status' => 'completed']);
+            } elseif ($photoEditing->status === 'processing') {
+                $booking->update(['status' => 'request_edit']);
+            }
+        }
 
         return redirect()->back()->with('success', 'Photo Request updated successfully.');
     }
