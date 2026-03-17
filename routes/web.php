@@ -58,6 +58,9 @@ Route::prefix('api/photo-selector')->group(function () {
     Route::post('/sessions/{uid}/edit-request', [PhotoSelectorController::class, 'storeEditRequest']);
     Route::post('/sessions/{uid}/review', [PhotoSelectorController::class, 'storeReview']);
     Route::post('/sessions/{uid}/quota-request', [PhotoSelectorController::class, 'storeQuotaRequest']);
+    Route::post('/sessions/{uid}/cancel-photo', [PhotoSelectorController::class, 'cancelPhoto']);
+    Route::post('/sessions/{uid}/cancel-multiple', [PhotoSelectorController::class, 'cancelMultiplePhotos']);
+    Route::post('/sessions/{uid}/cancel-all', [PhotoSelectorController::class, 'cancelAllPhotos']);
 });
 
 use App\Http\Controllers\Admin\EditorDashboardController;
@@ -175,6 +178,11 @@ Route::prefix('admin')->group(function () {
             Route::post('/move-session', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'moveSession'])->name('admin.photographer-sessions.move-session');
             Route::post('/mark', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'updateDateMark'])->name('admin.photographer-sessions.mark');
         });
+
+        // Follow Up Templates
+        Route::resource('follow-up-templates', \App\Http\Controllers\Admin\FollowUpTemplateController::class)
+            ->only(['store', 'update', 'destroy'])
+            ->names('admin.follow-up-templates');
 
         // Referral Codes
         Route::resource('referral-codes', \App\Http\Controllers\Admin\ReferralCodeController::class)

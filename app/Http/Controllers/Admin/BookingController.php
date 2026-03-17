@@ -102,6 +102,7 @@ class BookingController extends Controller
 
         return Inertia::render('Admin/Bookings/Index', [
             'bookingItems' => $items,
+            'followUpTemplates' => \App\Models\FollowUpTemplate::orderBy('name')->get(),
             'filters' => [
                 'year' => $year,
                 'month' => $month,

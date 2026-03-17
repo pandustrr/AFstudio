@@ -66,6 +66,20 @@ export default function ReviewsListSection({ reviews, onToggle, onDelete }) {
                                 {review.review_text}
                             </p>
 
+                            {/* Additional Fields Indicator */}
+                            {review.additional_fields && Object.keys(review.additional_fields).length > 0 && (
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                    {Object.entries(review.additional_fields).map(([key, value]) => (
+                                        value && (
+                                            <span key={key} className="px-2 py-0.5 bg-brand-gold/10 text-brand-gold rounded font-bold text-[8px] uppercase tracking-wider flex items-center gap-1">
+                                                {key.toLowerCase().includes('instagram') ? '📸' : (key.toLowerCase().includes('tiktok') ? '🎵' : '📄')}
+                                                <span className="truncate max-w-[60px]">{value}</span>
+                                            </span>
+                                        )
+                                    ))}
+                                </div>
+                            )}
+
                             {/* Review Photo Preview */}
                             {review.photo_url && (
                                 <div className="mb-2">

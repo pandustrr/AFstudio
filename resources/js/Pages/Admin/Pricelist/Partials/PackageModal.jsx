@@ -13,6 +13,7 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
         max_sessions: 1,
         max_editing_quota: 0,
         allow_split_session: false,
+        review_template: [],
     });
 
     const formatCurrency = (value) => {
@@ -42,6 +43,15 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
     const [editingValue, setEditingValue] = useState('');
     const [draggedItemIndex, setDraggedItemIndex] = useState(null);
 
+    const [newTemplateKey, setNewTemplateKey] = useState('custom_field');
+    const [newTemplateValue, setNewTemplateValue] = useState('');
+
+    const templateTypes = [
+        { id: 'custom_field', name: 'Form Input (Umum)', icon: '➕' },
+        { id: 'client_instagram', name: 'Input Instagram Klien', icon: '📸' },
+        { id: 'client_tiktok', name: 'Input TikTok Klien', icon: '🎵' },
+    ];
+
     useEffect(() => {
         if (pkg) {
             setData({
@@ -54,6 +64,7 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
                 max_sessions: pkg.max_sessions || 1,
                 max_editing_quota: pkg.max_editing_quota || 0,
                 allow_split_session: pkg.allow_split_session || false,
+                review_template: pkg.review_template || [],
             });
         } else {
             reset();
@@ -77,6 +88,22 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
         const updated = [...data.features];
         updated.splice(index, 1);
         setData('features', updated);
+    };
+
+    const addTemplateItem = () => {
+        if (newTemplateValue.trim()) {
+            setData('review_template', [
+                ...data.review_template,
+                { key: newTemplateKey, value: newTemplateValue.trim() }
+            ]);
+            setNewTemplateValue('');
+        }
+    };
+
+    const removeTemplateItem = (index) => {
+        const updated = [...data.review_template];
+        updated.splice(index, 1);
+        setData('review_template', updated);
     };
 
     const startEditing = (index) => {
@@ -275,6 +302,73 @@ export default function PackageModal({ isOpen, onClose, pkg, subCategoryId, onSu
                                     <p className="text-[10px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase tracking-tighter">Customer bisa memilih sesi secara terpisah (tidak harus berurutan)</p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Template Review Section */}
+                    <div className="p-6 bg-brand-gold/5 dark:bg-brand-gold/5 rounded-3xl border border-brand-gold/20 space-y-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="w-6 h-6 bg-brand-gold rounded-full flex items-center justify-center text-[10px] font-black">⭐</div>
+                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-gold">Template Review Klien</h4>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row gap-3">
+                            <select
+                                value={newTemplateKey}
+                                onChange={(e) => setNewTemplateKey(e.target.value)}
+                                className="w-full md:w-1/3 bg-white dark:bg-black/20 border-0 rounded-xl px-3 py-2 text-[11px] font-bold text-brand-black dark:text-brand-white focus:ring-1 focus:ring-brand-gold transition-all"
+                            >
+                                {templateTypes.map(type => (
+                                    <option key={type.id} value={type.id}>
+                                        {type.icon} {type.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="flex-1 flex gap-2">
+                                <input
+                                    type="text"
+                                    value={newTemplateValue}
+                                    onChange={(e) => setNewTemplateValue(e.target.value)}
+                                    className="flex-1 bg-white dark:bg-black/20 border-0 rounded-xl px-3 py-2 text-[11px] font-bold text-brand-black dark:text-brand-white focus:ring-1 focus:ring-brand-gold transition-all"
+                                    placeholder="Isi judul/label..."
+                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTemplateItem())}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={addTemplateItem}
+                                    className="p-2 bg-brand-gold text-brand-black rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand-gold/20"
+                                >
+                                    <PlusIcon className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            {data.review_template.map((item, index) => (
+                                <div key={index} className="flex items-center gap-3 p-3 bg-white dark:bg-white/5 rounded-2xl border border-black/5 dark:border-white/5 group transition-all hover:border-brand-gold/30">
+                                    <div className="w-8 h-8 bg-brand-gold/10 rounded-full flex items-center justify-center text-xs">
+                                        {templateTypes.find(t => t.id === item.key)?.icon || '✨'}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[7px] font-black uppercase tracking-widest text-brand-gold/60 truncate">
+                                                {templateTypes.find(t => t.id === item.key)?.name}
+                                            </span>
+                                        </div>
+                                        <span className="block text-[10px] font-bold text-brand-black dark:text-brand-white uppercase truncate">{item.value}</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeTemplateItem(index)}
+                                        className="p-1 mr-[-4px] text-brand-black/20 dark:text-brand-white/20 hover:text-brand-red transition-all"
+                                    >
+                                        <TrashIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
+                            {data.review_template.length === 0 && (
+                                <p className="text-center py-4 text-[9px] font-bold text-brand-black/20 dark:text-brand-white/20 uppercase tracking-widest border border-dashed border-black/10 dark:border-white/10 rounded-xl">Belum ada template</p>
+                            )}
                         </div>
                     </div>
 

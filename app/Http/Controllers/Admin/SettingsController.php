@@ -29,6 +29,7 @@ class SettingsController extends Controller
 
         $validated = $request->validate([
             'admin_whatsapp' => 'required|string|max:20',
+            'follow_up_template' => 'nullable|string',
         ]);
 
         $settings->update($validated);

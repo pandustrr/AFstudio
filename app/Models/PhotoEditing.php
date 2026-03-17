@@ -18,6 +18,11 @@ class PhotoEditing extends Model
         'status',
         'quota_request',
         'extra_editing_quota',
+        'cancelled_photos',
+    ];
+
+    protected $casts = [
+        'cancelled_photos' => 'array',
     ];
 
     public function editRequests()
