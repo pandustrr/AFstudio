@@ -28,6 +28,30 @@ export default function SelectorPhoto() {
     const [error, setError] = useState(null);
     const [previewIndex, setPreviewIndex] = useState(null);
     const [sessionData, setSessionData] = useState(null);
+
+    // Sync step with history popstate
+    useEffect(() => {
+        const handlePopState = (event) => {
+            if (event.state && typeof event.state.step === 'number') {
+                setStep(event.state.step);
+                // Also close preview if it's open when navigating back/forward between steps
+                if (previewIndex !== null) setPreviewIndex(null);
+            } else {
+                // If state is null or step is not defined, default to step 1
+                setStep(1);
+                if (previewIndex !== null) setPreviewIndex(null);
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+
+        // Initialize history state if it doesn't exist
+        if (!window.history.state || window.history.state.step === undefined) {
+            window.history.replaceState({ step: 1 }, '');
+        }
+
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [previewIndex]); // Add previewIndex to dependencies to react to its changes
     const [isSelectionMode, setIsSelectionMode] = useState(true);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successType, setSuccessType] = useState('request');
@@ -96,6 +120,9 @@ export default function SelectorPhoto() {
             // Set max edit quota from package (default 0 if not available)
             setMaxEditQuota(data.data.max_editing_quota || 0);
             setPreviouslySelectedPhotoIds(data.data.requested_photo_ids || []);
+
+            // Push to history when moving to step 2
+            window.history.pushState({ step: 2 }, '');
             setStep(2);
         } catch (err) {
             setError(err.message);
@@ -473,6 +500,9 @@ export default function SelectorPhoto() {
         if (toStep === 1) {
             setUid('');
             setSessionData(null);
+            window.history.pushState({ step: 1 }, '');
+        } else {
+            window.history.pushState({ step: toStep }, '');
         }
         setDriveType('');
         setSelectedPhotos([]);
@@ -561,8 +591,13 @@ export default function SelectorPhoto() {
 
         setDriveType(folderType);
         setSelectedPhotos([]); // Clear selections when switching folders
+        window.history.pushState({ step: 3 }, '');
         setStep(3);
         fetchPhotosFromDrive(folderType);
+    };
+
+    const handleBackToStep1 = () => {
+        window.history.back();
     };
 
     const handlePrev = (e) => {
@@ -805,7 +840,7 @@ export default function SelectorPhoto() {
                                                 </div>
                                             </button>
                                         </div>
-                                        <button onClick={() => setStep(1)} className="w-full text-brand-black/40 dark:text-brand-white/40 text-[10px] font-bold uppercase tracking-widest hover:text-brand-red transition-colors text-center">Kembali ke UID</button>
+                                        <button onClick={handleBackToStep1} className="w-full text-brand-black/40 dark:text-brand-white/40 text-[10px] font-bold uppercase tracking-widest hover:text-brand-red transition-colors text-center">Kembali ke UID</button>
                                     </div>
                                 )}
 
@@ -855,7 +890,10 @@ export default function SelectorPhoto() {
                                         ) : drivePhotos.length === 0 ? (
                                             <div className="py-20 text-center border-2 border-dashed border-black/5 dark:border-white/5 rounded-2xl animate-fade-in">
                                                 <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest">Foto masih belum di upload oleh admin</p>
-                                                <button onClick={() => setStep(2)} className="mt-4 text-[10px] font-black uppercase tracking-widest text-brand-red hover:underline">Kembali</button>
+                                                <button onClick={() => {
+                                                    window.history.pushState({ step: 2 }, '');
+                                                    setStep(2);
+                                                }} className="mt-4 text-[10px] font-black uppercase tracking-widest text-brand-red hover:underline">Kembali</button>
                                             </div>
                                         ) : (
                                             <>
@@ -960,7 +998,9 @@ export default function SelectorPhoto() {
                                                 </div>
                                                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                                                     <button
-                                                        onClick={() => setStep(2)}
+                                                        onClick={() => {
+                                                            window.history.back();
+                                                        }}
                                                         className="w-full sm:w-11 h-11 flex items-center justify-center text-brand-black/40 dark:text-brand-white/40 border border-black/10 dark:border-white/10 rounded-xl hover:bg-black/5 transition-all"
                                                         title="Kembali"
                                                     >
@@ -988,7 +1028,14 @@ export default function SelectorPhoto() {
                                                     </div>
 
                                                     <button
-                                                        onClick={() => driveType === 'Mentahan' ? handleSendEditRequest() : setStep(4)}
+                                                        onClick={() => {
+                                                            if (driveType === 'Mentahan') {
+                                                                handleSendEditRequest();
+                                                            } else {
+                                                                window.history.pushState({ step: 4 }, '');
+                                                                setStep(4);
+                                                            }
+                                                        }}
                                                         disabled={isDownloading || (driveType === 'Mentahan' && (selectedPhotos.length === 0 || selectedPhotos.length > (maxEditQuota - (sessionData?.requested_count || 0))))}
                                                         className="w-full sm:flex-1 bg-brand-gold hover:brightness-90 text-brand-black font-black py-3 sm:py-2.5 rounded-xl uppercase tracking-widest text-[10px] shadow-xl disabled:opacity-50 transition-all font-black px-6"
                                                     >
@@ -1145,7 +1192,9 @@ export default function SelectorPhoto() {
                                             </div>
                                         )}
                                         <div className="flex gap-4">
-                                            <button onClick={() => setStep(3)} className="flex-1 text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest border border-black/10 dark:border-white/10 rounded-xl">Kembali</button>
+                                            <button onClick={() => {
+                                                window.history.back();
+                                            }} className="flex-1 text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest border border-black/10 dark:border-white/10 rounded-xl">Kembali</button>
                                             <button
                                                 onClick={driveType === 'Mentahan' && selectedPhotos.length > 0 ? handleSendEditRequest : handleSendReview}
                                                 disabled={loading || (driveType === 'Result' && !review) || (driveType === 'Mentahan' && selectedPhotos.length === 0 && !review)}
@@ -1174,7 +1223,7 @@ export default function SelectorPhoto() {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
 
             {/* Preview Modal */}
             {
@@ -1259,6 +1308,6 @@ export default function SelectorPhoto() {
                 variant={confirmModal.variant}
                 processing={loading}
             />
-        </GuestLayout>
+        </GuestLayout >
     );
 }
