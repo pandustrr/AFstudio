@@ -16,7 +16,18 @@ class PricelistController extends Controller
 {
     public function index()
     {
-        $categories = PricelistCategory::with(['subCategories.packages'])->get();
+        $categories = PricelistCategory::with(['subCategories' => function($q) {
+            $q->with('packages');
+        }])->get();
+
+        // Add has_bookings check to each subCategory
+        foreach ($categories as $category) {
+            foreach ($category->subCategories as $subCategory) {
+                $packageIds = $subCategory->packages->pluck('id');
+                $subCategory->has_bookings = \App\Models\BookingItem::whereIn('pricelist_package_id', $packageIds)->exists();
+            }
+        }
+
         return Inertia::render('Admin/Pricelist/Index', [
             'categories' => $categories
         ]);
@@ -64,11 +75,16 @@ class PricelistController extends Controller
 
     public function destroyCategory(PricelistCategory $category)
     {
-        if ($category->background_image) {
-            Storage::disk('public')->delete($category->background_image);
+        try {
+            if ($category->background_image) {
+                Storage::disk('public')->delete($category->background_image);
+            }
+            $category->delete();
+            return back()->with('success', 'Kategori berhasil dihapus.');
+        } catch (\Exception $e) {
+            Log::error('Gagal menghapus kategori: ' . $e->getMessage());
+            return back()->with('error', 'Gagal menghapus kategori. Pastikan tidak ada sub-kategori atau paket di dalamnya yang sudah dipesan klien.');
         }
-        $category->delete();
-        return back()->with('success', 'Kategori berhasil dihapus.');
     }
 
     // SubCategory CRUD
@@ -97,8 +113,31 @@ class PricelistController extends Controller
 
     public function destroySubCategory(PricelistSubCategory $subCategory)
     {
-        $subCategory->delete();
-        return back()->with('success', 'Sub-Kategori berhasil dihapus.');
+        // Cek apakah ada paket di dalam sub-kategori ini yang sudah dipesan
+        $packageIds = $subCategory->packages->pluck('id');
+        $hasBookings = \App\Models\BookingItem::whereIn('pricelist_package_id', $packageIds)->exists();
+
+        if ($hasBookings) {
+            return back()->with('error', 'Gagal menghapus! Salah satu paket di sub-kategori ini sudah ada di daftar pesan (booking) klien. Silakan gunakan fitur arsip jika tidak ingin menampilkannya di publik.');
+        }
+
+        try {
+            $subCategory->delete();
+            return back()->with('success', 'Sub-Kategori beserta paket di dalamnya berhasil dihapus.');
+        } catch (\Exception $e) {
+            Log::error('Gagal menghapus sub-kategori: ' . $e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan saat menghapus sub-kategori.');
+        }
+    }
+
+    public function toggleSubCategoryStatus(PricelistSubCategory $subCategory)
+    {
+        $subCategory->update([
+            'is_active' => !$subCategory->is_active
+        ]);
+
+        $status = $subCategory->is_active ? 'diaktifkan' : 'diarsipkan';
+        return back()->with('success', "Sub-Kategori berhasil {$status}.");
     }
 
     // Package CRUD
@@ -156,7 +195,12 @@ class PricelistController extends Controller
 
     public function destroyPackage(PricelistPackage $package)
     {
-        $package->delete();
-        return back()->with('success', 'Paket berhasil dihapus.');
+        try {
+            $package->delete();
+            return back()->with('success', 'Paket berhasil dihapus.');
+        } catch (\Exception $e) {
+            Log::error('Gagal menghapus paket: ' . $e->getMessage());
+            return back()->with('error', 'Gagal menghapus paket karena paket ini sudah pernah dipesan oleh klien.');
+        }
     }
 }

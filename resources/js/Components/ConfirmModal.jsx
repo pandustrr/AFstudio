@@ -1,7 +1,7 @@
 import React from 'react';
 import { XMarkIcon, CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 
-export default function ConfirmModal({ isOpen, onClose, onConfirm, title, message, processing, variant = 'danger' }) {
+export default function ConfirmModal({ isOpen, onClose, onConfirm, title, message, processing, variant = 'danger', confirmText }) {
     if (!isOpen) return null;
 
     const getVariantStyles = () => {
@@ -77,7 +77,7 @@ export default function ConfirmModal({ isOpen, onClose, onConfirm, title, messag
                             disabled={processing}
                             className={`flex-1 px-4 py-3.5 ${styles.button} font-black uppercase tracking-widest text-[9px] rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg disabled:opacity-50 outline-none`}
                         >
-                            {processing ? '...' : styles.confirmText}
+                            {processing ? '...' : (confirmText || styles.confirmText)}
                         </button>
                     </div>
                 </div>

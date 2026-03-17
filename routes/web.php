@@ -163,6 +163,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/sub-category', [\App\Http\Controllers\Admin\PricelistController::class, 'storeSubCategory'])->name('admin.pricelist.sub-category.store');
             Route::put('/sub-category/{subCategory}', [\App\Http\Controllers\Admin\PricelistController::class, 'updateSubCategory'])->name('admin.pricelist.sub-category.update');
             Route::delete('/sub-category/{subCategory}', [\App\Http\Controllers\Admin\PricelistController::class, 'destroySubCategory'])->name('admin.pricelist.sub-category.destroy');
+            Route::patch('/sub-category/{subCategory}/toggle', [\App\Http\Controllers\Admin\PricelistController::class, 'toggleSubCategoryStatus'])->name('admin.pricelist.sub-category.toggle');
 
             // Package
             Route::post('/package', [\App\Http\Controllers\Admin\PricelistController::class, 'storePackage'])->name('admin.pricelist.package.store');

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import { Head, useForm, router } from '@inertiajs/react';
-import { PencilSquareIcon, TrashIcon, PlusIcon, ChevronRightIcon, ChevronDownIcon, StarIcon, ShareIcon } from '@heroicons/react/24/outline';
+import { PencilSquareIcon, TrashIcon, PlusIcon, ChevronRightIcon, ChevronDownIcon, StarIcon, ShareIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import ManageCategoriesModal from './Partials/ManageCategoriesModal';
 import SubCategoryModal from './Partials/SubCategoryModal';
@@ -11,6 +11,7 @@ import EditNotif from '@/Components/EditNotif';
 
 export default function Index({ categories }) {
     const [activeCategoryId, setActiveCategoryId] = useState(categories[0]?.id || null);
+    const [statusFilter, setStatusFilter] = useState('all'); // all, active, archived
 
     // Modal States
     const [manageCategoriesModal, setManageCategoriesModal] = useState(false);
@@ -42,6 +43,10 @@ export default function Index({ categories }) {
 
     const handleDelete = () => {
         const { type, id } = deleteModal;
+        if (type === 'prevent') {
+            setDeleteModal({ ...deleteModal, show: false });
+            return;
+        }
         let url = '';
         if (type === 'sub-category') url = `/admin/pricelist/sub-category/${id}`;
         if (type === 'package') url = `/admin/pricelist/package/${id}`;
@@ -96,7 +101,20 @@ export default function Index({ categories }) {
 
     // IN RENDER:
 
-    // ...
+    // Filter categories and sub-categories based on status
+    const filteredCategories = categories.map(cat => ({
+        ...cat,
+        sub_categories: cat.sub_categories.filter(sub => {
+            if (statusFilter === 'active') return sub.is_active;
+            if (statusFilter === 'archived') return !sub.is_active;
+            return true;
+        })
+    })).filter(cat => {
+        if (statusFilter === 'all') return true;
+        return cat.sub_categories.length > 0;
+    });
+
+    const activeCategory = filteredCategories.find(c => c.id === activeCategoryId) || filteredCategories[0];
 
     return (
         <AdminLayout>
@@ -117,11 +135,11 @@ export default function Index({ categories }) {
                     </button>
                 </div>
 
-                {/* Tabs for Categories & Category/Sub-Category Actions */}
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+                {/* Tabs for Categories & Category Actions */}
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6 pb-6 border-b border-black/5 dark:border-white/5">
                     <div className="flex flex-wrap items-center gap-4">
                         <div className="flex flex-wrap gap-2 p-1.5 bg-black/5 dark:bg-white/5 rounded-2xl w-fit">
-                            {categories.map((category) => (
+                            {filteredCategories.map((category) => (
                                 <button
                                     key={category.id}
                                     onClick={() => setActiveCategoryId(category.id)}
@@ -143,6 +161,41 @@ export default function Index({ categories }) {
                             Kelola Kategori
                         </button>
                     </div>
+                </div>
+
+                {/* Status Filter & Sub-Category Actions */}
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1 p-1.5 bg-black/5 dark:bg-white/5 rounded-2xl">
+                            <button
+                                onClick={() => setStatusFilter('all')}
+                                className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${statusFilter === 'all'
+                                    ? 'bg-white dark:bg-white/10 text-brand-black dark:text-brand-white shadow-sm'
+                                    : 'text-brand-black/40 dark:text-brand-white/40 hover:text-brand-black dark:hover:text-brand-white'
+                                    }`}
+                            >
+                                Semua
+                            </button>
+                            <button
+                                onClick={() => setStatusFilter('active')}
+                                className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${statusFilter === 'active'
+                                    ? 'bg-green-500 text-white shadow-sm'
+                                    : 'text-brand-black/40 dark:text-brand-white/40 hover:text-brand-black dark:hover:text-brand-white'
+                                    }`}
+                            >
+                                Aktif
+                            </button>
+                            <button
+                                onClick={() => setStatusFilter('archived')}
+                                className={`px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${statusFilter === 'archived'
+                                    ? 'bg-brand-gold text-brand-black shadow-sm'
+                                    : 'text-brand-black/40 dark:text-brand-white/40 hover:text-brand-black dark:hover:text-brand-white'
+                                    }`}
+                            >
+                                Arsip
+                            </button>
+                        </div>
+                    </div>
 
                     {activeCategoryId && (
                         <button
@@ -156,7 +209,7 @@ export default function Index({ categories }) {
                 </div>
 
                 {/* Category Content */}
-                {categories.filter(c => c.id === activeCategoryId).map(category => (
+                {filteredCategories.filter(c => c.id === activeCategoryId).map(category => (
                     <div key={category.id} className="space-y-8">
                         {/* CATEGORY SHARE BUTTON HEADER */}
                         <div className="flex items-center justify-between border-b border-black/5 dark:border-white/5 pb-4">
@@ -177,9 +230,14 @@ export default function Index({ categories }) {
                             {category.sub_categories.map(subCategory => (
                                 <div key={subCategory.id} className="bg-white dark:bg-white/3 border border-black/5 dark:border-white/5 rounded-3xl overflow-hidden shadow-sm">
                                     <div className="px-8 py-4 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-black/2 dark:bg-white/2">
-                                        <div>
-                                            <h3 className="text-base font-black text-brand-black dark:text-brand-white uppercase tracking-tighter">{subCategory.name}</h3>
-                                            <p className="text-[9px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-widest">{subCategory.packages.length} Paket</p>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-2 h-2 rounded-full ${subCategory.is_active ? 'bg-green-500' : 'bg-brand-black/20 dark:bg-white/20'}`} title={subCategory.is_active ? 'Aktif' : 'Diarsipkan'}></div>
+                                            <div>
+                                                <h3 className={`text-base font-black uppercase tracking-tighter ${!subCategory.is_active ? 'text-brand-black/40 dark:text-brand-white/40' : 'text-brand-black dark:text-brand-white'}`}>
+                                                    {subCategory.name} {!subCategory.is_active && <span className="text-[8px] px-1.5 py-0.5 bg-brand-black/10 dark:bg-white/10 rounded ml-1 italic font-bold">ARCHIVED</span>}
+                                                </h3>
+                                                <p className="text-[9px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-widest">{subCategory.packages.length} Paket</p>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <div className="flex items-center gap-2 border-r border-black/10 dark:border-white/10 pr-4 mr-2">
@@ -191,13 +249,39 @@ export default function Index({ categories }) {
                                                     <ShareIcon className="w-3.5 h-3.5" />
                                                 </button>
                                                 <button onClick={() => setSubCategoryModal({ show: true, subCategory, categoryId: category.id })} className="p-1.5 bg-black/5 dark:bg-white/5 hover:bg-black hover:text-white dark:hover:bg-brand-gold rounded-lg transition-all"><PencilSquareIcon className="w-3.5 h-3.5" /></button>
-                                                <button onClick={() => setDeleteModal({
-                                                    show: true,
-                                                    type: 'sub-category',
-                                                    id: subCategory.id,
-                                                    title: 'Hapus Sub-Kategori',
-                                                    message: `Hapus sub-kategori ${subCategory.name}? Semua paket di dalamnya akan ikut terhapus.`
-                                                })} className="p-1.5 bg-black/5 dark:bg-white/5 hover:bg-brand-red hover:text-white rounded-lg transition-all"><TrashIcon className="w-3.5 h-3.5" /></button>
+                                                <button onClick={() => {
+                                                    if (subCategory.has_bookings) {
+                                                        setDeleteModal({
+                                                            show: true,
+                                                            type: 'prevent',
+                                                            id: null,
+                                                            title: 'Gagal Hapus',
+                                                            message: `Sub-kategori "${subCategory.name}" tidak bisa dihapus karena salah satu paket di dalamnya sudah memiliki riwayat booking klien. Silakan gunakan fitur ARSIP untuk menyembunyikan dari publik.`,
+                                                            variant: 'warning',
+                                                            confirmText: 'Oke, Saya Mengerti'
+                                                        });
+                                                    } else {
+                                                        setDeleteModal({
+                                                            show: true,
+                                                            type: 'sub-category',
+                                                            id: subCategory.id,
+                                                            title: 'Hapus Sub-Kategori',
+                                                            message: `PENGHAPUSAN DAPAT DILAKUKAN karena belum ada klien yang booking dari paket di sub-kategori ini. Hapus sub-kategori "${subCategory.name}" beserta semua paket di dalamnya?`,
+                                                            variant: 'danger',
+                                                            confirmText: 'Ya, Hapus Semua'
+                                                        });
+                                                    }
+                                                }} className="p-1.5 bg-black/5 dark:bg-white/5 hover:bg-brand-red hover:text-white rounded-lg transition-all"><TrashIcon className="w-3.5 h-3.5" /></button>
+                                                <div className="flex items-center gap-2 px-1">
+                                                    <ArchiveBoxIcon className={`w-3.5 h-3.5 ${subCategory.is_active ? 'text-brand-black/20 dark:text-brand-white/20' : 'text-brand-gold'}`} />
+                                                    <button
+                                                        onClick={() => router.patch(`/admin/pricelist/sub-category/${subCategory.id}/toggle`)}
+                                                        className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors focus:outline-none ${subCategory.is_active ? 'bg-green-500' : 'bg-black/20 dark:bg-white/20'}`}
+                                                        title={subCategory.is_active ? 'Nonaktifkan/Arsipkan' : 'Aktifkan'}
+                                                    >
+                                                        <span className={`inline-block h-2.5 w-2.5 transform rounded-full bg-white transition-transform ${subCategory.is_active ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                                                    </button>
+                                                </div>
                                             </div>
                                             <button
                                                 onClick={() => setPackageModal({ show: true, pkg: null, subCategoryId: subCategory.id })}
@@ -295,6 +379,15 @@ export default function Index({ categories }) {
                         </div>
                     </div>
                 ))}
+                {filteredCategories.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-32 text-center bg-black/2 dark:bg-white/2 rounded-[40px] border-2 border-dashed border-black/5 dark:border-white/5 animate-in fade-in zoom-in duration-500">
+                        <ArchiveBoxIcon className="w-12 h-12 text-brand-black/10 dark:text-brand-white/10 mb-4" />
+                        <h3 className="text-lg font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-tighter">DATA TIDAK DITEMUKAN</h3>
+                        <p className="text-[10px] font-bold text-brand-black/20 dark:text-brand-white/20 uppercase tracking-widest mt-1">
+                            {statusFilter === 'archived' ? 'Belum ada sub-kategori yang diarsipkan.' : 'Data pricelist masih kosong atau tidak sesuai filter.'}
+                        </p>
+                    </div>
+                )}
             </div>
 
             {/* Modals */}
@@ -331,7 +424,8 @@ export default function Index({ categories }) {
                 onConfirm={handleDelete}
                 title={deleteModal.title}
                 message={deleteModal.message}
-                variant="danger"
+                variant={deleteModal.variant || 'danger'}
+                confirmText={deleteModal.confirmText}
             />
         </AdminLayout >
     );

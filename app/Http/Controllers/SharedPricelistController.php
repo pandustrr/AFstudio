@@ -9,7 +9,9 @@ class SharedPricelistController extends Controller
     public function category($slug)
     {
         $category = \App\Models\PricelistCategory::where('slug', $slug)
-            ->with(['subCategories.packages'])
+            ->with(['subCategories' => function ($query) {
+                $query->where('is_active', true)->with('packages');
+            }])
             ->firstOrFail();
 
         // Pass ONLY this category as a single-element list to reused view, or handle 'locked' mode
@@ -25,7 +27,11 @@ class SharedPricelistController extends Controller
 
     public function all()
     {
-        $categories = \App\Models\PricelistCategory::with(['subCategories.packages'])
+        $categories = \App\Models\PricelistCategory::whereHas('subCategories', function ($query) {
+                $query->where('is_active', true);
+            })->with(['subCategories' => function ($query) {
+                $query->where('is_active', true)->with('packages');
+            }])
             ->orderBy('id')
             ->get();
 
@@ -44,6 +50,10 @@ class SharedPricelistController extends Controller
         $package = \App\Models\PricelistPackage::where('slug', $slug)
             ->with(['subCategory.category'])
             ->firstOrFail();
+
+        if (!$package->subCategory->is_active) {
+            abort(404);
+        }
 
         // Even more specific: we prefer to just show the modal or the card isolated.
         // For now, let's wrap it in its category hierarchy so the page renders,
@@ -69,6 +79,7 @@ class SharedPricelistController extends Controller
     public function subCategory($slug)
     {
         $sub = \App\Models\PricelistSubCategory::where('slug', $slug)
+            ->where('is_active', true)
             ->with(['category', 'packages'])
             ->firstOrFail();
 
