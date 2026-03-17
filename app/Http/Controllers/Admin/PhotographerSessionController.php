@@ -121,7 +121,8 @@ class PhotographerSessionController extends Controller
                 'years' => $availableYears,
                 'months' => $availableMonths,
                 'days' => $availableDays,
-            ]
+            ],
+            'followUpTemplates' => \App\Models\FollowUpTemplate::orderBy('name')->get(),
         ]);
     }
 
@@ -230,7 +231,8 @@ class PhotographerSessionController extends Controller
                 'years' => $availableYears,
                 'months' => $availableMonths,
                 'days' => $availableDays,
-            ]
+            ],
+            'followUpTemplates' => \App\Models\FollowUpTemplate::orderBy('name')->get(),
         ]);
     }
 
@@ -485,6 +487,8 @@ class PhotographerSessionController extends Controller
                 'booking_status' => $session && $session->bookingItem ? $session->bookingItem->booking->status : null,
                 'booking_info' => $session && $session->bookingItem && $session->bookingItem->booking->status === 'confirmed' ? [
                     'customer_name' => $session->bookingItem->booking->name ?? 'GUEST',
+                    'customer_phone' => $session->bookingItem->booking->phone ?? '-',
+                    'cart_uid' => $session->cart_uid,
                     'package_name' => $session->bookingItem->package->name ?? 'N/A',
                 ] : null,
                 'offset_minutes' => $session ? $session->offset_minutes : 0,
@@ -501,20 +505,19 @@ class PhotographerSessionController extends Controller
     public function reservations(Request $request)
     {
         $photographerId = Auth::id();
-        $uidFilter = $request->input('uid');
+        $statusFilter = $request->input('status', 'confirmed');
 
         // Get all booked sessions for this photographer with booking details
         $query = PhotographerSession::where('photographer_id', $photographerId)
             ->where('status', 'booked')
-            ->whereHas('bookingItem.booking', function ($q) {
-                $q->where('status', 'confirmed');
+            ->whereHas('bookingItem.booking', function ($q) use ($statusFilter) {
+                if ($statusFilter && $statusFilter !== 'all') {
+                    $q->where('status', $statusFilter);
+                } else {
+                    $q->whereNotIn('status', ['cancelled']);
+                }
             })
             ->with(['bookingItem.booking', 'bookingItem.package']);
-
-        // Apply UID filter if provided
-        if ($uidFilter) {
-            $query->where('cart_uid', $uidFilter);
-        }
 
         $sessions = $query->orderBy('date', 'desc')
             ->orderBy('start_time', 'desc')
@@ -534,6 +537,7 @@ class PhotographerSessionController extends Controller
                 'booking_id' => $session->bookingItem?->booking_id ?? null,
                 'booking_item_id' => $session->booking_item_id,
                 'cart_uid' => $session->cart_uid,
+                'booking_status' => $session->bookingItem?->booking?->status ?? 'unknown',
                 'offset_minutes' => $session->offset_minutes,
                 'offset_description' => $session->offset_description,
             ];
@@ -549,7 +553,9 @@ class PhotographerSessionController extends Controller
         return Inertia::render('Photographer/Reservations', [
             'reservations' => $reservations,
             'allSessions' => $allSessions->isEmpty() ? [] : $allSessions->toArray(),
-            'selectedSessionId' => $uidFilter,
+            'filters' => [
+                'status' => $statusFilter,
+            ],
             'followUpTemplates' => \App\Models\FollowUpTemplate::orderBy('name')->get(),
         ]);
     }

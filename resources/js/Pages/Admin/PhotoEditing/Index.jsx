@@ -88,9 +88,9 @@ export default function Index({ sessions, filters, options }) {
             <Head title="Manage Requests" />
 
             <div className="pt-8 lg:pt-16 pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
-                <div className="flex flex-col gap-5 mb-6">
+                <div className="flex flex-col gap-5 mb-6 overflow-hidden">
                     <div>
-                        <h1 className="text-4xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-2">
+                        <h1 className="text-2xl sm:text-4xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter mb-2">
                             {window.location.pathname.startsWith('/photographer') ? 'Daftar Sesi Foto' : 'Daftar Request'}
                         </h1>
                         <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-black uppercase tracking-widest">
@@ -100,7 +100,7 @@ export default function Index({ sessions, filters, options }) {
 
                     <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                         {/* Compact Date Filters */}
-                        <div className="flex items-center gap-1 p-1.5 bg-white dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 w-fit shadow-sm">
+                        <div className="flex flex-wrap items-center gap-1 p-1.5 bg-white dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5 w-fit shadow-sm max-w-full">
                             <div className="relative group">
                                 <select
                                     value={filters.year || ''}
@@ -115,7 +115,7 @@ export default function Index({ sessions, filters, options }) {
                                 <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
                             </div>
 
-                            <div className="w-px h-4 bg-black/10 dark:bg-white/10"></div>
+                            <div className="hidden xs:block w-px h-4 bg-black/10 dark:bg-white/10"></div>
 
                             <div className="relative group">
                                 <select
@@ -132,7 +132,7 @@ export default function Index({ sessions, filters, options }) {
                                 <ChevronDownIcon className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-brand-black/40 dark:text-brand-white/40 pointer-events-none group-hover:text-brand-gold transition-colors" />
                             </div>
 
-                            <div className="w-px h-4 bg-black/10 dark:bg-white/10"></div>
+                            <div className="hidden xs:block w-px h-4 bg-black/10 dark:bg-white/10"></div>
 
                             <div className="relative group">
                                 <select
@@ -152,7 +152,7 @@ export default function Index({ sessions, filters, options }) {
 
                         <button
                             onClick={setToday}
-                            className="px-4 py-2 bg-brand-gold text-brand-black rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-brand-gold/90 transition-all shrink-0"
+                            className="px-4 py-2 bg-brand-gold text-brand-black rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:bg-brand-gold/90 transition-all shrink-0 sm:w-auto"
                         >
                             Hari Ini
                         </button>
