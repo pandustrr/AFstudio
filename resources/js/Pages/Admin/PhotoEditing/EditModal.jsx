@@ -6,9 +6,9 @@ export default function EditModal({ session, onClose }) {
     const { data, setData, put, processing, errors, clearErrors } = useForm({
         customer_name: session.customer_name,
         raw_folder_id: session.raw_folder_id,
-        is_raw_accessible: session.is_raw_accessible || false,
+        is_raw_accessible: Boolean(session.is_raw_accessible),
         edited_folder_id: session.edited_folder_id || '',
-        is_edited_accessible: session.is_edited_accessible || false,
+        is_edited_accessible: Boolean(session.is_edited_accessible),
         status: session.status,
     });
 
@@ -45,25 +45,39 @@ export default function EditModal({ session, onClose }) {
                         </div>
                     </div>
 
+                    {/* Status - Automated for non-admin roles */}
                     <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 ml-2">Status</label>
-                        <div className="relative group">
-                            <select
-                                value={data.status}
-                                onChange={e => setData('status', e.target.value)}
-                                className="w-full bg-black/3 dark:bg-white/3 border border-black/5 dark:border-white/10 rounded-xl px-6 py-4 font-bold text-sm focus:outline-none focus:border-brand-gold transition-all appearance-none cursor-pointer pr-12 group-hover:bg-black/5 dark:group-hover:bg-white/5"
-                            >
-                                <option value="pending" className="bg-white dark:bg-brand-black">Pending</option>
-                                <option value="processing" className="bg-white dark:bg-brand-black">Processing</option>
-                                <option value="done" className="bg-white dark:bg-brand-black">Done</option>
-                                <option value="cancelled" className="bg-white dark:bg-brand-black">Cancelled</option>
-                            </select>
-                            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-brand-black/20 dark:text-brand-white/20 group-hover:text-brand-gold transition-colors">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
-                                </svg>
+                        {window.location.pathname.startsWith('/admin') ? (
+                            <div className="relative group">
+                                <select
+                                    value={data.status}
+                                    onChange={e => setData('status', e.target.value)}
+                                    className="w-full bg-black/3 dark:bg-white/3 border border-black/5 dark:border-white/10 rounded-xl px-6 py-4 font-bold text-sm focus:outline-none focus:border-brand-gold transition-all appearance-none cursor-pointer pr-12 group-hover:bg-black/5 dark:group-hover:bg-white/5"
+                                >
+                                    <option value="pending" className="bg-white dark:bg-brand-black">Pending</option>
+                                    <option value="processing" className="bg-white dark:bg-brand-black">Processing (Req Edit)</option>
+                                    <option value="done" className="bg-white dark:bg-brand-black">Done</option>
+                                    <option value="cancelled" className="bg-white dark:bg-brand-black">Cancelled</option>
+                                </select>
+                                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-brand-black/20 dark:text-brand-white/20 group-hover:text-brand-gold transition-colors">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="px-6 py-4 bg-black/2 dark:bg-white/2 rounded-2xl border border-black/5 dark:border-white/5">
+                                <span className="text-sm font-black uppercase tracking-widest text-brand-gold">
+                                    {(() => {
+                                        const s = session.booking?.status || data.status;
+                                        if (s === 'processing' || s === 'request_edit') return 'REQUEST EDIT';
+                                        if (s === 'completed' || s === 'done') return 'DONE';
+                                        return s.toUpperCase();
+                                    })()}
+                                </span>
+                            </div>
+                        )}
                         {errors.status && <p className="text-red-500 text-[10px] font-bold mt-1 ml-2">{errors.status}</p>}
                     </div>
 
@@ -80,19 +94,21 @@ export default function EditModal({ session, onClose }) {
                         {errors.raw_folder_id && <p className="text-red-500 text-[10px] font-bold mt-1 ml-2">{errors.raw_folder_id}</p>}
                     </div>
 
-                    <div className="flex items-center justify-between px-2 py-4 bg-black/2 dark:bg-white/2 rounded-2xl border border-black/5 dark:border-white/5">
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white">Akses Mentahan</span>
-                            <span className="text-[9px] font-medium text-brand-black/40 dark:text-brand-white/40">Izinkan customer melihat folder mentahan</span>
+                    {!window.location.pathname.startsWith('/photographer') && (
+                        <div className="flex items-center justify-between px-2 py-4 bg-black/2 dark:bg-white/2 rounded-2xl border border-black/5 dark:border-white/5">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white">Akses Mentahan</span>
+                                <span className="text-[9px] font-medium text-brand-black/40 dark:text-brand-white/40">Izinkan customer melihat folder mentahan</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setData('is_raw_accessible', data.is_raw_accessible ? false : true)}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${data.is_raw_accessible === true ? 'bg-brand-gold' : 'bg-black/10 dark:bg-white/10'}`}
+                            >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.is_raw_accessible === true ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </button>
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => setData('is_raw_accessible', !data.is_raw_accessible)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${data.is_raw_accessible ? 'bg-brand-gold' : 'bg-black/10 dark:bg-white/10'}`}
-                        >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.is_raw_accessible ? 'translate-x-6' : 'translate-x-1'}`} />
-                        </button>
-                    </div>
+                    )}
 
                     {!window.location.pathname.startsWith('/photographer') && (
                         <>
@@ -115,10 +131,10 @@ export default function EditModal({ session, onClose }) {
                                 </div>
                                 <button
                                     type="button"
-                                    onClick={() => setData('is_edited_accessible', !data.is_edited_accessible)}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${data.is_edited_accessible ? 'bg-brand-gold' : 'bg-black/10 dark:bg-white/10'}`}
+                                    onClick={() => setData('is_edited_accessible', data.is_edited_accessible ? false : true)}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${data.is_edited_accessible === true ? 'bg-brand-gold' : 'bg-black/10 dark:bg-white/10'}`}
                                 >
-                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.is_edited_accessible ? 'translate-x-6' : 'translate-x-1'}`} />
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.is_edited_accessible === true ? 'translate-x-6' : 'translate-x-1'}`} />
                                 </button>
                             </div>
                         </>
