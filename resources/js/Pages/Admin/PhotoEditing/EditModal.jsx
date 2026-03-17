@@ -6,9 +6,9 @@ export default function EditModal({ session, onClose }) {
     const { data, setData, put, processing, errors, clearErrors } = useForm({
         customer_name: session.customer_name,
         raw_folder_id: session.raw_folder_id,
-        is_raw_accessible: session.is_raw_accessible || false,
+        is_raw_accessible: Boolean(session.is_raw_accessible),
         edited_folder_id: session.edited_folder_id || '',
-        is_edited_accessible: session.is_edited_accessible || false,
+        is_edited_accessible: Boolean(session.is_edited_accessible),
         status: session.status,
     });
 
@@ -102,10 +102,10 @@ export default function EditModal({ session, onClose }) {
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setData('is_raw_accessible', !data.is_raw_accessible)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${data.is_raw_accessible ? 'bg-brand-gold' : 'bg-black/10 dark:bg-white/10'}`}
+                                onClick={() => setData('is_raw_accessible', data.is_raw_accessible ? false : true)}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${data.is_raw_accessible === true ? 'bg-brand-gold' : 'bg-black/10 dark:bg-white/10'}`}
                             >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.is_raw_accessible ? 'translate-x-6' : 'translate-x-1'}`} />
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.is_raw_accessible === true ? 'translate-x-6' : 'translate-x-1'}`} />
                             </button>
                         </div>
                     )}
@@ -131,10 +131,10 @@ export default function EditModal({ session, onClose }) {
                                 </div>
                                 <button
                                     type="button"
-                                    onClick={() => setData('is_edited_accessible', !data.is_edited_accessible)}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${data.is_edited_accessible ? 'bg-brand-gold' : 'bg-black/10 dark:bg-white/10'}`}
+                                    onClick={() => setData('is_edited_accessible', data.is_edited_accessible ? false : true)}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${data.is_edited_accessible === true ? 'bg-brand-gold' : 'bg-black/10 dark:bg-white/10'}`}
                                 >
-                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.is_edited_accessible ? 'translate-x-6' : 'translate-x-1'}`} />
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.is_edited_accessible === true ? 'translate-x-6' : 'translate-x-1'}`} />
                                 </button>
                             </div>
                         </>
