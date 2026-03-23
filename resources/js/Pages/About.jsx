@@ -11,6 +11,23 @@ export default function About({ about, moodboards = [] }) {
     const row1 = moodboards.slice(0, midPoint);
     const row2 = moodboards.slice(midPoint);
 
+    // Mobile back button handler
+    React.useEffect(() => {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (!isMobile) return;
+
+        const handlePopState = (event) => {
+            window.history.pushState(null, null, window.location.pathname);
+        };
+
+        window.history.pushState(null, null, window.location.pathname);
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, []);
+
     // Helper to get icon component
     const getIcon = (iconName) => {
         const icons = {

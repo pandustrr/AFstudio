@@ -17,6 +17,38 @@ export default function SelectorPhoto() {
             setUid(savedUid);
         }
     }, []);
+
+    // Mobile back button handler
+    useEffect(() => {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (!isMobile) return;
+
+        const handlePopState = (event) => {
+            if (event.state && event.state.step !== undefined) {
+                setStep(event.state.step);
+            } else {
+                setStep(1);
+                window.history.pushState({ step: 1 }, '', window.location.pathname);
+            }
+        };
+
+        // Initialize first state
+        window.history.replaceState({ step: 1 }, '', window.location.pathname);
+        
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
+    // Push new state when step changes forward
+    useEffect(() => {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (!isMobile) return;
+
+        const currentState = window.history.state;
+        if (!currentState || currentState.step !== step) {
+            window.history.pushState({ step: step }, '', window.location.pathname);
+        }
+    }, [step]);
     const [driveType, setDriveType] = useState(''); // 'Mentahan', 'Result', or 'RequestEdit'
     const [selectedPhotos, setSelectedPhotos] = useState([]); // Array of objects {id, name}
     const [review, setReview] = useState('');

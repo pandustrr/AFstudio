@@ -24,6 +24,23 @@ export default function Home({ categories = [], homePage, galleries = [], journe
         message: '',
     });
 
+    // Mobile back button handler
+    React.useEffect(() => {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (!isMobile) return;
+
+        const handlePopState = (event) => {
+            window.history.pushState(null, null, window.location.pathname);
+        };
+
+        window.history.pushState(null, null, window.location.pathname);
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, []);
+
     const handleSubmit = (e) => {
         e.preventDefault();
 

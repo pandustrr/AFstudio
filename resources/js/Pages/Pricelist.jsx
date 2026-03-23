@@ -30,6 +30,23 @@ export default function Pricelist({ categories, rooms, locked }) {
         }
     }, [locked, categories]);
 
+    // Mobile back button handler
+    useEffect(() => {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (!isMobile) return;
+
+        const handlePopState = (event) => {
+            window.history.pushState(null, null, window.location.pathname);
+        };
+
+        window.history.pushState(null, null, window.location.pathname);
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, []);
+
     const openScheduleModal = (pkg, mode = 'cart') => {
         setSelectedPackageForCart(pkg);
         setBookingMode(mode);
