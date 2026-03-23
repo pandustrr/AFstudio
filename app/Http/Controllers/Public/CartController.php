@@ -355,24 +355,4 @@ class CartController extends Controller
 
         return redirect()->back()->with('success', 'Item removed from cart.');
     }
-
-    /**
-     * Migrate cart items from one UID to another.
-     */
-    public function migrate(Request $request)
-    {
-        $request->validate([
-            'old_uid' => 'required|string',
-            'new_uid' => 'required|string',
-        ]);
-
-        Cart::where('cart_uid', $request->old_uid)
-            ->update(['cart_uid' => $request->new_uid]);
-
-        // Also update any photographer sessions that were locked by this UID
-        \App\Models\PhotographerSession::where('cart_uid', $request->old_uid)
-            ->update(['cart_uid' => $request->new_uid]);
-
-        return redirect()->back()->with('success', 'Cart migrated successfully.');
-    }
 }
