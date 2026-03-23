@@ -198,17 +198,22 @@ class BookingController extends Controller
                     }
                 }
 
-                // Auto-create Photo Session if Confirmed
-                if ($newStatus === 'confirmed' && $oldStatus !== 'confirmed') {
-                    $uid = $booking->guest_uid ?? $booking->booking_code;
+                // Auto-create/Update Photo Session status
+                $uid = $booking->guest_uid ?? $booking->booking_code;
+                $photoSession = PhotoEditing::where('uid', $uid)->first();
 
-                    PhotoEditing::updateOrCreate(
-                        ['uid' => $uid],
-                        [
+                if ($newStatus === 'confirmed') {
+                    if (!$photoSession) {
+                        PhotoEditing::create([
+                            'uid' => $uid,
                             'customer_name' => $booking->name,
                             'status' => 'pending',
-                        ]
-                    );
+                        ]);
+                    }
+                } elseif ($newStatus === 'completed') {
+                    if ($photoSession) $photoSession->update(['status' => 'done']);
+                } elseif ($newStatus === 'cancelled') {
+                    if ($photoSession) $photoSession->update(['status' => 'cancelled']);
                 }
             });
 
@@ -272,6 +277,10 @@ class BookingController extends Controller
                     $proof->delete();
                 }
 
+                // Delete associated photo session
+                $uid = $booking->guest_uid ?? $booking->booking_code;
+                PhotoEditing::where('uid', $uid)->delete();
+
                 $booking->delete();
             });
 
@@ -302,7 +311,7 @@ class BookingController extends Controller
         try {
             $status = $request->status;
             if (!$status || $status === 'all') {
-                return redirect()->back()->with('error', 'Pilih filter status terlebih dahulu (Done atau Cancelled).');
+                return redirect()->back()->with('error', 'Pilih filter status terlebih dahulu (Pending, Done, atau Cancelled).');
             }
 
             $bookings = Booking::where('status', $status)
@@ -330,6 +339,10 @@ class BookingController extends Controller
                         $proof->delete();
                     }
 
+                    // Delete associated photo session
+                    $uid = $booking->guest_uid ?? $booking->booking_code;
+                    PhotoEditing::where('uid', $uid)->delete();
+
                     $booking->delete();
                     $count++;
                 });
@@ -347,7 +360,7 @@ class BookingController extends Controller
         try {
             $status = $request->status;
             if (!$status || $status === 'all') {
-                return redirect()->back()->with('error', 'Pilih filter status terlebih dahulu (Done atau Cancelled).');
+                return redirect()->back()->with('error', 'Pilih filter status terlebih dahulu (Pending, Done, atau Cancelled).');
             }
 
             $query = PaymentProof::query();

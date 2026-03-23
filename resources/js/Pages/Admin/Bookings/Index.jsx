@@ -275,7 +275,7 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
                             </p>
                         </div>
                         <div className="flex items-center gap-2">
-                            {(filters.status === 'completed' || filters.status === 'cancelled') && (
+                            {(filters.status && filters.status !== 'all') && (
                                 <>
                                     <button
                                         onClick={bulkDeleteAllProofs}
@@ -499,7 +499,7 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
                                                             </div>
 
                                                             {/* Delete Proof Button */}
-                                                            {(filters.status === 'completed' || filters.status === 'cancelled') && (
+                                                            {(filters.status && filters.status !== 'all') && (
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
@@ -585,7 +585,7 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
                                                             >
                                                                 <EyeIcon className="w-4 h-4" />
                                                             </Link>
-                                                            {(filters.status === 'completed' || filters.status === 'cancelled') && (
+                                                            {(filters.status && filters.status !== 'all') && (
                                                                 <button
                                                                     onClick={() => deleteBooking(item.booking.id)}
                                                                     className="bg-red-500 text-white p-2 rounded-xl hover:bg-red-600 hover:scale-110 active:scale-95 transition-all shadow-md"
