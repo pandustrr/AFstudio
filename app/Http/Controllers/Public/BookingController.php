@@ -62,9 +62,7 @@ class BookingController extends Controller
             return $cart->package !== null;
         });
 
-        if ($carts->isEmpty()) {
-            return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
-        }
+        // Removed redirect block to allow rendering with empty cart for new UID sessions
 
         return Inertia::render('Checkout/Create', [
             'carts' => $carts,

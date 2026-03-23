@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, useForm, usePage, Link, router } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
 import { ShieldCheckIcon, CalendarIcon, MapPinIcon, PhoneIcon, UserIcon, ChatBubbleBottomCenterTextIcon, ClockIcon, HomeIcon, ShoppingCartIcon, TicketIcon, QrCodeIcon, DocumentIcon, CheckIcon, CheckCircleIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import ConfirmModal from '@/Components/ConfirmModal';
 
 export default function CheckoutCreate({ carts = [], rooms = [], photographers = [] }) {
     const { auth, settings, homePage } = usePage().props;
     const [appliedDiscount, setAppliedDiscount] = useState(null);
     const [validatingCode, setValidatingCode] = useState(false);
     const [voucherError, setVoucherError] = useState(null);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
     const getRoomLabel = (id) => {
         const room = rooms.find(r => r.id === parseInt(id));
@@ -225,6 +227,31 @@ Mohon konfirmasinya ya min. Terima kasih!`;
         });
     };
 
+    const handleGenerateNewUid = () => {
+        const oldUid = localStorage.getItem('afstudio_cart_uid');
+        const randomNumber = Math.floor(10000 + Math.random() * 90000);
+        const newUid = `AF-${randomNumber}`;
+
+        // Migrate cart items to the new UID first
+        router.post('/cart/migrate', {
+            old_uid: oldUid,
+            new_uid: newUid
+        }, {
+            onSuccess: () => {
+                localStorage.setItem('afstudio_cart_uid', newUid);
+                setData('cart_uid', newUid);
+                // Refresh and stay on the booking form with the new UID
+                window.location.href = `/checkout?uid=${newUid}`;
+            },
+            onError: () => {
+                // Fallback: stay on the checkout but the cart might be empty if migration failed
+                localStorage.setItem('afstudio_cart_uid', newUid);
+                setData('cart_uid', newUid);
+                window.location.href = `/checkout?uid=${newUid}`;
+            }
+        });
+    };
+
     const { flash } = usePage().props;
 
     return (
@@ -262,9 +289,18 @@ Mohon konfirmasinya ya min. Terima kasih!`;
 
                             {/* Session UID (Read-only) */}
                             <div className="space-y-2">
-                                <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/40 dark:text-brand-white/40">
-                                    <ShieldCheckIcon className="w-4 h-4" /> Session ID
-                                </label>
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-brand-black/40 dark:text-brand-white/40 truncate">
+                                        <ShieldCheckIcon className="w-4 h-4" /> Session ID
+                                    </label>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setIsConfirmOpen(true)}
+                                        className="w-auto px-4 py-2 bg-brand-red text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 border border-brand-red shrink-0"
+                                    >
+                                        <UserIcon className="w-3.5 h-3.5" /> Ganti UID?
+                                    </button>
+                                </div>
                                 <div className="w-full bg-black/5 dark:bg-white/5 border border-dashed border-black/10 dark:border-white/10 rounded-xl px-4 py-3 text-brand-black/50 dark:text-brand-white/50 font-mono text-xs tracking-widest">
                                     {data.cart_uid || 'NO-SESSION'}
                                 </div>
@@ -493,68 +529,81 @@ Mohon konfirmasinya ya min. Terima kasih!`;
                                     overflow-y-auto pr-2 custom-scrollbar
                                 "
                             >
-                                {carts.map((cart) => (
-                                    <div key={cart.id} className="pb-4 border-b border-black/5 dark:border-white/5 last:border-0">
-                                        <div className="flex gap-4 mb-2">
-                                            <div className="w-12 h-12 rounded-lg bg-black/5 dark:bg-white/10 flex items-center justify-center shrink-0">
-                                                <span className="text-xs font-bold text-brand-black dark:text-brand-white">{cart.quantity}x</span>
+                                {carts.length > 0 ? (
+                                    carts.map((cart) => (
+                                        <div key={cart.id} className="pb-4 border-b border-black/5 dark:border-white/5 last:border-0">
+                                            <div className="flex gap-4 mb-2">
+                                                <div className="w-12 h-12 rounded-lg bg-black/5 dark:bg-white/10 flex items-center justify-center shrink-0">
+                                                    <span className="text-xs font-bold text-brand-black dark:text-brand-white">{cart.quantity}x</span>
+                                                </div>
+                                                <div className="grow">
+                                                    <h3 className="text-xs font-bold uppercase text-brand-black dark:text-brand-white mb-1">
+                                                        {cart.package.name}
+                                                    </h3>
+                                                    <p className="text-[10px] text-brand-black/50 dark:text-brand-white/50 uppercase">
+                                                        {cart.package.sub_category?.name}
+                                                    </p>
+                                                </div>
+                                                <div className="text-xs font-bold text-brand-black dark:text-brand-white">
+                                                    {formatPrice(cart.package.price_numeric * cart.quantity)}
+                                                </div>
                                             </div>
-                                            <div className="grow">
-                                                <h3 className="text-xs font-bold uppercase text-brand-black dark:text-brand-white mb-1">
-                                                    {cart.package.name}
-                                                </h3>
-                                                <p className="text-[10px] text-brand-black/50 dark:text-brand-white/50 uppercase">
-                                                    {cart.package.sub_category?.name}
-                                                </p>
-                                            </div>
-                                            <div className="text-xs font-bold text-brand-black dark:text-brand-white">
-                                                {formatPrice(cart.package.price_numeric * cart.quantity)}
-                                            </div>
-                                        </div>
 
-                                        {/* Schedule Info Display */}
-                                        <div className="bg-brand-gold/10 rounded-lg p-3 border border-brand-gold/20">
-                                            <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white mb-1">
-                                                <CalendarIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
-                                                <span>{cart.scheduled_date}</span>
-                                            </div>
-                                            <div className="flex items-start gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white mb-1">
-                                                <ClockIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40 mt-0.5" />
-                                                {cart.package?.allow_split_session && cart.selected_times ? (
-                                                    <div className="flex flex-col gap-1 w-full">
-                                                        <div className="flex items-center justify-between border-b border-brand-gold/10 pb-1 mb-1">
-                                                            <span className="text-[9px] opacity-60">RINCIAN JADWAL</span>
-                                                            <span className="text-[9px] text-brand-gold">{cart.selected_times.length} SESI</span>
+                                            {/* Schedule Info Display */}
+                                            <div className="bg-brand-gold/10 rounded-lg p-3 border border-brand-gold/20">
+                                                <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white mb-1">
+                                                    <CalendarIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
+                                                    <span>{cart.scheduled_date}</span>
+                                                </div>
+                                                <div className="flex items-start gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white mb-1">
+                                                    <ClockIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40 mt-0.5" />
+                                                    {cart.package?.allow_split_session && cart.selected_times ? (
+                                                        <div className="flex flex-col gap-1 w-full">
+                                                            <div className="flex items-center justify-between border-b border-brand-gold/10 pb-1 mb-1">
+                                                                <span className="text-[9px] opacity-60">RINCIAN JADWAL</span>
+                                                                <span className="text-[9px] text-brand-gold">{cart.selected_times.length} SESI</span>
+                                                            </div>
+                                                            <div className="grid grid-cols-1 gap-1">
+                                                                {cart.selected_times.sort().map((t, i) => {
+                                                                    const [h, m] = t.split(':').map(Number);
+                                                                    const totalMin = h * 60 + m + 30;
+                                                                    const endT = `${String(Math.floor(totalMin / 60)).padStart(2, '0')}.${String(totalMin % 60).padStart(2, '0')}`;
+                                                                    return (
+                                                                        <div key={i} className="flex justify-between items-center bg-black/5 dark:bg-white/5 px-2 py-1 rounded">
+                                                                            <span>Sesi {i + 1}</span>
+                                                                            <span className="text-brand-gold">{t.substring(0, 5).replace(':', '.')}-{endT}</span>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
                                                         </div>
-                                                        <div className="grid grid-cols-1 gap-1">
-                                                            {cart.selected_times.sort().map((t, i) => {
-                                                                const [h, m] = t.split(':').map(Number);
-                                                                const totalMin = h * 60 + m + 30;
-                                                                const endT = `${String(Math.floor(totalMin / 60)).padStart(2, '0')}.${String(totalMin % 60).padStart(2, '0')}`;
-                                                                return (
-                                                                    <div key={i} className="flex justify-between items-center bg-black/5 dark:bg-white/5 px-2 py-1 rounded">
-                                                                        <span>Sesi {i + 1}</span>
-                                                                        <span className="text-brand-gold">{t.substring(0, 5).replace(':', '.')}-{endT}</span>
-                                                                    </div>
-                                                                );
-                                                            })}
+                                                    ) : (
+                                                        <span>{cart.start_time?.substring(0, 5)} - {cart.end_time?.substring(0, 5)}</span>
+                                                    )}
+                                                </div>
+                                                {(cart.room_id || cart.room_name) && (
+                                                    <div className="flex flex-col gap-1 border-t border-brand-gold/10 pt-1 mt-1">
+                                                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white">
+                                                            <MapPinIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
+                                                            <span>Studio: {cart.room_name || getRoomLabel(cart.room_id)}</span>
                                                         </div>
                                                     </div>
-                                                ) : (
-                                                    <span>{cart.start_time?.substring(0, 5)} - {cart.end_time?.substring(0, 5)}</span>
                                                 )}
                                             </div>
-                                            {(cart.room_id || cart.room_name) && (
-                                                <div className="flex flex-col gap-1 border-t border-brand-gold/10 pt-1 mt-1">
-                                                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white">
-                                                        <MapPinIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40" />
-                                                        <span>Studio: {cart.room_name || getRoomLabel(cart.room_id)}</span>
-                                                    </div>
-                                                </div>
-                                            )}
                                         </div>
+                                    ))
+                                ) : (
+                                    <div className="py-12 text-center border-2 border-dashed border-black/5 dark:border-white/5 rounded-3xl">
+                                        <ShoppingCartIcon className="w-12 h-12 text-brand-black/10 dark:text-brand-white/10 mx-auto mb-4" />
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-4">Keranjang Kosong</p>
+                                        <Link 
+                                            href="/price-list" 
+                                            className="inline-block px-6 py-3 bg-brand-gold text-brand-black text-[9px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand-gold/20"
+                                        >
+                                            Pilih Kategori
+                                        </Link>
                                     </div>
-                                ))}
+                                )}
                             </div>
 
                             <div className="pt-4 border-t-2 border-dashed border-black/10 dark:border-white/10 space-y-2">
@@ -686,6 +735,18 @@ Mohon konfirmasinya ya min. Terima kasih!`;
 
                 </div>
             </div>
+            <ConfirmModal
+                isOpen={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={() => {
+                    setIsConfirmOpen(false);
+                    handleGenerateNewUid();
+                }}
+                title="Ganti User Baru?"
+                message="Sesi belanja saat ini akan dikosongkan untuk membuat UID baru."
+                variant="danger"
+                confirmText="Ya, Ganti UID"
+            />
         </div>
     );
 }

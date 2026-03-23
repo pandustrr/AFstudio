@@ -57,7 +57,8 @@ export default function Navbar() {
             localStorage.setItem('afstudio_cart_uid', formattedUid);
             setCartUid(formattedUid);
             setIsCartModalOpen(false);
-            router.visit(`/cart?uid=${formattedUid}`);
+            // Stay on current page but update UID parameter
+            router.visit(`${window.location.pathname}?uid=${formattedUid}`);
         }
     };
 
