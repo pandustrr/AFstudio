@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, useForm, usePage, Link, router } from '@inertiajs/react';
 import Navbar from '@/Components/Navbar';
-import { ShieldCheckIcon, CalendarIcon, MapPinIcon, PhoneIcon, UserIcon, ChatBubbleBottomCenterTextIcon, ClockIcon, HomeIcon, ShoppingCartIcon, TicketIcon, QrCodeIcon, DocumentIcon, CheckIcon, CheckCircleIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { ShieldCheckIcon, CalendarIcon, MapPinIcon, PhoneIcon, UserIcon, ChatBubbleBottomCenterTextIcon, ClockIcon, HomeIcon, ShoppingCartIcon, TicketIcon, QrCodeIcon, DocumentIcon, CheckIcon, CheckCircleIcon, ArrowDownTrayIcon, TrashIcon } from '@heroicons/react/24/outline';
 import ConfirmModal from '@/Components/ConfirmModal';
 
 export default function CheckoutCreate({ carts = [], rooms = [], photographers = [] }) {
@@ -241,27 +241,46 @@ Mohon konfirmasinya ya min. Terima kasih!`;
         const randomNumber = Math.floor(10000 + Math.random() * 90000);
         const newUid = `AF-${randomNumber}`;
 
-        // Migrate cart items to the new UID first
-        router.post('/cart/migrate', {
-            old_uid: oldUid,
-            new_uid: newUid
-        }, {
-            onSuccess: () => {
-                localStorage.setItem('afstudio_cart_uid', newUid);
-                setData('cart_uid', newUid);
-                // Refresh and stay on the booking form with the new UID
-                window.location.href = `/checkout?uid=${newUid}`;
-            },
-            onError: () => {
-                // Fallback: stay on the checkout but the cart might be empty if migration failed
-                localStorage.setItem('afstudio_cart_uid', newUid);
-                setData('cart_uid', newUid);
-                window.location.href = `/checkout?uid=${newUid}`;
-            }
-        });
+        if (carts.length > 0) {
+            // Migrate cart items to the new UID first
+            router.post('/cart/migrate', {
+                old_uid: oldUid,
+                new_uid: newUid
+            }, {
+                onSuccess: () => {
+                    localStorage.setItem('afstudio_cart_uid', newUid);
+                    setData('cart_uid', newUid);
+                    // Refresh and stay on the booking form with the new UID
+                    window.location.href = `/checkout?uid=${newUid}`;
+                },
+                onError: () => {
+                    // Fallback: stay on the checkout but the cart might be empty if migration failed
+                    localStorage.setItem('afstudio_cart_uid', newUid);
+                    setData('cart_uid', newUid);
+                    window.location.href = `/checkout?uid=${newUid}`;
+                }
+            });
+        } else {
+            // Simply switch to a new UID (clean cart)
+            localStorage.setItem('afstudio_cart_uid', newUid);
+            setData('cart_uid', newUid);
+            window.location.href = `/checkout?uid=${newUid}`;
+        }
     };
 
     const { flash } = usePage().props;
+    
+    const handleRemoveFromCart = (cartId) => {
+        if (!window.confirm('Hapus paket ini dari keranjang?')) return;
+        
+        router.delete(`/cart/${cartId}`, {
+            preserveScroll: true,
+            onError: (err) => console.error(err),
+            onSuccess: () => {
+                console.log('Item removed from cart');
+            }
+        });
+    };
 
     return (
         <div className="min-h-screen bg-brand-white dark:bg-brand-black transition-colors duration-300 pb-20">
@@ -553,8 +572,18 @@ Mohon konfirmasinya ya min. Terima kasih!`;
                                                         {cart.package.sub_category?.name}
                                                     </p>
                                                 </div>
-                                                <div className="text-xs font-bold text-brand-black dark:text-brand-white">
-                                                    {formatPrice(cart.package.price_numeric * cart.quantity)}
+                                                <div className="flex flex-col items-end gap-2 shrink-0">
+                                                    <div className="text-xs font-bold text-brand-black dark:text-brand-white">
+                                                        {formatPrice(cart.package.price_numeric * cart.quantity)}
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveFromCart(cart.id)}
+                                                        className="p-1.5 text-brand-red hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all active:scale-90"
+                                                        title="Hapus dari keranjang"
+                                                    >
+                                                        <TrashIcon className="w-3.5 h-3.5" />
+                                                    </button>
                                                 </div>
                                             </div>
 
@@ -752,8 +781,8 @@ Mohon konfirmasinya ya min. Terima kasih!`;
                     handleGenerateNewUid();
                 }}
                 title="Ganti User Baru?"
-                message="Sesi belanja saat ini akan dikosongkan untuk membuat UID baru."
-                variant="danger"
+                message="Anda yakin ingin membuat ID baru? Paket yang sudah dipilih akan otomatis dipindahkan ke identitas baru Anda."
+                variant="warning"
                 confirmText="Ya, Ganti UID"
             />
         </div>

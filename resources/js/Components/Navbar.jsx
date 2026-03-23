@@ -50,6 +50,12 @@ export default function Navbar() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, [props.flash, isCartModalOpen]); // Re-check on flash changes (adding to cart)
 
+    const handleCartClick = () => {
+        // SELALU buka modal agar user bisa ganti UID dengan mudah 
+        // (Misal: Nanda ingin masukan UID-nya di HP Lisa)
+        setIsCartModalOpen(true);
+    };
+
     const handleUidSubmit = (e) => {
         e.preventDefault();
         if (inputUid.trim()) {
@@ -57,8 +63,8 @@ export default function Navbar() {
             localStorage.setItem('afstudio_cart_uid', formattedUid);
             setCartUid(formattedUid);
             setIsCartModalOpen(false);
-            // Stay on current page but update UID parameter
-            router.visit(`${window.location.pathname}?uid=${formattedUid}`);
+            // Langsung arahkan ke halaman keranjang (Cart) setelah memasukkan UID
+            router.visit(`/cart?uid=${formattedUid}`);
         }
     };
 
@@ -120,7 +126,7 @@ export default function Navbar() {
 
                         {/* Cart Icon */}
                         <button
-                            onClick={() => setIsCartModalOpen(true)}
+                            onClick={handleCartClick}
                             className={`relative transition-all duration-300 ml-5 hover:scale-110 ${!scrolled && (url === '/about' || url === '/review') ? 'text-white' : 'text-brand-black/70 dark:text-brand-white/70'
                                 } hover:text-brand-gold`}
                         >
@@ -138,9 +144,7 @@ export default function Navbar() {
                     {/* Mobile Toggle & Theme Button */}
                     <div className="md:hidden flex items-center space-x-2">
                         <button
-                            onClick={() => {
-                                setIsCartModalOpen(true);
-                            }}
+                            onClick={handleCartClick}
                             className={`p-2 rounded-lg transition-all duration-300 ${!scrolled && (url === '/about' || url === '/review')
                                 ? 'text-white hover:bg-white/10 active:scale-90'
                                 : 'text-brand-black/70 dark:text-brand-white/70 hover:bg-black/5 dark:hover:bg-white/5'

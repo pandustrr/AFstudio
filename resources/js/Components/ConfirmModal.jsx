@@ -1,7 +1,7 @@
 import React from 'react';
 import { XMarkIcon, CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 
-export default function ConfirmModal({ isOpen, onClose, onConfirm, title, message, processing, variant = 'danger', confirmText }) {
+export default function ConfirmModal({ isOpen, onClose, onConfirm, title, message, processing, variant = 'danger', confirmText, children }) {
     if (!isOpen) return null;
 
     const getVariantStyles = () => {
@@ -64,6 +64,12 @@ export default function ConfirmModal({ isOpen, onClose, onConfirm, title, messag
                             </p>
                         </div>
                     </div>
+                    
+                    {children && (
+                        <div className="mt-4 animate-fade-in">
+                            {children}
+                        </div>
+                    )}
 
                     <div className="flex gap-2 mt-8">
                         <button
