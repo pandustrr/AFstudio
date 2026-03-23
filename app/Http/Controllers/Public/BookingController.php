@@ -298,8 +298,8 @@ class BookingController extends Controller
                 }
             }
 
-            // Clear Cart (All, including orphans to clean up)
-            $query->delete();
+            // Clear entire cart for this UID (All, including orphans to clean up)
+            Cart::where('cart_uid', $uid)->delete();
 
             DB::commit();
 
