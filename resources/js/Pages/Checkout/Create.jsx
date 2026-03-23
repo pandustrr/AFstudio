@@ -228,12 +228,28 @@ Mohon konfirmasinya ya min. Terima kasih!`;
     };
 
     const handleGenerateNewUid = () => {
+        const oldUid = localStorage.getItem('afstudio_cart_uid');
         const randomNumber = Math.floor(10000 + Math.random() * 90000);
         const newUid = `AF-${randomNumber}`;
-        localStorage.setItem('afstudio_cart_uid', newUid);
-        setData('cart_uid', newUid);
-        // Refresh and stay on the booking form with the new UID (cart will be empty)
-        window.location.href = `/checkout?uid=${newUid}`;
+
+        // Migrate cart items to the new UID first
+        router.post('/cart/migrate', {
+            old_uid: oldUid,
+            new_uid: newUid
+        }, {
+            onSuccess: () => {
+                localStorage.setItem('afstudio_cart_uid', newUid);
+                setData('cart_uid', newUid);
+                // Refresh and stay on the booking form with the new UID
+                window.location.href = `/checkout?uid=${newUid}`;
+            },
+            onError: () => {
+                // Fallback: stay on the checkout but the cart might be empty if migration failed
+                localStorage.setItem('afstudio_cart_uid', newUid);
+                setData('cart_uid', newUid);
+                window.location.href = `/checkout?uid=${newUid}`;
+            }
+        });
     };
 
     const { flash } = usePage().props;

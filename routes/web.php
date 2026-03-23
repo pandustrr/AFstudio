@@ -22,6 +22,7 @@ Route::get('/open-access/{token}', [\App\Http\Controllers\Public\AccessControlle
 Route::get('/review', [\App\Http\Controllers\PublicReviewController::class, 'index']);
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
+Route::post('/cart/migrate', [CartController::class, 'migrate'])->name('cart.migrate');
 Route::patch('/cart/{cart}', [CartController::class, 'update'])->name('cart.update');
 Route::delete('/cart/{cart}', [CartController::class, 'destroy'])->name('cart.destroy');
 Route::get('/schedule/check', [ScheduleController::class, 'checkAvailability'])->name('schedule.check');
