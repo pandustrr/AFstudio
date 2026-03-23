@@ -34,4 +34,11 @@ class Booking extends Model
         return $this->hasMany(PaymentProof::class);
     }
 
+    public function photoSession()
+    {
+        // Matching by guest_uid first, then fallback to booking_code
+        return $this->hasOne(PhotoEditing::class, 'uid', 'guest_uid')
+            ->orWhere('uid', $this->booking_code);
+    }
+
 }
