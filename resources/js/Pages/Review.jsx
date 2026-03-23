@@ -7,6 +7,23 @@ import { XMarkIcon, SparklesIcon, ChatBubbleBottomCenterTextIcon, CameraIcon, Ar
 export default function Review({ reviews }) {
     const [selectedPhoto, setSelectedPhoto] = useState(null);
 
+    // Mobile back button handler
+    React.useEffect(() => {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (!isMobile) return;
+
+        const handlePopState = (event) => {
+            window.history.pushState(null, null, window.location.pathname);
+        };
+
+        window.history.pushState(null, null, window.location.pathname);
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, []);
+
     return (
         <GuestLayout>
             <Head title="Suara Mereka - AFSTUDIO" />

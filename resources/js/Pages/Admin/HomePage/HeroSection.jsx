@@ -109,10 +109,10 @@ export default function HeroSection({
                 <div className="lg:col-span-12 xl:col-span-7 space-y-4">
                     <div>
                         <InputLabel value="Judul Utama (H1)" />
-                        <TextInput
+                        <TextArea
                             value={data.hero_title}
                             onChange={(e) => setData('hero_title', e.target.value)}
-                            className="w-full mt-1.5 py-2.5 text-xs font-bold"
+                            className="w-full mt-1.5 py-2.5 text-xs font-bold min-h-[80px]"
                             placeholder="MELAMPAUI MOMEN."
                         />
                         {errors.hero_title && <p className="text-red-500 text-[10px] mt-1">{errors.hero_title}</p>}
@@ -138,6 +138,42 @@ export default function HeroSection({
                             placeholder="Mari abadikan setiap penggalan cerita Anda..."
                         />
                         {errors.hero_description && <p className="text-red-500 text-[10px] mt-1">{errors.hero_description}</p>}
+                    </div>
+
+                    {/* Stats Management */}
+                    <div className="pt-4 border-t border-black/5 dark:border-white/5">
+                        <InputLabel value="Impact Stats (Home Cards)" className="mb-4 text-brand-gold" />
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {[1, 2, 3].map((num) => (
+                                <div key={num} className="space-y-3 p-4 bg-black/5 dark:bg-white/5 rounded-xl border border-black/5 dark:border-white/5">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-brand-gold mb-2">Statistik #{num}</div>
+                                    <div>
+                                        <InputLabel value="Nilai (e.g. 2+)" className="text-[9px]" />
+                                        <TextInput
+                                            value={data[`stat${num}_value`]}
+                                            onChange={(e) => setData(`stat${num}_value`, e.target.value)}
+                                            className="w-full mt-1 py-1.5 text-[11px]"
+                                        />
+                                    </div>
+                                    <div>
+                                        <InputLabel value="Label (e.g. Total Booking)" className="text-[9px]" />
+                                        <TextInput
+                                            value={data[`stat${num}_label`]}
+                                            onChange={(e) => setData(`stat${num}_label`, e.target.value)}
+                                            className="w-full mt-1 py-1.5 text-[11px]"
+                                        />
+                                    </div>
+                                    <div>
+                                        <InputLabel value="Deskripsi Singkat" className="text-[9px]" />
+                                        <TextArea
+                                            value={data[`stat${num}_desc`]}
+                                            onChange={(e) => setData(`stat${num}_desc`, e.target.value)}
+                                            className="w-full mt-1 py-1.5 text-[11px] h-20"
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>

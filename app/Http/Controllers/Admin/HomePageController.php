@@ -58,7 +58,17 @@ class HomePageController extends Controller
             'contact_form_title' => 'nullable|string|max:255',
             'contact_form_placeholder' => 'nullable|string|max:255',
             'contact_button_text' => 'nullable|string|max:255',
+            'contact_button_text' => 'nullable|string|max:255',
             'admin_whatsapp' => 'nullable|string|max:20',
+            'stat1_value' => 'nullable|string|max:255',
+            'stat1_label' => 'nullable|string|max:255',
+            'stat1_desc' => 'nullable|string|max:255',
+            'stat2_value' => 'nullable|string|max:255',
+            'stat2_label' => 'nullable|string|max:255',
+            'stat2_desc' => 'nullable|string|max:255',
+            'stat3_value' => 'nullable|string|max:255',
+            'stat3_label' => 'nullable|string|max:255',
+            'stat3_desc' => 'nullable|string|max:255',
         ];
 
         $validated = $request->validate($rules);

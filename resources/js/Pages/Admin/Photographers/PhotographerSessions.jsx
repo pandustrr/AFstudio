@@ -9,14 +9,31 @@ import {
     AdjustmentsHorizontalIcon,
     InformationCircleIcon,
     ArrowsRightLeftIcon,
+    ChatBubbleLeftEllipsisIcon,
 } from '@heroicons/react/24/outline';
 import Modal from '@/Components/Modal';
 import CalendarWidget from '@/Components/CalendarWidget';
 
-export default function PhotographerSessions({ photographers, grid, selectedDate, selectedPhotographerId, filters, options, monthlyStats, dateMarks }) {
+export default function PhotographerSessions({ photographers, grid, selectedDate, selectedPhotographerId, filters, options, monthlyStats, dateMarks, followUpTemplates = [] }) {
     const [selectedSession, setSelectedSession] = useState(null);
     const [isOffsetModalOpen, setIsOffsetModalOpen] = useState(false);
     const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+    const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
+    const [selectedItemForFollowUp, setSelectedItemForFollowUp] = useState(null);
+
+    const getFollowUpLink = (session, templateContent) => {
+        if (!session || !templateContent) return '#';
+
+        const bookingInfo = session.booking_info || {};
+        let text = templateContent
+            .replace(/\[client_name\]/g, bookingInfo.customer_name || '')
+            .replace(/\[booking_code\]/g, bookingInfo.cart_uid || '')
+            .replace(/\[package_name\]/g, bookingInfo.package_name || '')
+            .replace(/\[scheduled_date\]/g, selectedDate ? new Date(selectedDate).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '');
+
+        const phone = bookingInfo.customer_phone?.startsWith('0') ? '62' + bookingInfo.customer_phone.substring(1) : bookingInfo.customer_phone;
+        return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+    };
 
     const [offsetData, setOffsetData] = useState({ minutes: 0, description: '' });
     const [moveData, setMoveData] = useState({
@@ -465,6 +482,20 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                                                     <p className="text-[9px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase mt-0.5">
                                                                         {item.booking_info.package_name}
                                                                     </p>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            setSelectedItemForFollowUp(item);
+                                                                            setIsSelectionModalOpen(true);
+                                                                        }}
+                                                                        className="mt-2 w-fit px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-[8px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-500/10"
+                                                                    >
+                                                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                                                                            <path d="M17.472 14.382c-.301-.15-1.78-.876-2.056-.976-.277-.1-.478-.15-.678.15s-.777.977-.952 1.177-.35.225-.651.075c-.301-.15-1.27-.468-2.42-1.494-.894-.797-1.498-1.782-1.674-2.081-.175-.3-.019-.462.13-.611.136-.134.301-.35.451-.525.15-.175.2-.299.3-.5.1-.2.05-.375-.025-.525s-.678-1.635-.929-2.239c-.244-.589-.493-.51-.678-.52h-.579c-.201 0-.527.076-.802.376s-1.053 1.028-1.053 2.508 1.103 2.909 1.254 3.109c.151.2 2.169 3.312 5.255 4.643.735.316 1.307.505 1.754.647.739.234 1.412.201 1.944.121.594-.09 1.78-.727 2.03-1.431.25-.705.25-1.309.175-1.432-.075-.123-.276-.198-.577-.348zM12 2C6.477 2 2 6.477 2 12c0 2.159.685 4.155 1.854 5.8L2.05 22l4.31-.968C7.942 21.683 9.897 22 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" />
+                                                                        </svg>
+                                                                        Follow Up
+                                                                    </button>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -677,6 +708,47 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                         >
                             Konfirmasi Pindah Jadwal
                         </button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Template Selection Modal */}
+            <Modal show={isSelectionModalOpen} onClose={() => setIsSelectionModalOpen(false)} maxWidth="md">
+                <div className="p-6">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-3 bg-brand-gold text-brand-black rounded-2xl shadow-xl">
+                            <ChatBubbleLeftEllipsisIcon className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-black uppercase tracking-tighter italic text-brand-black dark:text-brand-white leading-none">Pilih Template</h2>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mt-1">Pilih pesan untuk dikirim ke {selectedItemForFollowUp?.booking_info?.customer_name}</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        {followUpTemplates.length > 0 ? (
+                            followUpTemplates.map((tpl) => (
+                                <a
+                                    key={tpl.id}
+                                    href={getFollowUpLink(selectedItemForFollowUp, tpl.content)}
+                                    target="_blank"
+                                    onClick={() => setIsSelectionModalOpen(false)}
+                                    className="block p-4 bg-gray-50 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl hover:border-brand-gold transition-all group"
+                                >
+                                    <div className="flex justify-between items-center">
+                                        <span className="font-black uppercase tracking-widest text-xs text-brand-black dark:text-brand-white group-hover:text-brand-gold">{tpl.name}</span>
+                                        <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M17.472 14.382c-.301-.15-1.78-.876-2.056-.976-.277-.1-.478-.15-.678.15s-.777.977-.952 1.177-.35.225-.651.075c-.301-.15-1.27-.468-2.42-1.494-.894-.797-1.498-1.782-1.674-2.081-.175-.3-.019-.462.13-.611.136-.134.301-.35.451-.525.15-.175.2-.299.3-.5.1-.2.05-.375-.025-.525s-.678-1.635-.929-2.239c-.244-.589-.493-.51-.678-.52h-.579c-.201 0-.527.076-.802.376s-1.053 1.028-1.053 2.508 1.103 2.909 1.254 3.109c.151.2 2.169 3.312 5.255 4.643.735.316 1.307.505 1.754.647.739.234 1.412.201 1.944.121.594-.09 1.78-.727 2.03-1.431.25-.705.25-1.309.175-1.432-.075-.123-.276-.198-.577-.348zM12 2C6.477 2 2 6.477 2 12c0 2.159.685 4.155 1.854 5.8L2.05 22l4.31-.968C7.942 21.683 9.897 22 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" />
+                                        </svg>
+                                    </div>
+                                    <p className="text-[10px] text-brand-black/40 dark:text-brand-white/40 mt-2 line-clamp-2 italic">
+                                        {tpl.content}
+                                    </p>
+                                </a>
+                            ))
+                        ) : (
+                            <div className="text-center py-6 text-[10px] font-black uppercase text-brand-black/20">Belum ada template follow up yang tersedia.</div>
+                        )}
                     </div>
                 </div>
             </Modal>

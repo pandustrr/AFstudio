@@ -11,7 +11,8 @@ import {
     ShoppingBagIcon,
     CurrencyDollarIcon,
     XMarkIcon,
-    ChevronRightIcon
+    ChevronRightIcon,
+    ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { formatIDR } from '../../utils/formatters';
 import Modal from '@/Components/Modal';
@@ -19,8 +20,7 @@ import {
     ChatBubbleLeftEllipsisIcon
 } from '@heroicons/react/24/outline';
 
-export default function Reservations({ reservations, allSessions, selectedSessionId, followUpTemplates = [] }) {
-    const [filterValue, setFilterValue] = useState(selectedSessionId || '');
+export default function Reservations({ reservations, allSessions, filters, followUpTemplates = [] }) {
     const [searchCustomerName, setSearchCustomerName] = useState('');
     const [selectedCustomerGroup, setSelectedCustomerGroup] = useState(null);
     const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
@@ -36,8 +36,15 @@ export default function Reservations({ reservations, allSessions, selectedSessio
         });
     };
 
-    // Extract unique UIDs from reservations
-    const uniqueUIDs = [...new Set(reservations.map(r => r.cart_uid))].sort();
+    // Status filter options
+    const statusOptions = [
+        { id: 'all', label: 'Semua' },
+        { id: 'pending', label: 'Pending' },
+        { id: 'confirmed', label: 'Confirmed' },
+        { id: 'request_edit', label: 'Req Edit' },
+        { id: 'completed', label: 'Done' },
+        { id: 'cancelled', label: 'Cancelled' },
+    ];
 
     // Filter reservations based on customer name search
     const filteredReservations = reservations.filter(r =>
@@ -53,6 +60,8 @@ export default function Reservations({ reservations, allSessions, selectedSessio
                 cart_uid: reservation.cart_uid,
                 customer_email: reservation.customer_email,
                 customer_phone: reservation.customer_phone,
+                booking_status: reservation.booking_status,
+                date: reservation.date,
                 sessions: []
             };
         }
@@ -62,21 +71,26 @@ export default function Reservations({ reservations, allSessions, selectedSessio
 
     const customerGroups = Object.values(groupedReservations);
 
-    const handleFilterChange = (e) => {
-        const value = e.target.value;
-        setFilterValue(value);
-        if (value) {
-            get(route('photographer.reservations', { uid: value }));
-        }
-    };
-
-    const handleClearFilter = () => {
-        setFilterValue('');
-        get(route('photographer.reservations'));
+    const handleFilterStatus = (status) => {
+        get(`/photographer/reservations?status=${status}`, {
+            preserveState: true,
+            preserveScroll: true
+        });
     };
 
     const handleClearSearch = () => {
         setSearchCustomerName('');
+    };
+
+    const getStatusColor = (s) => {
+        switch (s) {
+            case 'pending': return 'bg-yellow-100 text-yellow-800';
+            case 'confirmed': return 'bg-blue-100 text-blue-800';
+            case 'completed': return 'bg-green-100 text-green-800';
+            case 'request_edit': return 'bg-purple-100 text-purple-800';
+            case 'cancelled': return 'bg-red-100 text-red-800';
+            default: return 'bg-gray-100 text-gray-800';
+        }
     };
 
     const getFollowUpLink = (session, templateContent) => {
@@ -135,33 +149,42 @@ export default function Reservations({ reservations, allSessions, selectedSessio
                                 </div>
                             </div>
 
-                            {/* Filter by UID */}
+                            {/* Filter by Status */}
                             <div className="flex flex-col gap-2">
                                 <label className="text-[10px] font-bold uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">
-                                    Filter by Customer UID
+                                    Filter Status Booking
                                 </label>
-                                <div className="flex gap-2">
+                                
+                                {/* Mobile View: Dropdown */}
+                                <div className="relative sm:hidden">
                                     <select
-                                        value={filterValue}
-                                        onChange={handleFilterChange}
-                                        className="flex-1 px-3 py-2 rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-bold text-brand-black dark:text-brand-white focus:outline-none focus:ring-2 focus:ring-brand-gold"
+                                        value={filters?.status || 'confirmed'}
+                                        onChange={(e) => handleFilterStatus(e.target.value)}
+                                        className="w-full pl-4 pr-10 py-2.5 bg-gray-100 dark:bg-white/5 border-0 rounded-xl text-[11px] font-black uppercase tracking-widest text-brand-black dark:text-brand-white focus:ring-1 focus:ring-brand-gold appearance-none"
                                     >
-                                        <option value="">Semua Customer</option>
-                                        {uniqueUIDs.map((uid) => (
-                                            <option key={uid} value={uid}>
-                                                {uid}
+                                        {statusOptions.map((s) => (
+                                            <option key={s.id} value={s.id} className="bg-white dark:bg-brand-black">
+                                                {s.label}
                                             </option>
                                         ))}
                                     </select>
-                                    {filterValue && (
+                                    <ChevronDownIcon className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-brand-black/40 dark:text-brand-white/40 pointer-events-none" />
+                                </div>
+
+                                {/* Desktop View: Tabs */}
+                                <div className="hidden sm:flex gap-1 overflow-x-auto pb-1.5 lg:pb-0">
+                                    {statusOptions.map((s) => (
                                         <button
-                                            onClick={handleClearFilter}
-                                            className="p-2 rounded-lg bg-brand-red/10 hover:bg-brand-red/20 text-brand-red transition-colors"
-                                            title="Clear filter"
+                                            key={s.id}
+                                            onClick={() => handleFilterStatus(s.id)}
+                                            className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider whitespace-nowrap transition-all ${filters?.status === s.id
+                                                ? 'bg-brand-red text-white shadow-md'
+                                                : 'bg-gray-100 text-brand-black/40 dark:bg-white/5 dark:text-brand-white/40 hover:bg-gray-200'
+                                                }`}
                                         >
-                                            <XMarkIcon className="w-4 h-4" />
+                                            {s.label}
                                         </button>
-                                    )}
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -186,27 +209,37 @@ export default function Reservations({ reservations, allSessions, selectedSessio
                                                     w-6 h-6 text-brand-gold shrink-0
                                                 "
                                             />
-                                            <div className="flex-1">
-                                                <h3 className="text-lg font-black text-brand-black dark:text-brand-white uppercase tracking-tight">
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="text-sm sm:text-lg font-black text-brand-black dark:text-brand-white uppercase tracking-tight truncate">
                                                     {group.customer_name}
                                                 </h3>
-                                                <p className="text-xs text-brand-black/40 dark:text-brand-white/40 font-bold mt-1">
+                                                <p className="text-[9px] sm:text-[10px] text-brand-black/40 dark:text-brand-white/40 font-bold mt-0.5">
                                                     UID: {group.cart_uid}
                                                 </p>
                                             </div>
-                                            <div
-                                                className="
-                                                    text-right shrink-0
-                                                "
-                                            >
-                                                <p className="text-2xl font-black text-brand-gold">
+
+                                            {/* Status & Date - Mobile & Desktop Balanced */}
+                                            <div className="flex flex-col items-center gap-1 sm:gap-1.5 px-3 sm:px-6 sm:border-x border-black/5 dark:border-white/5 mx-1 sm:mx-2 shrink-0">
+                                                <span className={`px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-[4px] sm:rounded text-[7px] sm:text-[8px] font-black uppercase tracking-widest ${getStatusColor(group.booking_status)}`}>
+                                                    {group.booking_status}
+                                                </span>
+                                                <div className="flex items-center gap-1 opacity-40">
+                                                    <CalendarIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                                    <span className="text-[8px] sm:text-[9px] font-black uppercase tracking-tighter">
+                                                        {new Date(group.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="text-right shrink-0 min-w-[50px]">
+                                                <p className="text-lg sm:text-2xl font-black text-brand-gold leading-none">
                                                     {group.sessions.length}
                                                 </p>
-                                                <p className="text-[10px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase">
-                                                    {group.sessions.length === 1 ? 'Sesi' : 'Sesi'}
+                                                <p className="text-[8px] sm:text-[10px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase mt-0.5">
+                                                    SESI
                                                 </p>
                                             </div>
-                                            <ChevronRightIcon className={`w-5 h-5 text-brand-gold transition-transform ${selectedCustomerGroup?.cart_uid === group.cart_uid ? 'rotate-90' : ''
+                                            <ChevronRightIcon className={`w-4 h-4 sm:w-5 sm:h-5 text-brand-gold transition-transform shrink-0 ${selectedCustomerGroup?.cart_uid === group.cart_uid ? 'rotate-90' : ''
                                                 }`} />
                                         </div>
                                     </div>
@@ -319,7 +352,7 @@ export default function Reservations({ reservations, allSessions, selectedSessio
                         <div className="bg-white dark:bg-white/3 border border-dashed border-black/10 dark:border-white/10 rounded-2xl p-12 text-center">
                             <CalendarIcon className="w-12 h-12 text-brand-black/20 dark:text-brand-white/20 mx-auto mb-4" />
                             <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-bold uppercase tracking-widest italic">
-                                {searchCustomerName || filterValue ? 'Tidak ada reservasi sesuai pencarian' : 'Belum ada reservasi booking'}
+                                {searchCustomerName ? 'Tidak ada reservasi sesuai pencarian' : 'Belum ada reservasi booking untuk status ini'}
                             </p>
                         </div>
                     )}

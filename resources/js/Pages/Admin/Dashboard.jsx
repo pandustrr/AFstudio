@@ -74,13 +74,13 @@ export default function Dashboard({ stats, recentBookings, recentReviews }) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                     {[
                         {
-                            label: 'Verifikasi Pembayaran',
-                            value: stats.pending_payments,
-                            desc: 'Perlu dicek segera',
-                            icon: CreditCardIcon,
-                            color: 'text-amber-500',
-                            bg: 'bg-amber-500/10',
-                            href: '/admin/bookings?status=pending'
+                            label: 'Booking Terkonfirmasi',
+                            value: stats.confirmed_bookings,
+                            desc: 'Jadwal yang sudah fix',
+                            icon: CheckCircleIcon,
+                            color: 'text-green-500',
+                            bg: 'bg-green-500/10',
+                            href: '/admin/bookings?status=confirmed'
                         },
                         {
                             label: 'Sesi Hari Ini',

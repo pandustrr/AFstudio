@@ -18,6 +18,7 @@ class DashboardController extends Controller
         // Stats for Dashboard
         $stats = [
             'pending_payments' => \App\Models\PaymentProof::where('status', 'pending')->count(),
+            'confirmed_bookings' => Booking::where('status', 'confirmed')->count(),
             'today_sessions' => PhotographerSession::where('date', $today)
                 ->where('status', 'booked')
                 ->count(),
