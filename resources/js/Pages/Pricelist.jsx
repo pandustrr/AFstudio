@@ -23,6 +23,11 @@ export default function Pricelist({ categories, rooms, locked }) {
 
     // Handle initial state for locked package
     useEffect(() => {
+        if (locked) {
+            // Save the shared link so we can return to it from checkout if cart is empty
+            localStorage.setItem('afstudio_last_shared_link', window.location.href);
+        }
+
         if (locked?.type === 'package' && categories[0]?.sub_categories[0]?.packages[0]) {
             const pkg = categories[0].sub_categories[0].packages[0];
             setSelectedPackageForCart(pkg);
