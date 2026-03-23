@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import GuestLayout from '../Layouts/GuestLayout';
 import { Head, router, usePage } from '@inertiajs/react';
 import { StarIcon, XMarkIcon, CameraIcon } from '@heroicons/react/24/solid';
-import { StarIcon as StarOutlineIcon } from '@heroicons/react/24/outline';
+import { StarIcon as StarOutlineIcon, UserIcon } from '@heroicons/react/24/outline';
 import EditNotif from '@/Components/EditNotif';
 import ConfirmModal from '@/Components/ConfirmModal';
 
@@ -134,6 +134,14 @@ export default function SelectorPhoto() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleGenerateNewUid = () => {
+        const randomNumber = Math.floor(10000 + Math.random() * 90000);
+        const newUid = `AF-${randomNumber}`;
+        localStorage.setItem('afstudio_cart_uid', newUid);
+        // Full reload to ensure a clean session for the new user
+        window.location.href = window.location.pathname;
     };
 
     // Fetch photos from drive
@@ -673,13 +681,31 @@ export default function SelectorPhoto() {
                                             <p className="text-brand-black/40 dark:text-brand-white/40 text-[10px] font-bold uppercase tracking-widest">Masukkan kode unik untuk mengakses koleksi foto Anda.</p>
                                         </div>
                                         <div className="space-y-4">
-                                            <label className="block text-[10px] uppercase font-black tracking-widest text-brand-black/60 dark:text-brand-white/60">User ID (UID)</label>
+                                            <div className="flex items-center justify-between gap-4">
+                                                <label className="block text-[10px] uppercase font-black tracking-widest text-brand-black/60 dark:text-brand-white/60">User ID (UID)</label>
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => setConfirmModal({
+                                                        isOpen: true,
+                                                        title: 'Ganti UID?',
+                                                        message: 'Ini akan mengosongkan sesi saat ini untuk masuk sebagai user baru.',
+                                                        variant: 'danger',
+                                                        onConfirm: () => {
+                                                            setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                                                            handleGenerateNewUid();
+                                                        }
+                                                    })}
+                                                    className="w-auto px-3 py-1.5 bg-brand-red text-white text-[8px] font-black uppercase tracking-widest rounded-lg transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5 border border-brand-red shrink-0"
+                                                >
+                                                    <UserIcon className="w-3 h-3" /> Ganti UID?
+                                                </button>
+                                            </div>
                                             <input
                                                 type="text"
                                                 value={uid}
                                                 onChange={(e) => setUid(e.target.value)}
                                                 placeholder="Contoh: nama-angka"
-                                                className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-6 py-4 text-brand-black dark:text-brand-white focus:outline-none focus:border-brand-red transition-all font-mono"
+                                                className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 text-brand-black dark:text-brand-white focus:outline-none focus:border-brand-red transition-all font-mono text-sm"
                                             />
                                             {error && <p className="text-red-500 text-[10px] font-bold uppercase tracking-tight">{error}</p>}
                                             <button
