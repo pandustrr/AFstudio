@@ -118,26 +118,60 @@ class CartController extends Controller
                 $data['session_ids'] = $sessionIds;
                 $data['room_name'] = $request->room_name;
                 $data['selected_times'] = $request->selected_times;
-
-                // For split sessions, we still need a start/end time for display in cart
-                // We'll use the range from earliest to latest selected
+ 
+                // For customized sessions, we need to respect the override times
+                $sessions = \App\Models\PhotographerSession::whereIn('id', $sessionIds)
+                    ->orderBy('start_time')
+                    ->get();
+                
+                $first = $sessions->first();
+                $last = $sessions->last();
                 $times = collect($request->selected_times)->sort();
-                $data['start_time'] = $times->first();
-                $lastTime = \Carbon\Carbon::parse($times->last())->addMinutes(30);
-                $data['end_time'] = $lastTime->format('H:i');
+ 
+                $data['start_time'] = ($first && $first->is_customized && $first->override_start_time) 
+                    ? substr($first->override_start_time, 0, 5) 
+                    : $times->first();
+                
+                $data['end_time'] = ($last && $last->is_customized && $last->override_end_time) 
+                    ? substr($last->override_end_time, 0, 5) 
+                    : \Carbon\Carbon::parse($times->last())->addMinutes(30)->format('H:i');
+                
                 $data['sessions_needed'] = count($sessionIds);
             } elseif ($request->has('sessions_needed')) {
                 // Auto-assign flow
                 if (!$request->start_time || !$request->sessions_needed) {
                     return redirect()->back()->with('error', 'Silakan pilih waktu mulai.');
                 }
-
+ 
                 $sessionsNeeded = $request->sessions_needed;
-                $startTime = \Carbon\Carbon::parse($request->start_time);
-                $endTime = $startTime->copy()->addMinutes($sessionsNeeded * 30);
-
-                $data['start_time'] = $startTime->format('H:i');
-                $data['end_time'] = $endTime->format('H:i');
+                
+                // Get the actual session records to check for overrides
+                $slots = [];
+                $t = \Carbon\Carbon::createFromTimeString($request->start_time);
+                for ($i = 0; $i < $sessionsNeeded; $i++) {
+                    $slots[] = $t->format('H:i:s');
+                    $t->addMinutes(30);
+                }
+ 
+                $sessions = \App\Models\PhotographerSession::where('photographer_id', $request->photographer_id)
+                    ->where('date', $request->scheduled_date)
+                    ->whereIn('start_time', $slots)
+                    ->orderBy('start_time')
+                    ->get();
+                
+                $first = $sessions->first();
+                $last = $sessions->last();
+ 
+                $startTimeStr = ($first && $first->is_customized && $first->override_start_time)
+                    ? substr($first->override_start_time, 0, 5)
+                    : $request->start_time;
+                
+                $endTimeStr = ($last && $last->is_customized && $last->override_end_time)
+                    ? substr($last->override_end_time, 0, 5)
+                    : \Carbon\Carbon::parse($request->start_time)->addMinutes($sessionsNeeded * 30)->format('H:i');
+ 
+                $data['start_time'] = $startTimeStr;
+                $data['end_time'] = $endTimeStr;
                 $data['sessions_needed'] = $sessionsNeeded;
                 $data['photographer_id'] = $request->photographer_id;
                 $data['room_name'] = $request->room_name;

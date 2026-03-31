@@ -10,6 +10,7 @@ import {
     InformationCircleIcon,
     ArrowsRightLeftIcon,
     ChatBubbleLeftEllipsisIcon,
+    PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 import Modal from '@/Components/Modal';
 import CalendarWidget from '@/Components/CalendarWidget';
@@ -20,6 +21,11 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
     const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
     const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
     const [selectedItemForFollowUp, setSelectedItemForFollowUp] = useState(null);
+    const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+    const [customTimeData, setCustomTimeData] = useState({ 
+        override_start_time: '', 
+        override_end_time: '' 
+    });
 
     const getFollowUpLink = (session, templateContent) => {
         if (!session || !templateContent) return '#';
@@ -166,6 +172,28 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
             target_time: moveData.time
         }, {
             onSuccess: () => setIsMoveModalOpen(false)
+        });
+    };
+
+    const openCustomModal = (session) => {
+        setSelectedSession(session);
+        setCustomTimeData({
+            override_start_time: session.override_start_time || '',
+            override_end_time: session.override_end_time || ''
+        });
+        setIsCustomModalOpen(true);
+    };
+
+    const submitCustomTime = () => {
+        router.post('/admin/photographer-sessions/custom-time', {
+            session_id: selectedSession.session_id,
+            override_start_time: customTimeData.override_start_time,
+            override_end_time: customTimeData.override_end_time,
+            photographer_id: selectedPhotographerId,
+            date: selectedDate,
+            start_time: selectedSession.time_full
+        }, {
+            onSuccess: () => setIsCustomModalOpen(false)
         });
     };
 
@@ -415,8 +443,8 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                             return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }).replace(':', '.');
                                         };
 
-                                        const startTime = getTimeWithOffset(item.time, item.cumulative_offset);
-                                        const endTime = getTimeWithOffset(item.time, (item.cumulative_offset || 0) + 30);
+                                        const startTime = item.is_customized && item.override_start_time ? item.override_start_time.replace(':', '.') : getTimeWithOffset(item.time, item.cumulative_offset);
+                                        const endTime = item.is_customized && item.override_end_time ? item.override_end_time.replace(':', '.') : getTimeWithOffset(item.time, (item.cumulative_offset || 0) + 30);
                                         const isBooked = item.status === 'booked';
                                         const isOff = item.status === 'off';
                                         const isOpen = item.status === 'open';
@@ -507,7 +535,12 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                                     ) : (
                                                         <div className="flex items-center gap-1.5 px-3 py-1 bg-brand-gold/10 text-brand-gold rounded-full w-fit">
                                                             <div className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">TERSEDIA / OPEN</span>
+                                                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                                                                TERSEDIA / OPEN
+                                                                {item.is_customized && (
+                                                                    <span className="bg-brand-gold text-brand-black px-1 rounded-[4px] text-[7px] italic">CUSTOMED</span>
+                                                                )}
+                                                            </span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -516,6 +549,18 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                                                 <div className="flex items-center gap-2">
                                                     {!isOff && (
                                                         <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => openCustomModal(item)}
+                                                                className={`flex items-center px-4 py-2 rounded-xl transition-all shadow-sm
+                                                                    ${item.is_customized 
+                                                                        ? 'bg-brand-gold text-brand-black' 
+                                                                        : 'bg-white dark:bg-white/10 text-brand-black dark:text-brand-white border border-black/5 dark:border-white/10'
+                                                                    }`}
+                                                                title="Edit Jam Manual"
+                                                            >
+                                                                <PencilSquareIcon className="w-4 h-4" />
+                                                            </button>
+
                                                             {isBooked && (
                                                                 <button
                                                                     onClick={() => openMoveModal(item)}
@@ -708,6 +753,73 @@ export default function PhotographerSessions({ photographers, grid, selectedDate
                         >
                             Konfirmasi Pindah Jadwal
                         </button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Custom Time Modal */}
+            <Modal show={isCustomModalOpen} onClose={() => setIsCustomModalOpen(false)} maxWidth="md" closeable={false}>
+                <div className="p-8">
+                    <h2 className="text-xl font-black uppercase tracking-tighter italic mb-1 text-brand-black dark:text-brand-white">Edit Waktu Manual</h2>
+                    <p className="text-[10px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase tracking-widest mb-6">Atur jam mulai dan selesai secara kustom untuk sesi ini</p>
+                    
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-[9px] uppercase font-black tracking-widest text-brand-black/40 dark:text-brand-white/40 block mb-2 ml-1">Jam Mulai</label>
+                                <input
+                                    type="time"
+                                    value={customTimeData.override_start_time}
+                                    onChange={(e) => setCustomTimeData({ ...customTimeData, override_start_time: e.target.value })}
+                                    className="w-full bg-black/5 dark:bg-white/10 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-gold border-0 ring-1 ring-black/5 dark:ring-white/10 text-brand-black dark:text-brand-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[9px] uppercase font-black tracking-widest text-brand-black/40 dark:text-brand-white/40 block mb-2 ml-1">Jam Selesai</label>
+                                <input
+                                    type="time"
+                                    value={customTimeData.override_end_time}
+                                    onChange={(e) => setCustomTimeData({ ...customTimeData, override_end_time: e.target.value })}
+                                    className="w-full bg-black/5 dark:bg-white/10 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-gold border-0 ring-1 ring-black/5 dark:ring-white/10 text-brand-black dark:text-brand-white"
+                                />
+                            </div>
+                        </div>
+                        
+
+                        <div className="flex flex-col gap-3 pt-2">
+                            <button 
+                                onClick={submitCustomTime} 
+                                className="w-full bg-brand-gold text-brand-black py-4 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-brand-gold/20 hover:scale-[1.02] transition-all"
+                            >
+                                Simpan Jadwal Kustom
+                            </button>
+                            <button 
+                                onClick={() => setIsCustomModalOpen(false)} 
+                                className="w-full bg-black/5 dark:bg-white/10 text-brand-black/60 dark:text-brand-white/60 py-4 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-black/10 dark:hover:bg-white/20 transition-all"
+                            >
+                                Batal
+                            </button>
+                            
+                            {selectedSession?.is_customized && (
+                                <button
+                                    onClick={() => {
+                                        router.post('/admin/photographer-sessions/custom-time', {
+                                            session_id: selectedSession.session_id,
+                                            override_start_time: null,
+                                            override_end_time: null,
+                                            photographer_id: selectedPhotographerId,
+                                            date: selectedDate,
+                                            start_time: selectedSession.time_full
+                                        }, {
+                                            onSuccess: () => setIsCustomModalOpen(false)
+                                        });
+                                    }}
+                                    className="mt-2 w-full border border-brand-red text-brand-red py-4 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-red hover:text-white transition-all italic"
+                                >
+                                    Reset Ke Waktu Default (30 Menit)
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </Modal>

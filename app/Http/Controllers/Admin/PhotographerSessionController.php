@@ -389,6 +389,39 @@ class PhotographerSessionController extends Controller
         return back()->with('success', 'Jadwal berhasil dipindahkan dan data invoice telah diperbarui.');
     }
 
+    public function updateCustomTime(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'nullable|exists:photographer_sessions,id',
+            'override_start_time' => 'nullable',
+            'override_end_time' => 'nullable',
+            'photographer_id' => 'required|exists:users,id',
+            'date' => 'required|date',
+            'start_time' => 'required',
+        ]);
+ 
+        $data = [
+            'override_start_time' => $request->override_start_time,
+            'override_end_time' => $request->override_end_time,
+            'is_customized' => $request->filled('override_start_time') || $request->filled('override_end_time'),
+        ];
+ 
+        if ($request->session_id) {
+            PhotographerSession::where('id', $request->session_id)->update($data);
+        } else {
+            PhotographerSession::updateOrCreate(
+                [
+                    'photographer_id' => $request->photographer_id,
+                    'date' => $request->date,
+                    'start_time' => $request->start_time,
+                ],
+                $data
+            );
+        }
+ 
+        return back()->with('success', 'Waktu kustom sesi berhasil disimpan.');
+    }
+ 
     public function toggle(Request $request)
     {
         $request->validate([
@@ -515,6 +548,9 @@ class PhotographerSessionController extends Controller
                 'offset_minutes' => $session ? $session->offset_minutes : 0,
                 'cumulative_offset' => $cumulativeOffset,
                 'offset_description' => $session ? $session->offset_description : '',
+                'override_start_time' => $session && $session->override_start_time ? substr($session->override_start_time, 0, 5) : null,
+                'override_end_time' => $session && $session->override_end_time ? substr($session->override_end_time, 0, 5) : null,
+                'is_customized' => $session ? $session->is_customized : false,
             ];
 
             $start->addMinutes(30);
@@ -548,8 +584,10 @@ class PhotographerSessionController extends Controller
             return [
                 'id' => $session->id,
                 'date' => $session->date,
-                'time' => Carbon::createFromTimeString($session->start_time)->format('H:i'),
-                'time_full' => $session->start_time,
+                'time' => substr($session->adjusted_start_time, 0, 5),
+                'adjusted_start_time' => substr($session->adjusted_start_time, 0, 5),
+                'adjusted_end_time' => substr($session->adjusted_end_time, 0, 5),
+                'is_customized' => $session->is_customized,
                 'customer_name' => $session->bookingItem?->booking?->name ?? 'GUEST',
                 'customer_email' => $session->bookingItem?->booking?->email ?? '-',
                 'customer_phone' => $session->bookingItem?->booking?->phone ?? '-',

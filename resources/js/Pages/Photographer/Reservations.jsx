@@ -51,7 +51,7 @@ export default function Reservations({ reservations, allSessions, filters, follo
         r.customer_name.toLowerCase().includes(searchCustomerName.toLowerCase())
     );
 
-    // Group reservations by customer name and uid
+    // Group reservations by customer name, uid, and then by booking item (package)
     const groupedReservations = filteredReservations.reduce((acc, reservation) => {
         const key = `${reservation.customer_name}|${reservation.cart_uid}`;
         if (!acc[key]) {
@@ -62,10 +62,23 @@ export default function Reservations({ reservations, allSessions, filters, follo
                 customer_phone: reservation.customer_phone,
                 booking_status: reservation.booking_status,
                 date: reservation.date,
+                items: {},
+                total_sessions: 0
+            };
+        }
+        
+        const itemId = reservation.booking_item_id || 'manual';
+        if (!acc[key].items[itemId]) {
+            acc[key].items[itemId] = {
+                booking_item_id: itemId,
+                package_name: reservation.package_name,
+                package_price: reservation.package_price,
                 sessions: []
             };
         }
-        acc[key].sessions.push(reservation);
+        
+        acc[key].items[itemId].sessions.push(reservation);
+        acc[key].total_sessions++;
         return acc;
     }, {});
 
@@ -233,7 +246,7 @@ export default function Reservations({ reservations, allSessions, filters, follo
 
                                             <div className="text-right shrink-0 min-w-[50px]">
                                                 <p className="text-lg sm:text-2xl font-black text-brand-gold leading-none">
-                                                    {group.sessions.length}
+                                                    {group.total_sessions}
                                                 </p>
                                                 <p className="text-[8px] sm:text-[10px] font-bold text-brand-black/40 dark:text-brand-white/40 uppercase mt-0.5">
                                                     SESI
@@ -257,31 +270,48 @@ export default function Reservations({ reservations, allSessions, filters, follo
                                     leaveTo="opacity-0"
                                 >
                                     <div className="space-y-3 mb-4">
-                                        {group.sessions.map((session) => (
+                                        {Object.values(group.items).map((item) => (
                                             <div
-                                                key={session.id}
+                                                key={item.booking_item_id}
                                                 className="bg-brand-gold/5 dark:bg-brand-gold/10 border border-brand-gold/20 rounded-xl p-4 ml-4"
                                             >
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                    {/* Date & Time */}
+                                                    {/* Date & Detailed Sessions */}
                                                     <div className="flex flex-col gap-2">
                                                         <div className="flex items-center gap-2">
                                                             <CalendarIcon className="w-4 h-4 text-brand-gold" />
                                                             <span className="text-[9px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Tanggal</span>
                                                         </div>
                                                         <p className="text-xs font-black text-brand-black dark:text-brand-white">
-                                                            {getDateDisplay(session.date)}
+                                                            {getDateDisplay(group.date)}
                                                         </p>
-                                                        <div className="flex items-center gap-2 mt-2">
-                                                            <ClockIcon className="w-4 h-4 text-brand-gold" />
-                                                            <span className="text-[9px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Waktu</span>
+
+                                                        <div className="mt-2 flex flex-col gap-1.5">
+                                                            <div className="flex items-center gap-2 mb-1 opacity-40">
+                                                                <ClockIcon className="w-4 h-4 text-brand-gold" />
+                                                                <span className="text-[9px] font-black uppercase tracking-widest leading-none">Rincian Jadwal</span>
+                                                            </div>
+                                                            <div className="flex flex-col gap-1 pl-6 border-l-2 border-brand-gold/20">
+                                                                {item.sessions.map((s, idx) => (
+                                                                    <div key={idx} className="flex flex-col gap-0.5 mb-1 last:mb-0">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-[9px] font-black uppercase opacity-40">Sesi {idx + 1}:</span>
+                                                                            <span className={`text-[10px] font-black ${s.is_customized ? 'text-brand-gold' : 'text-brand-gold/80'}`}>
+                                                                                {s.adjusted_start_time?.replace(':', '.')} - {s.adjusted_end_time?.replace(':', '.')}
+                                                                            </span>
+                                                                            {s.is_customized && (
+                                                                                <span className="bg-brand-gold text-brand-black px-1 rounded-[3px] text-[7px] italic font-black uppercase">CUSTOMED</span>
+                                                                            )}
+                                                                        </div>
+                                                                        {s.offset_description && (
+                                                                            <p className="text-[8px] font-bold text-brand-black/40 dark:text-brand-white/40 italic ml-4 line-clamp-1">
+                                                                                📝 {s.offset_description}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
                                                         </div>
-                                                        <p className="text-xs font-black text-brand-gold">
-                                                            {session.time}
-                                                            {session.offset_minutes > 0 && (
-                                                                <span className="text-[9px] text-brand-red ml-2">+{session.offset_minutes}m</span>
-                                                            )}
-                                                        </p>
                                                     </div>
 
                                                     {/* Package Info */}
@@ -291,14 +321,14 @@ export default function Reservations({ reservations, allSessions, filters, follo
                                                             <span className="text-[9px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Paket</span>
                                                         </div>
                                                         <p className="text-xs font-black text-brand-black dark:text-brand-white">
-                                                            {session.package_name}
+                                                            {item.package_name}
                                                         </p>
                                                         <div className="flex items-center gap-2 mt-2">
                                                             <CurrencyDollarIcon className="w-4 h-4 text-brand-gold" />
                                                             <span className="text-[9px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40">Harga</span>
                                                         </div>
                                                         <p className="text-xs font-black text-brand-gold">
-                                                            {formatIDR(session.package_price)}
+                                                            {formatIDR(item.package_price)}
                                                         </p>
                                                     </div>
 
@@ -315,7 +345,7 @@ export default function Reservations({ reservations, allSessions, filters, follo
                                                             {group.customer_email}
                                                         </a>
                                                         <a
-                                                            href={` tel:${group.customer_phone}`}
+                                                            href={`tel:${group.customer_phone}`}
                                                             className="text-[9px] font-bold text-brand-black/60 dark:text-brand-white/60 hover:text-brand-gold transition-colors"
                                                         >
                                                             {group.customer_phone}
@@ -323,7 +353,7 @@ export default function Reservations({ reservations, allSessions, filters, follo
                                                         <button
                                                             onClick={(e) => {
                                                                 e.preventDefault();
-                                                                setSelectedItemForFollowUp(session);
+                                                                setSelectedItemForFollowUp(item.sessions[0]);
                                                                 setIsSelectionModalOpen(true);
                                                             }}
                                                             className="mt-2 w-full py-1.5 bg-green-500 hover:bg-green-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-500/10"
@@ -335,13 +365,6 @@ export default function Reservations({ reservations, allSessions, filters, follo
                                                         </button>
                                                     </div>
                                                 </div>
-                                                {session.offset_description && (
-                                                    <div className="mt-3 pt-3 border-t border-brand-gold/20">
-                                                        <p className="text-[9px] font-bold text-brand-black/60 dark:text-brand-white/60 italic">
-                                                            📝 {session.offset_description}
-                                                        </p>
-                                                    </div>
-                                                )}
                                             </div>
                                         ))}
                                     </div>

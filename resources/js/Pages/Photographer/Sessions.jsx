@@ -214,12 +214,12 @@ export default function Sessions({ grid, selectedDate, filters, options, monthly
                                                 .map(item => {
                                                     const cumulative = item.cumulative_offset || 0;
                                                     const individual = item.offset_minutes || 0;
-                                                    const start = addMinutes(item.time, cumulative);
-                                                    const end = addMinutes(item.time, 30 + cumulative);
+                                                    const start = (item.is_customized && item.override_start_time) ? item.override_start_time.replace(':', '.') : addMinutes(item.time, cumulative);
+                                                    const end = (item.is_customized && item.override_end_time) ? item.override_end_time.replace(':', '.') : addMinutes(item.time, 30 + cumulative);
                                                     const name = item.booking_info?.customer_name || 'Booked';
-                                                    const pkg = item.booking_info?.package_name ? ` (${item.booking_info.package_name})` : '';
-                                                    const offsetText = individual !== 0 ? ` [ ${individual > 0 ? '+' : ''}${individual}m]` : '';
-                                                    return `${start}-${end} ; ${name}${pkg}${offsetText}`;
+                     const pkg = item.booking_info?.package_name ? ` (${item.booking_info.package_name})` : '';
+                                                    const customLabel = item.is_customized ? ' [CUSTOMED]' : '';
+                                                    return `${start}-${end} ; ${name}${pkg}${customLabel}`;
                                                 })
                                                 .join('\n');
 
@@ -256,18 +256,18 @@ export default function Sessions({ grid, selectedDate, filters, options, monthly
                                                 };
                                                 const cumulative = item.cumulative_offset || 0;
                                                 const individual = item.offset_minutes || 0;
-                                                const start = addMinutes(item.time, cumulative);
-                                                const end = addMinutes(item.time, 30 + cumulative);
+                                                const start = (item.is_customized && item.override_start_time) ? item.override_start_time.replace(':', '.') : addMinutes(item.time, cumulative);
+                                                const end = (item.is_customized && item.override_end_time) ? item.override_end_time.replace(':', '.') : addMinutes(item.time, 30 + cumulative);
                                                 const name = item.booking_info?.customer_name || 'Booked';
                                                 const pkg = item.booking_info?.package_name ? ` (${item.booking_info.package_name})` : '';
                                                 return (
-                                                    <div key={i} className="mb-1 flex flex-wrap items-center gap-1">
+                                                    <div key={i} className="mb-1 flex flex-wrap items-center gap-x-1 gap-y-0.5">
                                                         <span className="text-brand-gold">{start}-{end}</span>
                                                         <span className="dark:text-white/80">; {name}</span>
                                                         <span className="opacity-50 text-[10px]">{pkg}</span>
-                                                        {individual !== 0 && (
-                                                            <span className="text-[7px] bg-brand-gold/20 text-brand-gold px-1 rounded font-black italic">
-                                                                {individual > 0 ? '+' : ''}{individual}m
+                                                        {item.is_customized && (
+                                                            <span className="text-[7px] bg-brand-gold/10 text-brand-gold px-1 rounded font-black italic">
+                                                                CUSTOMED
                                                             </span>
                                                         )}
                                                     </div>
@@ -379,8 +379,8 @@ export default function Sessions({ grid, selectedDate, filters, options, monthly
                                     return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }).replace(':', '.');
                                 };
 
-                                const startTime = getTimeWithOffset(item.time, item.cumulative_offset);
-                                const endTime = getTimeWithOffset(item.time, (item.cumulative_offset || 0) + 30);
+                                const startTime = (item.is_customized && item.override_start_time) ? item.override_start_time.replace(':', '.') : getTimeWithOffset(item.time, item.cumulative_offset);
+                                const endTime = (item.is_customized && item.override_end_time) ? item.override_end_time.replace(':', '.') : getTimeWithOffset(item.time, (item.cumulative_offset || 0) + 30);
                                 const isBooked = item.status === 'booked';
                                 const isOff = item.status === 'off';
                                 const isOpen = item.status === 'open';
@@ -430,11 +430,6 @@ export default function Sessions({ grid, selectedDate, filters, options, monthly
                                                         <h3 className="text-sm font-black text-brand-black dark:text-brand-white tracking-widest uppercase">
                                                             Jam {startTime} - {endTime}
                                                         </h3>
-                                                        {item.cumulative_offset !== 0 && (
-                                                            <span className="text-[10px] font-bold text-brand-red italic">
-                                                                ({item.cumulative_offset > 0 ? '+' : ''}{item.cumulative_offset}m)
-                                                            </span>
-                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -445,7 +440,12 @@ export default function Sessions({ grid, selectedDate, filters, options, monthly
                                                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                                                         <div className="flex items-center gap-1.5 px-3 py-1 bg-green-500/10 text-green-500 rounded-full w-fit">
                                                             <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">TERISI</span>
+                                                            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                                                                TERISI
+                                                                {item.is_customized && (
+                                                                    <span className="bg-green-500 text-white px-1 rounded-[4px] text-[7px] italic">CUSTOMED</span>
+                                                                )}
+                                                            </span>
                                                         </div>
                                                         {item.booking_info && (
                                                             <div className="flex items-center justify-between gap-4 w-full">
@@ -477,12 +477,22 @@ export default function Sessions({ grid, selectedDate, filters, options, monthly
                                                 ) : isOff ? (
                                                     <div className="flex items-center gap-1.5 px-3 py-1 bg-black/5 dark:bg-white/5 text-brand-black/30 dark:text-brand-white/30 rounded-full w-fit">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-current" />
-                                                        <span className="text-[10px] font-black uppercase tracking-widest">KOSONG / OFF</span>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                                                            KOSONG / OFF
+                                                            {item.is_customized && (
+                                                                <span className="bg-black/20 text-brand-black dark:text-brand-white px-1 rounded-[4px] text-[7px] italic">CUSTOMED</span>
+                                                            )}
+                                                        </span>
                                                     </div>
                                                 ) : (
                                                     <div className="flex items-center gap-1.5 px-3 py-1 bg-brand-gold/10 text-brand-gold rounded-full w-fit border border-brand-gold/20">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-brand-gold" />
-                                                        <span className="text-[10px] font-black uppercase tracking-widest">TERSEDIA / OPEN</span>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                                                            TERSEDIA / OPEN
+                                                            {item.is_customized && (
+                                                                <span className="bg-brand-gold text-brand-black px-1 rounded-[4px] text-[7px] italic">CUSTOMED</span>
+                                                            )}
+                                                        </span>
                                                     </div>
                                                 )}
                                             </div>

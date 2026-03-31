@@ -413,16 +413,17 @@ Mohon konfirmasinya ya min. Terima kasih!`;
                                         <ClockIcon className="w-4 h-4" /> Jam yg disepakati
                                     </label>
                                     <div className="w-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-xl px-4 py-3 text-brand-black/60 dark:text-brand-white/60 font-bold">
-                                        {carts[0]?.package?.allow_split_session && carts[0]?.selected_times ? (
+                                        {carts[0]?.adjusted_sessions?.length > 0 ? (
                                             <div className="flex flex-wrap gap-2">
-                                                {carts[0].selected_times.map((t, i) => (
-                                                    <span key={i} className="bg-brand-gold/10 px-2 py-0.5 rounded border border-brand-gold/20">
-                                                        {t.substring(0, 5)}
+                                                {carts[0].adjusted_sessions.map((s, i) => (
+                                                    <span key={i} className="bg-brand-gold/10 px-2 py-1 rounded border border-brand-gold/20 flex items-center gap-1.5">
+                                                        {s.adjusted_start_time.substring(0, 5).replace(':', '.')}
+                                                        {s.is_customized && <span className="text-[7px] italic bg-brand-gold text-brand-black px-1 rounded-[3px]">CUSTOMED</span>}
                                                     </span>
                                                 ))}
                                             </div>
                                         ) : (
-                                            <span>{carts[0]?.start_time?.substring(0, 5)} WIB</span>
+                                            <span>{carts[0]?.start_time?.substring(0, 5).replace(':', '.')} WIB</span>
                                         )}
                                     </div>
                                 </div>
@@ -595,28 +596,26 @@ Mohon konfirmasinya ya min. Terima kasih!`;
                                                 </div>
                                                 <div className="flex items-start gap-2 text-[10px] font-bold uppercase text-brand-black dark:text-brand-white mb-1">
                                                     <ClockIcon className="w-3.5 h-3.5 text-brand-black/40 dark:text-brand-white/40 mt-0.5" />
-                                                    {cart.package?.allow_split_session && cart.selected_times ? (
+                                                    {cart.adjusted_sessions?.length > 0 ? (
                                                         <div className="flex flex-col gap-1 w-full">
                                                             <div className="flex items-center justify-between border-b border-brand-gold/10 pb-1 mb-1">
                                                                 <span className="text-[9px] opacity-60">RINCIAN JADWAL</span>
-                                                                <span className="text-[9px] text-brand-gold">{cart.selected_times.length} SESI</span>
+                                                                <span className="text-[9px] text-brand-gold">{cart.adjusted_sessions.length} SESI</span>
                                                             </div>
                                                             <div className="grid grid-cols-1 gap-1">
-                                                                {cart.selected_times.sort().map((t, i) => {
-                                                                    const [h, m] = t.split(':').map(Number);
-                                                                    const totalMin = h * 60 + m + 30;
-                                                                    const endT = `${String(Math.floor(totalMin / 60)).padStart(2, '0')}.${String(totalMin % 60).padStart(2, '0')}`;
-                                                                    return (
-                                                                        <div key={i} className="flex justify-between items-center bg-black/5 dark:bg-white/5 px-2 py-1 rounded">
-                                                                            <span>Sesi {i + 1}</span>
-                                                                            <span className="text-brand-gold">{t.substring(0, 5).replace(':', '.')}-{endT}</span>
+                                                                {cart.adjusted_sessions.map((s, i) => (
+                                                                    <div key={i} className="flex justify-between items-center bg-black/5 dark:bg-white/5 px-2 py-1 rounded">
+                                                                        <span>Sesi {i + 1}</span>
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <span className="text-brand-gold">{s.adjusted_start_time.substring(0, 5).replace(':', '.')}-{s.adjusted_end_time.substring(0, 5).replace(':', '.')}</span>
+                                                                            {s.is_customized && <span className="text-[7px] italic bg-brand-gold text-brand-black px-1 rounded-[3px]">CUSTOM</span>}
                                                                         </div>
-                                                                    );
-                                                                })}
+                                                                    </div>
+                                                                ))}
                                                             </div>
                                                         </div>
                                                     ) : (
-                                                        <span>{cart.start_time?.substring(0, 5)} - {cart.end_time?.substring(0, 5)}</span>
+                                                        <span>{cart.start_time?.substring(0, 5).replace(':', '.')} - {cart.end_time?.substring(0, 5).replace(':', '.')}</span>
                                                     )}
                                                 </div>
                                                 {(cart.room_id || cart.room_name) && (
