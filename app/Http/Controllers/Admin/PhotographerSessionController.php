@@ -536,7 +536,7 @@ class PhotographerSessionController extends Controller
                 'package_price' => $session->bookingItem?->package?->price ?? 0,
                 'booking_id' => $session->bookingItem?->booking_id ?? null,
                 'booking_item_id' => $session->booking_item_id,
-                'cart_uid' => $session->cart_uid,
+                'cart_uid' => $session->bookingItem?->booking?->guest_uid ?? $session->cart_uid,
                 'booking_status' => $session->bookingItem?->booking?->status ?? 'unknown',
                 'offset_minutes' => $session->offset_minutes,
                 'offset_description' => $session->offset_description,
