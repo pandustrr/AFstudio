@@ -342,18 +342,10 @@ class PhotographerSessionController extends Controller
             ]
         );
 
-        // Update Booking Item agar merujuk ke fotografer yang baru
-        if ($session->bookingItem) {
-            $session->bookingItem->update([
-                'photographer_id' => $request->target_photographer_id,
-                'scheduled_date' => $request->target_date,
-                'start_time' => $request->target_time,
-                // End time juga harus diupdate (asumsi 30 menit per sesi)
-                'end_time' => Carbon::createFromTimeString($request->target_time)->addMinutes(30)->toTimeString(),
-            ]);
-        }
+        // 1. Simpan referensi booking item sebelum sesi lama dilepas
+        $bookingItem = $session->bookingItem;
 
-        // Kembalikan sesi lama menjadi 'open' atau hapus jika itu record manual
+        // 2. Kembalikan sesi lama menjadi 'open' agar tidak terhitung lagi dalam jadwal
         $session->update([
             'status' => 'open',
             'booking_item_id' => null,
@@ -362,7 +354,39 @@ class PhotographerSessionController extends Controller
             'offset_description' => null
         ]);
 
-        return back()->with('success', 'Jadwal berhasil dipindahkan.');
+        // 3. Update data Booking Item (Invoice) agar sinkron dengan jadwal yang baru
+        if ($bookingItem) {
+            // Ambil semua sesi yang AKTIF (status=booked) untuk booking item ini
+            // Termasuk sesi target yang baru saja kita isi di atas
+            $relatedSessions = \App\Models\PhotographerSession::where('booking_item_id', $bookingItem->id)
+                ->where('status', 'booked')
+                ->orderBy('date')
+                ->orderBy('start_time')
+                ->get();
+
+            if ($relatedSessions->isNotEmpty()) {
+                $firstSession = $relatedSessions->first();
+                $lastSession = $relatedSessions->last();
+                
+                // Gunakan Carbon untuk kalkulasi end_time (sesi terakhir + 30 menit)
+                $endTime = Carbon::createFromTimeString($lastSession->start_time)->addMinutes(30)->toTimeString();
+                
+                // Ambil daftar waktu untuk kolom selected_times (Invoice mengandalkan rincian ini)
+                $selectedTimes = $relatedSessions->map(function($s) {
+                    return substr($s->start_time, 0, 5); // Format H:i
+                })->toArray();
+
+                $bookingItem->update([
+                    'photographer_id' => $firstSession->photographer_id, 
+                    'scheduled_date' => $firstSession->date,
+                    'start_time' => $firstSession->start_time,
+                    'end_time' => $endTime,
+                    'selected_times' => $selectedTimes,
+                ]);
+            }
+        }
+
+        return back()->with('success', 'Jadwal berhasil dipindahkan dan data invoice telah diperbarui.');
     }
 
     public function toggle(Request $request)
