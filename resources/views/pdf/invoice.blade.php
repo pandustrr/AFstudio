@@ -227,22 +227,29 @@
                                 @php
                                 $sortedTimes = $item->selected_times;
                                 sort($sortedTimes);
+                                
+                                // Calculate cumulative offset for individual sessions if needed
+                                // For simplicity, we use the item's main offset for all its sessions
+                                $startTimeRaw = \Carbon\Carbon::parse($item->start_time);
+                                $startTimeAdjusted = \Carbon\Carbon::parse($item->adjusted_start_time);
+                                $itemOffset = $startTimeRaw->diffInMinutes($startTimeAdjusted, false);
                                 @endphp
                                 @foreach($sortedTimes as $index => $t)
                                 @php
-                                $timeParts = explode(':', $t);
-                                $totalMin = ($timeParts[0] * 60) + $timeParts[1] + 30;
-                                $endT = sprintf('%02d.%02d', floor($totalMin/60), $totalMin%60);
+                                $tCarbon = \Carbon\Carbon::parse($t)->addMinutes($itemOffset);
+                                $tFormatted = $tCarbon->format('H:i');
+                                $endTCarbon = (clone $tCarbon)->addMinutes(30);
+                                $endT = $endTCarbon->format('H.i');
                                 @endphp
                                 <tr>
                                     <td style="border:none; padding: 0;">Sesi {{ $index + 1 }}:</td>
-                                    <td style="border:none; padding: 0; text-align: right; font-family: monospace;">{{ str_replace(':', '.', substr($t, 0, 5)) }}-{{ $endT }}</td>
+                                    <td style="border:none; padding: 0; text-align: right; font-family: monospace;">{{ str_replace(':', '.', $tFormatted) }}-{{ $endT }}</td>
                                 </tr>
                                 @endforeach
                             </table>
                         </div>
                         @else
-                        {{ substr($item->start_time, 0, 5) }} - {{ substr($item->end_time, 0, 5) }} WIB
+                        {{ substr($item->adjusted_start_time, 0, 5) }} - {{ substr($item->adjusted_end_time, 0, 5) }} WIB
                         @endif
 
                         @if($item->photographer)
