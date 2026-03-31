@@ -149,21 +149,7 @@ class BookingController extends Controller
                 // Handle photographer slots
                 if ($newStatus === 'cancelled') {
                     // Release photographer slots if the new status is cancelled
-                    $itemIds = DB::table('booking_items')
-                        ->where('booking_id', $booking->id)
-                        ->pluck('id')
-                        ->toArray();
-
-                    if (!empty($itemIds)) {
-                        DB::table('photographer_sessions')
-                            ->whereIn('booking_item_id', $itemIds)
-                            ->update([
-                                'booking_item_id' => null,
-                                'status' => 'open',
-                                'cart_uid' => null,
-                                'updated_at' => now()
-                            ]);
-                    }
+                    $this->releasePhotographerSessions($booking);
                 } elseif ($oldStatus === 'cancelled' && $newStatus !== 'cancelled') {
                     // Re-claim photographer slots if moving away from cancelled
                     foreach ($booking->items as $item) {
@@ -254,21 +240,8 @@ class BookingController extends Controller
     {
         try {
             DB::transaction(function () use ($booking) {
-                $itemIds = DB::table('booking_items')
-                    ->where('booking_id', $booking->id)
-                    ->pluck('id')
-                    ->toArray();
-
-                if (!empty($itemIds)) {
-                    DB::table('photographer_sessions')
-                        ->whereIn('booking_item_id', $itemIds)
-                        ->update([
-                            'booking_item_id' => null,
-                            'status' => 'open',
-                            'cart_uid' => null,
-                            'updated_at' => now()
-                        ]);
-                }
+                // Release photographer slots
+                $this->releasePhotographerSessions($booking);
 
                 foreach ($booking->paymentProof as $proof) {
                     if ($proof->file_path && Storage::disk('public')->exists($proof->file_path)) {
@@ -310,27 +283,52 @@ class BookingController extends Controller
     {
         try {
             $status = $request->status;
+            $search = $request->input('search');
+            $year = $request->input('year');
+            $month = $request->input('month');
+            $day = $request->input('day');
+            $photographerId = $request->input('photographer_id');
+
             if (!$status || $status === 'all') {
                 return redirect()->back()->with('error', 'Pilih filter status terlebih dahulu (Pending, Done, atau Cancelled).');
             }
 
-            $bookings = Booking::where('status', $status)
-                ->with(['paymentProof', 'items'])->limit(500)->get();
+            // Build a query for Bookings that match the filtered BookingItems
+            $query = Booking::where('status', $status);
+
+            // Apply same filters as Index
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('booking_code', 'like', "%{$search}%")
+                        ->orWhere('name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
+                });
+            }
+
+            if ($year || $month || $day || $photographerId) {
+                $query->whereHas('items', function ($q) use ($year, $month, $day, $photographerId) {
+                    if ($photographerId) {
+                        $q->where('photographer_id', $photographerId);
+                    }
+                    if ($year) {
+                        $q->whereYear('scheduled_date', $year);
+                    }
+                    if ($month) {
+                        $q->whereMonth('scheduled_date', $month);
+                    }
+                    if ($day) {
+                        $q->whereDay('scheduled_date', $day);
+                    }
+                });
+            }
+
+            $bookings = $query->with(['paymentProof', 'items'])->limit(500)->get();
 
             $count = 0;
             foreach ($bookings as $booking) {
                 DB::transaction(function () use ($booking, &$count) {
-                    $itemIds = $booking->items->pluck('id')->toArray();
-                    if (!empty($itemIds)) {
-                        DB::table('photographer_sessions')
-                            ->whereIn('booking_item_id', $itemIds)
-                            ->update([
-                                'booking_item_id' => null,
-                                'status' => 'open',
-                                'cart_uid' => null,
-                                'updated_at' => now()
-                            ]);
-                    }
+                    // Release photographer slots
+                    $this->releasePhotographerSessions($booking);
 
                     foreach ($booking->paymentProof as $proof) {
                         if ($proof->file_path && Storage::disk('public')->exists($proof->file_path)) {
@@ -384,5 +382,33 @@ class BookingController extends Controller
             Log::error('Bulk Delete Proofs Error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Gagal menghapus bukti masal: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Release all photographer sessions associated with a booking.
+     */
+    private function releasePhotographerSessions(Booking $booking)
+    {
+        $itemIds = $booking->items->pluck('id')->toArray();
+        $uid = $booking->guest_uid;
+
+        // Condition 1: Find by booking_item_id
+        $query = DB::table('photographer_sessions');
+        
+        $query->where(function($q) use ($itemIds, $uid) {
+            if (!empty($itemIds)) {
+                $q->whereIn('booking_item_id', $itemIds);
+            }
+            if ($uid) {
+                $q->orWhere('cart_uid', $uid);
+            }
+        });
+
+        $query->update([
+            'booking_item_id' => null,
+            'status' => 'open',
+            'cart_uid' => null,
+            'updated_at' => now()
+        ]);
     }
 }
