@@ -493,11 +493,8 @@ class PhotographerSessionController extends Controller
             if ($session) {
                 $status = $session->status; // Use the actual status from the session record
                 // Offset persists and accumulates through booked and open sessions
-                if ($status === 'booked' || $status === 'open') {
-                    $cumulativeOffset += ($session->offset_minutes ?? 0);
-                } else {
-                    $cumulativeOffset = 0; // Reset on 'off'
-                }
+                // Accumulate offsets universally to shift the day's timeline
+                $cumulativeOffset += ($session->offset_minutes ?? 0);
             }
             // Don't reset offset on gaps, allow it to propagate
             // $cumulativeOffset = 0; 

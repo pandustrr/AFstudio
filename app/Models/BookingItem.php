@@ -80,13 +80,12 @@ class BookingItem extends Model
 
             $cumulative = 0;
             $matrix = [];
-
+            
             foreach ($sessions as $s) {
-                if ($s->status === 'booked') {
-                    $cumulative += ($s->offset_minutes ?? 0);
-                } else {
-                    $cumulative = 0; // Reset on open/off
-                }
+                // Accumulate offsets from all sessions (booked, open, and even off) 
+                // to maintain a consistent day-wide shift as expected by the user.
+                $cumulative += ($s->offset_minutes ?? 0);
+                
                 $matrix[$s->start_time] = $cumulative;
             }
             static::$daySessionCache[$cacheKey] = $matrix;
