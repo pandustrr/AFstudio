@@ -28,6 +28,9 @@ class CartController extends Controller
             $query->where('cart_uid', $uid);
         }
 
+        // Only show items that are NOT direct buy in the main cart list
+        $query->where('is_direct', false);
+
         $carts = $query->get();
 
         // Get transaction history (completed bookings) - always fetch regardless of cart status
@@ -71,6 +74,7 @@ class CartController extends Controller
             'room_name' => 'nullable|string',
             'cart_uid' => 'required|string',
             'selected_times' => 'nullable|array',
+            'is_direct' => 'nullable|boolean',
         ]);
 
         $package = \App\Models\PricelistPackage::with('subCategory.category')->findOrFail($request->pricelist_package_id);
@@ -98,7 +102,15 @@ class CartController extends Controller
             'pricelist_package_id' => $request->pricelist_package_id,
             'quantity' => 1,
             'scheduled_date' => $request->scheduled_date,
+            'is_direct' => $request->boolean('is_direct'),
         ];
+
+        // If this is a direct buy, clear any previous direct buy items for this UID
+        if ($request->boolean('is_direct')) {
+            Cart::where('cart_uid', $request->cart_uid)
+                ->where('is_direct', true)
+                ->delete();
+        }
 
         if ($type === 'photographer') {
             // New flow: split session or auto-assign or manual
@@ -390,23 +402,4 @@ class CartController extends Controller
         return redirect()->back()->with('success', 'Item removed from cart.');
     }
 
-    /**
-     * Migrate cart items from one UID to another.
-     */
-    public function migrate(Request $request)
-    {
-        $request->validate([
-            'old_uid' => 'required|string',
-            'new_uid' => 'required|string',
-        ]);
-
-        Cart::where('cart_uid', $request->old_uid)
-            ->update(['cart_uid' => $request->new_uid]);
-
-        // Also update any photographer sessions that were locked by this UID
-        \App\Models\PhotographerSession::where('cart_uid', $request->old_uid)
-            ->update(['cart_uid' => $request->new_uid]);
-
-        return redirect()->back()->with('success', 'Cart migrated successfully.');
-    }
 }

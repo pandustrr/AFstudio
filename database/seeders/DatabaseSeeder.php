@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
             RoomScheduleSeeder::class,
             PhotoSessionSeeder::class,
             JourneyStepSeeder::class,
-            // PricelistSeeder::class,
+            PricelistSeeder::class,
             InsightsSeeder::class,
         ]);
     }
