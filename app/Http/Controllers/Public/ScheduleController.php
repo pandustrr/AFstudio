@@ -492,6 +492,9 @@ class ScheduleController extends Controller
                 'offset_minutes' => $session ? $session->offset_minutes : 0,
                 'cumulative_offset' => $cumulativeOffset,
                 'offset_description' => $session ? $session->offset_description : '',
+                'override_start_time' => $session && $session->override_start_time ? substr($session->override_start_time, 0, 5) : null,
+                'override_end_time' => $session && $session->override_end_time ? substr($session->override_end_time, 0, 5) : null,
+                'is_customized' => $session ? $session->is_customized : false,
             ];
 
             $start->addMinutes(30);

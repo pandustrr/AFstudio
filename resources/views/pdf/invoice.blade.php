@@ -220,37 +220,34 @@
                 <td style="font-size: 10pt;">
                     <strong>{{ \Carbon\Carbon::parse($item->scheduled_date)->format('d/m/Y') }}</strong><br>
                     <span style="font-size: 9pt;">
-                        @if($item->selected_times && count($item->selected_times) > 0)
                         <div style="margin-top: 4px; border-top: 0.5px solid #eee; padding-top: 2px;">
                             <span style="font-size: 8pt; font-weight: bold;">Rincian Sesi:</span><br>
                             <table style="width: 100%; font-size: 8pt; border: none;">
                                 @php
-                                $sortedTimes = $item->selected_times;
-                                sort($sortedTimes);
-                                
-                                // Calculate cumulative offset for individual sessions if needed
-                                // For simplicity, we use the item's main offset for all its sessions
-                                $startTimeRaw = \Carbon\Carbon::parse($item->start_time);
-                                $startTimeAdjusted = \Carbon\Carbon::parse($item->adjusted_start_time);
-                                $itemOffset = $startTimeRaw->diffInMinutes($startTimeAdjusted, false);
+                                    $sessions = $item->photographerSessions->sortBy('start_time');
                                 @endphp
-                                @foreach($sortedTimes as $index => $t)
-                                @php
-                                $tCarbon = \Carbon\Carbon::parse($t)->addMinutes($itemOffset);
-                                $tFormatted = $tCarbon->format('H:i');
-                                $endTCarbon = (clone $tCarbon)->addMinutes(30);
-                                $endT = $endTCarbon->format('H.i');
-                                @endphp
-                                <tr>
-                                    <td style="border:none; padding: 0;">Sesi {{ $index + 1 }}:</td>
-                                    <td style="border:none; padding: 0; text-align: right; font-family: monospace;">{{ str_replace(':', '.', $tFormatted) }}-{{ $endT }}</td>
-                                </tr>
-                                @endforeach
+                                @if($sessions->count() > 0)
+                                    @foreach($sessions as $index => $session)
+                                    <tr>
+                                        <td style="border:none; padding: 0;">Sesi {{ $index + 1 }}:</td>
+                                        <td style="border:none; padding: 0; text-align: right; font-family: monospace;">
+                                            {{ str_replace(':', '.', substr($session->adjusted_start_time, 0, 5)) }}-{{ str_replace(':', '.', substr($session->adjusted_end_time, 0, 5)) }}
+                                            @if($session->is_customized)
+                                            <span style="font-size: 7pt; font-style: italic; color: #666;">(CUSTOMED)</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                @else
+                                    <tr>
+                                        <td style="border:none; padding: 0;">Sesi 1:</td>
+                                        <td style="border:none; padding: 0; text-align: right; font-family: monospace;">
+                                            {{ str_replace(':', '.', substr($item->adjusted_start_time, 0, 5)) }}-{{ str_replace(':', '.', substr($item->adjusted_end_time, 0, 5)) }}
+                                        </td>
+                                    </tr>
+                                @endif
                             </table>
                         </div>
-                        @else
-                        {{ substr($item->adjusted_start_time, 0, 5) }} - {{ substr($item->adjusted_end_time, 0, 5) }} WIB
-                        @endif
 
                         @if($item->photographer)
                         <div style="margin-top: 4px; border-top: 0.5px dashed #eee; padding-top: 2px;">

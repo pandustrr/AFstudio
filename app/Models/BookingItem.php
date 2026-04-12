@@ -1,109 +1,146 @@
 <?php
-
+ 
 namespace App\Models;
-
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+ 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
+use Carbon\Carbon;
+ 
 class BookingItem extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'booking_id',
         'pricelist_package_id',
+        'photographer_id',
+        'room_id',
+        'room_name',
         'quantity',
         'price',
         'subtotal',
         'scheduled_date',
         'start_time',
         'end_time',
-        'room_id',
-        'room_name',
-        'photographer_id',
         'selected_times',
     ];
-
+ 
     protected $casts = [
         'selected_times' => 'array',
+        'scheduled_date' => 'date',
     ];
-
-    protected $appends = ['adjusted_start_time', 'adjusted_end_time'];
-
-    public function booking(): BelongsTo
+ 
+    protected $appends = [
+        'adjusted_start_time',
+        'adjusted_end_time',
+        'adjusted_sessions'
+    ];
+ 
+    public function getAdjustedSessionsAttribute()
+    {
+        $sessions = $this->photographerSessions->sortBy('start_time');
+        return $sessions->map(function($s) {
+            return [
+                'id' => $s->id,
+                'start_time' => $s->start_time,
+                'end_time' => $s->override_end_time ?: \Carbon\Carbon::parse($s->start_time)->addMinutes(30)->format('H:i:s'),
+                'adjusted_start_time' => $s->adjusted_start_time,
+                'adjusted_end_time' => $s->adjusted_end_time,
+                'is_customized' => $s->is_customized
+            ];
+        })->values()->toArray();
+    }
+ 
+    public function booking()
     {
         return $this->belongsTo(Booking::class);
     }
-
-    public function photographer(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'photographer_id');
-    }
-
-    public function sessions(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(PhotographerSession::class, 'booking_item_id');
-    }
-
-    public function package(): BelongsTo
+ 
+    public function package()
     {
         return $this->belongsTo(PricelistPackage::class, 'pricelist_package_id');
     }
-
-    // --- Cascading Offset Logic ---
+ 
+    public function photographer()
+    {
+        return $this->belongsTo(User::class, 'photographer_id');
+    }
+ 
+    public function photographerSessions()
+    {
+        return $this->hasMany(PhotographerSession::class, 'booking_item_id');
+    }
+ 
+    public function room()
+    {
+        return $this->belongsTo(Room::class);
+    }
+ 
+    // --- Cascading Offset & Manual Override Logic ---
     protected static $daySessionCache = [];
-
+ 
     public function getAdjustedStartTimeAttribute()
     {
-        return $this->getAdjustedTimes()['start'];
+        if (!$this->start_time || !$this->photographer_id) return $this->start_time;
+ 
+        try {
+            $matrix = $this->getOffsetMatrix();
+            $offsetMinutes = $matrix[$this->start_time] ?? 0;
+            
+            // Check for manual override from admin
+            $firstSession = $this->photographerSessions->sortBy('start_time')->first();
+            $baseStartTime = ($firstSession && $firstSession->is_customized && $firstSession->override_start_time)
+                ? $firstSession->override_start_time
+                : $this->start_time;
+ 
+            $time = Carbon::createFromFormat('H:i:s', strlen($baseStartTime) == 5 ? $baseStartTime . ':00' : $baseStartTime);
+            return $time->addMinutes($offsetMinutes)->format('H:i:s');
+        } catch (\Exception $e) {
+            return $this->start_time;
+        }
     }
-
+ 
     public function getAdjustedEndTimeAttribute()
     {
-        return $this->getAdjustedTimes()['end'];
-    }
-
-    protected function getAdjustedTimes()
-    {
-        if (!$this->photographer_id || !$this->scheduled_date) {
-            return ['start' => $this->start_time, 'end' => $this->end_time];
+        if (!$this->end_time || !$this->photographer_id) return $this->end_time;
+ 
+        try {
+            $matrix = $this->getOffsetMatrix();
+            
+            // For end time, we use the offset of the LAST session in the booking
+            $lastSession = $this->photographerSessions->sortByDesc('start_time')->first();
+            $lastSessionStartTime = $lastSession ? $lastSession->start_time : $this->start_time;
+            $offsetMinutes = $matrix[$lastSessionStartTime] ?? 0;
+ 
+            // Check for manual override from admin
+            $baseEndTime = ($lastSession && $lastSession->is_customized && $lastSession->override_end_time)
+                ? $lastSession->override_end_time
+                : $this->end_time;
+ 
+            $time = Carbon::createFromFormat('H:i:s', strlen($baseEndTime) == 5 ? $baseEndTime . ':00' : $baseEndTime);
+            return $time->addMinutes($offsetMinutes)->format('H:i:s');
+        } catch (\Exception $e) {
+            return $this->end_time;
         }
-
-        $cacheKey = $this->photographer_id . '_' . $this->scheduled_date;
-
+    }
+ 
+    protected function getOffsetMatrix()
+    {
+        $cacheKey = $this->photographer_id . '_' . $this->scheduled_date->toDateString();
+ 
         if (!isset(static::$daySessionCache[$cacheKey])) {
-            $sessions = \App\Models\PhotographerSession::where('photographer_id', $this->photographer_id)
-                ->where('date', $this->scheduled_date)
+            $sessions = PhotographerSession::where('photographer_id', $this->photographer_id)
+                ->where('date', $this->scheduled_date->toDateString())
                 ->orderBy('start_time', 'asc')
                 ->get();
-
+ 
             $cumulative = 0;
             $matrix = [];
-
+            
             foreach ($sessions as $s) {
-                if ($s->status === 'booked') {
-                    $cumulative += ($s->offset_minutes ?? 0);
-                } else {
-                    $cumulative = 0; // Reset on open/off
-                }
+                $cumulative += ($s->offset_minutes ?? 0);
                 $matrix[$s->start_time] = $cumulative;
             }
             static::$daySessionCache[$cacheKey] = $matrix;
         }
-
-        $offsetMins = static::$daySessionCache[$cacheKey][$this->start_time] ?? 0;
-
-        if ($offsetMins === 0) {
-            return ['start' => $this->start_time, 'end' => $this->end_time];
-        }
-
-        $start = \Carbon\Carbon::createFromTimeString($this->start_time)->addMinutes($offsetMins);
-        $end = \Carbon\Carbon::createFromTimeString($this->end_time)->addMinutes($offsetMins);
-
-        return [
-            'start' => $start->format('H:i:s'),
-            'end' => $end->format('H:i:s')
-        ];
+ 
+        return static::$daySessionCache[$cacheKey];
     }
 }

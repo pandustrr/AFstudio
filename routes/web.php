@@ -176,6 +176,7 @@ Route::prefix('admin')->group(function () {
         Route::prefix('photographer-sessions')->group(function () {
             Route::get('/', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'adminIndex'])->name('admin.photographer-sessions.index');
             Route::post('/offset', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'updateOffset'])->name('admin.photographer-sessions.offset');
+            Route::post('/custom-time', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'updateCustomTime'])->name('admin.photographer-sessions.custom-time');
             Route::post('/reschedule', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'reschedule'])->name('admin.photographer-sessions.reschedule');
             Route::post('/move-session', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'moveSession'])->name('admin.photographer-sessions.move-session');
             Route::post('/mark', [\App\Http\Controllers\Admin\PhotographerSessionController::class, 'updateDateMark'])->name('admin.photographer-sessions.mark');

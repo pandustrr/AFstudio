@@ -53,17 +53,17 @@ class AuthController extends Controller
         if (Auth::guard($guard)->attempt($credentials, $request->boolean('remember'))) {
             $user = Auth::guard($guard)->user();
 
-            if ($guard === 'editor' && $user->role !== 'editor' && $user->role !== 'admin') {
+            if ($guard === 'editor' && strtolower($user->role) !== 'editor' && strtolower($user->role) !== 'admin') {
                 Auth::guard($guard)->logout();
                 return back()->withErrors(['username' => 'Akses khusus Editor.']);
             }
 
-            if ($guard === 'photographer' && $user->role !== 'photographer' && $user->role !== 'admin') {
+            if ($guard === 'photographer' && strtolower($user->role) !== 'photographer' && strtolower($user->role) !== 'admin') {
                 Auth::guard($guard)->logout();
                 return back()->withErrors(['username' => 'Akses khusus Photographer.']);
             }
 
-            if ($guard === 'web' && $user->role !== 'admin') {
+            if ($guard === 'web' && strtolower($user->role) !== 'admin') {
                 Auth::guard($guard)->logout();
                 return back()->withErrors(['username' => 'Akses khusus Admin.']);
             }
@@ -71,8 +71,8 @@ class AuthController extends Controller
             $request->session()->regenerate();
 
             // Redirect based on guard first, so admins can access specific portals
-            if ($guard === 'editor') return redirect()->intended(route('editor.dashboard'));
-            if ($guard === 'photographer') return redirect()->intended(route('photographer.dashboard'));
+            if ($guard === 'editor') return redirect()->route('editor.dashboard');
+            if ($guard === 'photographer') return redirect()->route('photographer.dashboard');
 
             // Default fallback for admin or web guard
             return redirect()->intended(route('admin.dashboard'));

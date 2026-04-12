@@ -15,7 +15,18 @@ class EnsureRole
      */
     public function handle(Request $request, Closure $next, string $role): Response
     {
-        if (!$request->user() || ($request->user()->role !== $role && $request->user()->role !== 'admin')) {
+        $user = $request->user();
+
+        // If no user in default guard, check specific guards
+        if (!$user) {
+            if (\Illuminate\Support\Facades\Auth::guard('photographer')->check()) {
+                $user = \Illuminate\Support\Facades\Auth::guard('photographer')->user();
+            } elseif (\Illuminate\Support\Facades\Auth::guard('editor')->check()) {
+                $user = \Illuminate\Support\Facades\Auth::guard('editor')->user();
+            }
+        }
+
+        if (!$user || (strtolower($user->role) !== strtolower($role) && strtolower($user->role) !== 'admin')) {
             abort(403, 'Akses ditolak.');
         }
 

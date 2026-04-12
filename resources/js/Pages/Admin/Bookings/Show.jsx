@@ -328,21 +328,42 @@ ${booking.items.some(i => i.photographer)
                                                     <div className="flex flex-wrap gap-4">
                                                         <div className="flex items-center gap-2 text-xs font-bold text-brand-black/60 dark:text-brand-white/60">
                                                             <CalendarIcon className="w-4 h-4" />
-                                                            {item.scheduled_date}
+                                                            {new Date(item.scheduled_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                         </div>
-                                                        <div className="flex items-center gap-2 text-xs font-bold text-brand-black/60 dark:text-brand-white/60">
-                                                            <ClockIcon className="w-4 h-4" />
-                                                            {item.start_time !== item.adjusted_start_time ? (
-                                                                <div className="flex flex-col">
-                                                                    <span className="line-through opacity-40 text-[10px] leading-tight">
-                                                                        {item.start_time.substring(0, 5)} - {item.end_time.substring(0, 5)}
-                                                                    </span>
-                                                                    <span className="text-brand-red font-black">
-                                                                        {item.adjusted_start_time.substring(0, 5)} - {item.adjusted_end_time.substring(0, 5)}
-                                                                    </span>
+                                                        <div className="flex flex-col gap-1.5 text-xs font-bold text-brand-black/60 dark:text-brand-white/60">
+                                                            <div className="flex items-center gap-2 mb-1 opacity-40">
+                                                                <ClockIcon className="w-4 h-4" />
+                                                                <span className="text-[10px] font-black uppercase tracking-widest leading-none">Rincian Jadwal</span>
+                                                            </div>
+                                                            {item.adjusted_sessions?.length > 1 ? (
+                                                                <div className="flex flex-col gap-1 pl-6 border-l-2 border-brand-gold/20">
+                                                                    {item.adjusted_sessions.map((s, idx) => (
+                                                                        <div key={idx} className="flex items-center gap-2">
+                                                                            <span className="text-[10px] font-black uppercase opacity-40">Sesi {idx + 1}:</span>
+                                                                            <span className={`font-mono ${s.is_customized ? 'text-brand-gold' : ''}`}>
+                                                                                {s.adjusted_start_time.substring(0, 5).replace(':', '.')}-{s.adjusted_end_time.substring(0, 5).replace(':', '.')}
+                                                                            </span>
+                                                                            {s.is_customized && (
+                                                                                <span className="bg-brand-gold text-brand-black px-1 rounded-[3px] text-[7px] italic font-black">CUSTOMED</span>
+                                                                            )}
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
                                                             ) : (
-                                                                <span>{item.start_time.substring(0, 5)} - {item.end_time.substring(0, 5)}</span>
+                                                                <div className="flex items-center gap-2 pl-6">
+                                                                    {item.start_time !== item.adjusted_start_time ? (
+                                                                        <div className="flex flex-col">
+                                                                            <span className="line-through opacity-40 text-[10px] leading-tight flex items-center gap-1">
+                                                                                {(item.start_time || '').substring(0, 5).replace(':', '.')} - {(item.end_time || '').substring(0, 5).replace(':', '.')}
+                                                                            </span>
+                                                                            <span className="text-brand-red font-black">
+                                                                                {(item.adjusted_start_time || '').substring(0, 5).replace(':', '.')} - {(item.adjusted_end_time || '').substring(0, 5).replace(':', '.')}
+                                                                            </span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span>{(item.start_time || '').substring(0, 5).replace(':', '.')} - {(item.end_time || '').substring(0, 5).replace(':', '.')}</span>
+                                                                    )}
+                                                                </div>
                                                             )}
                                                         </div>
                                                         <div className="flex items-center gap-3">

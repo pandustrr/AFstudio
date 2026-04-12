@@ -566,8 +566,8 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                         : startTime === item.time;
 
                                                                     // Time calculation for the 30min slot with offset
-                                                                    const startTimeWithOffset = getTimeWithOffset(item.time, item.cumulative_offset);
-                                                                    const slotEndTime = getTimeWithOffset(item.time, (item.cumulative_offset || 0) + 30);
+                                                                    const startTimeWithOffset = item.is_customized && item.override_start_time ? item.override_start_time.replace(':', '.') : getTimeWithOffset(item.time, item.cumulative_offset);
+                                                                    const slotEndTime = item.is_customized && item.override_end_time ? item.override_end_time.replace(':', '.') : getTimeWithOffset(item.time, (item.cumulative_offset || 0) + 30);
 
                                                                     const isPartOfConsecutive = (() => {
                                                                         if (isSplitActive || !startTime) return false;
@@ -649,6 +649,9 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                                         isHighlighted ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-brand-gold/10 text-brand-gold border-brand-gold/20'}
                                                                             `}>
                                                                                 {isBooked ? 'TERISI' : isOff ? 'LIBUR' : isHighlighted ? 'FIXED' : 'OPEN'}
+                                                                                {isOpen && item.is_customized && (
+                                                                                    <span className="ml-1 opacity-60 text-[6px] italic">CUSTOMED</span>
+                                                                                )}
                                                                             </div>
 
                                                                             {isHighlighted && isSplitActive && (
@@ -685,8 +688,8 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                     selectedSplitTimes.sort().map((t, i) => {
                                                                         const gridItem = sessionGrid.find(s => s.time === t);
                                                                         const offset = gridItem?.cumulative_offset || 0;
-                                                                        const startTimeWithOffset = getTimeWithOffset(t, offset);
-                                                                        const endTimeWithOffset = getTimeWithOffset(t, offset + 30);
+                                                                        const startTimeWithOffset = gridItem?.is_customized && gridItem?.override_start_time ? gridItem.override_start_time.replace(':', '.') : getTimeWithOffset(t, offset);
+                                                                        const endTimeWithOffset = gridItem?.is_customized && gridItem?.override_end_time ? gridItem.override_end_time.replace(':', '.') : getTimeWithOffset(t, offset + 30);
                                                                         return (
                                                                             <div key={i} className="flex items-center justify-between text-xs font-bold text-brand-black dark:text-brand-white bg-white/50 dark:bg-black/20 px-3 py-2 rounded-xl">
                                                                                 <span>Sesi {i + 1}</span>
@@ -702,8 +705,8 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                                         const gridItem = sessionGrid.find(s => s.time_full === timeStr);
                                                                         const offset = gridItem?.cumulative_offset || 0;
 
-                                                                        const startTimeWithOffset = getTimeWithOffset(timeStr.substring(0, 5), offset);
-                                                                        const endTimeWithOffset = getTimeWithOffset(timeStr.substring(0, 5), offset + 30);
+                                                                        const startTimeWithOffset = gridItem?.is_customized && gridItem?.override_start_time ? gridItem.override_start_time.replace(':', '.') : getTimeWithOffset(timeStr.substring(0, 5), offset);
+                                                                        const endTimeWithOffset = gridItem?.is_customized && gridItem?.override_end_time ? gridItem.override_end_time.replace(':', '.') : getTimeWithOffset(timeStr.substring(0, 5), offset + 30);
 
                                                                         return (
                                                                             <div key={i} className="flex items-center justify-between text-xs font-bold text-brand-black dark:text-brand-white bg-white/50 dark:bg-black/20 px-3 py-2 rounded-xl">
