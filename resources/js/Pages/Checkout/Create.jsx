@@ -237,35 +237,13 @@ Mohon konfirmasinya ya min. Terima kasih!`;
     };
 
     const handleGenerateNewUid = () => {
-        const oldUid = localStorage.getItem('afstudio_cart_uid');
         const randomNumber = Math.floor(10000 + Math.random() * 90000);
         const newUid = `AF-${randomNumber}`;
 
-        if (carts.length > 0) {
-            // Migrate cart items to the new UID first
-            router.post('/cart/migrate', {
-                old_uid: oldUid,
-                new_uid: newUid
-            }, {
-                onSuccess: () => {
-                    localStorage.setItem('afstudio_cart_uid', newUid);
-                    setData('cart_uid', newUid);
-                    // Refresh and stay on the booking form with the new UID
-                    window.location.href = `/checkout?uid=${newUid}`;
-                },
-                onError: () => {
-                    // Fallback: stay on the checkout but the cart might be empty if migration failed
-                    localStorage.setItem('afstudio_cart_uid', newUid);
-                    setData('cart_uid', newUid);
-                    window.location.href = `/checkout?uid=${newUid}`;
-                }
-            });
-        } else {
-            // Simply switch to a new UID (clean cart)
-            localStorage.setItem('afstudio_cart_uid', newUid);
-            setData('cart_uid', newUid);
-            window.location.href = `/checkout?uid=${newUid}`;
-        }
+        // Simply switch to a new UID (clean cart, old cart remains with old UID)
+        localStorage.setItem('afstudio_cart_uid', newUid);
+        setData('cart_uid', newUid);
+        window.location.href = `/checkout?uid=${newUid}`;
     };
 
     const { flash } = usePage().props;
@@ -824,7 +802,7 @@ Mohon konfirmasinya ya min. Terima kasih!`;
                     handleGenerateNewUid();
                 }}
                 title="Ganti User Baru?"
-                message="Anda yakin ingin membuat ID baru? Paket yang sudah dipilih akan otomatis dipindahkan ke identitas baru Anda."
+                message="Anda yakin ingin membuat ID baru? Keranjang Anda di ID lama tidak akan ikut pindah (Anda akan mulai dengan keranjang kosong di ID baru)."
                 variant="warning"
                 confirmText="Ya, Ganti UID"
             />

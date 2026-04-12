@@ -359,6 +359,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             room_name: selectedRoom,
             cart_uid: uid,
             is_direct_buy: mode === 'direct',
+            is_direct: mode === 'direct',
             selected_times: packageData?.allow_split_session
                 ? selectedSplitTimes
                 : Array.from({ length: maxSessions }, (_, i) => {
