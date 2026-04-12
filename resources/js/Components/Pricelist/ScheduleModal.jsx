@@ -1,8 +1,8 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { XMarkIcon, CalendarIcon, ClockIcon, HomeIcon, ExclamationTriangleIcon, UserIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CalendarIcon, ClockIcon, HomeIcon, ExclamationTriangleIcon, UserIcon, CheckIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
-import { router, usePage } from '@inertiajs/react';
+import { router, usePage, Link } from '@inertiajs/react';
 import SuccessModal from './Modals/SuccessModal';
 
 export default function ScheduleModal({ isOpen, onClose, packageData, rooms: initialRooms = [], mode = 'cart', canBook = true, onLanjutBooking }) {
@@ -81,6 +81,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     const isSplitActive = !!packageData?.allow_split_session;
     const [selectedSplitTimes, setSelectedSplitTimes] = useState([]);
     const [availabilityStatus, setAvailabilityStatus] = useState(null);
+    const [isInCart, setIsInCart] = useState(false);
 
     // Reset state when modal opens/closes or package changes
     useEffect(() => {
@@ -160,6 +161,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         setStartTime('');
         setSelectedSplitTimes([]);
         setAvailabilityStatus(null);
+        setIsInCart(false);
         setError(null);
     }, [date, selectedRoom, packageData?.id, packageData?.max_sessions, packageData?.allow_split_session]);
 
@@ -273,8 +275,10 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             if (response.data.available) {
                 setAvailabilityStatus('available');
                 setPhotographerId(response.data.photographer_id);
+                setIsInCart(!!response.data.in_cart);
             } else {
                 setAvailabilityStatus('full');
+                setIsInCart(false);
                 setError('Tidak ada fotografer tersedia untuk waktu tersebut.');
             }
         } catch (err) {
@@ -722,11 +726,21 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                     )}
 
                                                     {availabilityStatus === 'available' && (
-                                                        <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl animate-in zoom-in duration-300">
-                                                            <div className="text-xs font-bold text-green-700 dark:text-green-400 uppercase tracking-widest flex items-center gap-2">
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                                                                Fotografer tersedia untuk {maxSessions} sesi
+                                                        <div className="space-y-2 animate-in zoom-in duration-300">
+                                                            <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                                                                <div className="text-xs font-bold text-green-700 dark:text-green-400 uppercase tracking-widest flex items-center gap-2">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                                    Fotografer tersedia untuk {maxSessions} sesi
+                                                                </div>
                                                             </div>
+                                                            {isInCart && (
+                                                                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl flex items-center gap-3">
+                                                                    <ShoppingCartIcon className="w-5 h-5 text-blue-500" />
+                                                                    <p className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 tracking-widest">
+                                                                        Waktu ini sudah ada di keranjang Anda.
+                                                                    </p>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
                                                     {error && (
@@ -744,6 +758,14 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                 >
                                                     Hubungi Admin untuk Booking
                                                 </a>
+                                            ) : isInCart ? (
+                                                <Link
+                                                    href={`/cart?uid=${getOrCreateUID()}`}
+                                                    className="w-full py-5 bg-brand-gold text-brand-black font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl block text-center mt-4 flex items-center justify-center gap-2"
+                                                >
+                                                    <ShoppingCartIcon className="w-5 h-5" />
+                                                    Lihat Keranjang
+                                                </Link>
                                             ) : (
                                                 <button
                                                     onClick={handleSubmit}

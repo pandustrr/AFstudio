@@ -8,6 +8,7 @@ use App\Models\PricelistPackage;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class ScheduleController extends Controller
 {
@@ -323,42 +324,57 @@ class ScheduleController extends Controller
                     }
                 }
 
-                // Get session IDs already in cart with same cart_uid (to exclude them)
-                $cartSessionIds = [];
-                if ($request->cart_uid) {
-                    $cartsWithSessions = \App\Models\Cart::where('cart_uid', $request->cart_uid)
-                        ->whereNotNull('session_ids')
-                        ->get();
-
-                    foreach ($cartsWithSessions as $cart) {
-                        $sessionIds = $cart->session_ids ?? [];
-                        $cartSessionIds = array_merge($cartSessionIds, $sessionIds);
-                    }
-                }
-
-                // Find photographer who DOES NOT have any conflicts (booked, off, or already in this user's cart)
+                // Find photographer who DOES NOT have any conflicts (booked or off)
                 $query = \App\Models\User::where('role', 'photographer');
 
                 if ($request->room_name) {
                     $query->where('room_name', $request->room_name);
                 }
 
-                $query->whereDoesntHave('sessions', function ($query) use ($date, $slots, $cartSessionIds) {
+                $query->whereDoesntHave('sessions', function ($query) use ($date, $slots) {
                     $query->where('date', $date)
                         ->whereIn('start_time', $slots)
-                        ->where(function ($q) use ($cartSessionIds) {
-                            $q->whereIn('status', ['booked', 'off']);
-                            if (!empty($cartSessionIds)) {
-                                $q->orWhereIn('id', $cartSessionIds);
-                            }
-                        });
+                        ->whereIn('status', ['booked', 'off']);
                 });
 
                 $photographer = $query->first();
 
+                // Optional: Check if these sessions are already in this user's cart (for UI notice)
+                $inCart = false;
+                if ($request->cart_uid || Auth::check()) {
+                    $inCartQuery = \App\Models\Cart::query();
+                    
+                    if (Auth::check()) {
+                        $inCartQuery->where(function($q) use ($request) {
+                            $q->where('user_id', Auth::id());
+                            if ($request->cart_uid) {
+                                $q->orWhere('cart_uid', $request->cart_uid);
+                            }
+                        });
+                    } else {
+                        $inCartQuery->where('cart_uid', $request->cart_uid);
+                    }
+
+                    $inCart = $inCartQuery->where('scheduled_date', $date)
+                        ->where('photographer_id', $photographer->id)
+                        ->where('pricelist_package_id', $request->package_id) // Match specific package
+                        ->where('is_direct', false) // Only check regular cart items
+                        ->where(function($q) use ($slots) {
+                            if (empty($slots)) {
+                                $q->whereRaw('1=0'); // Force false if no slots provided
+                            } else {
+                                foreach($slots as $slot) {
+                                    $q->orWhereJsonContains('selected_times', substr($slot, 0, 5));
+                                }
+                            }
+                        })
+                        ->exists();
+                }
+
                 return response()->json([
                     'available' => $photographer !== null,
                     'photographer_id' => $photographer?->id,
+                    'in_cart' => $inCart,
                 ]);
             } else {
                 // For room booking, use customer-provided end_time or calculate from duration

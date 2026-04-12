@@ -428,7 +428,10 @@ export default function BookingIndex({ bookingItems, filters, options, photograp
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                         {groupedItems[dateKey].map((item) => (
-                                            <div key={item.id} className="bg-white dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+                                                                    <div key={item.id} className={`rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group overflow-hidden relative border-2 ${item.is_conflict
+                                                                        ? 'bg-yellow-200 border-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.15)]'
+                                                                        : 'bg-white dark:bg-white/5 border-black/5 dark:border-white/5'
+                                                                        }`}>
                                                 {/* Photographer Badge */}
                                                 <div className="absolute top-0 right-0 p-3 flex flex-col items-end gap-1">
                                                     <span className={`px-2 py-0.5 ${item.photographer ? 'bg-brand-gold/10 text-brand-gold' : 'bg-gray-100 text-gray-400'} rounded-full font-black text-[8px] uppercase tracking-tighter`}>
