@@ -346,7 +346,37 @@ class CartController extends Controller
             $data['selected_times'] = $request->selected_times;
         }
 
-        $cart = Cart::create($data);
+        // Check for existing identical item in cart to prevent duplicates
+        $query = Cart::where('pricelist_package_id', $data['pricelist_package_id'])
+            ->where('scheduled_date', $data['scheduled_date'])
+            ->where('photographer_id', $data['photographer_id'] ?? null)
+            ->where('is_direct', $data['is_direct']);
+
+        if (Auth::check()) {
+            $query->where('user_id', Auth::id());
+        } else {
+            $query->where('cart_uid', $data['cart_uid']);
+        }
+
+        // Check for exact match of selected_times
+        $existing = $query->get()->filter(function($c) use ($data) {
+            $existingTimes = is_array($c->selected_times) ? $c->selected_times : json_decode($c->selected_times, true);
+            $newTimes = is_array($data['selected_times']) ? $data['selected_times'] : json_decode($data['selected_times'], true);
+            
+            if (empty($existingTimes) && empty($newTimes)) return true;
+            if (count($existingTimes ?? []) !== count($newTimes ?? [])) return false;
+            
+            sort($existingTimes);
+            sort($newTimes);
+            return $existingTimes === $newTimes;
+        })->first();
+
+        if ($existing) {
+            $existing->update($data);
+            $cart = $existing;
+        } else {
+            $cart = Cart::create($data);
+        }
 
         // Flash ID barang yang baru dibuat agar frontend bisa mengisolasinya
         return redirect()->back()->with([
@@ -366,14 +396,18 @@ class CartController extends Controller
 
         $uid = $request->header('X-Cart-UID') ?? $request->input('cart_uid') ?? $request->input('uid');
 
-        $query = Cart::query();
+        $query = Cart::where('id', $id);
+        
         if (Auth::check()) {
-            $query->where('user_id', Auth::id());
+            $query->where(function($q) use ($uid) {
+                $q->where('user_id', Auth::id())
+                  ->orWhere('cart_uid', $uid);
+            });
         } else {
             $query->where('cart_uid', $uid);
         }
 
-        $cart = $query->where('id', $id)->firstOrFail();
+        $cart = $query->firstOrFail();
 
         $cart->update([
             'quantity' => $request->quantity
@@ -389,14 +423,18 @@ class CartController extends Controller
     {
         $uid = $request->header('X-Cart-UID') ?? $request->input('cart_uid') ?? $request->query('cart_uid') ?? $request->input('uid') ?? $request->query('uid');
 
-        $query = Cart::query();
+        $query = Cart::where('id', $id);
+        
         if (Auth::check()) {
-            $query->where('user_id', Auth::id());
+            $query->where(function($q) use ($uid) {
+                $q->where('user_id', Auth::id())
+                  ->orWhere('cart_uid', $uid);
+            });
         } else {
             $query->where('cart_uid', $uid);
         }
 
-        $cart = $query->where('id', $id)->firstOrFail();
+        $cart = $query->firstOrFail();
         $cart->delete();
 
         return redirect()->back()->with('success', 'Item removed from cart.');

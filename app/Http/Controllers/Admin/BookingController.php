@@ -73,6 +73,55 @@ class BookingController extends Controller
 
         $items = $query->paginate(30)->withQueryString();
 
+        // --- Conflict Detection Logic (Yellow Card) ---
+        $items->getCollection()->transform(function ($item) {
+            $isConflict = false;
+
+            // Only check for Pending or Confirmed bookings
+            if (in_array($item->booking->status, ['pending', 'confirmed'])) {
+                $slots = $item->selected_times; // Array of strings like ["10:00:00", "10:30:00"]
+                $date = $item->scheduled_date->toDateString();
+                $photographerId = $item->photographer_id;
+
+                if ($photographerId && $date && !empty($slots)) {
+                    // 1. Check for Booked Sessions (Conflict with Confirmed)
+                    $bookedCount = \App\Models\PhotographerSession::where('photographer_id', $photographerId)
+                        ->where('date', $date)
+                        ->whereIn('start_time', $slots)
+                        ->where('status', 'booked')
+                        // Ensure it's not booked for THIS same item (legitimate booking)
+                        ->where('booking_item_id', '!=', $item->id)
+                        ->count();
+
+                    if ($bookedCount > 0) {
+                        $isConflict = true;
+                    } else {
+                        // 2. Check for Multiple Pending Bookings (Conflict between Pendings)
+                        // Find OTHER pending items for the same slots
+                        $overlapPendingCount = \App\Models\BookingItem::where('id', '!=', $item->id)
+                            ->where('photographer_id', $photographerId)
+                            ->where('scheduled_date', $date)
+                            ->whereHas('booking', function($q) {
+                                $q->where('status', 'pending');
+                            })
+                            ->where(function($q) use ($slots) {
+                                foreach ($slots as $slot) {
+                                    $q->orWhereJsonContains('selected_times', $slot);
+                                }
+                            })
+                            ->count();
+
+                        if ($overlapPendingCount > 0) {
+                            $isConflict = true;
+                        }
+                    }
+                }
+            }
+
+            $item->is_conflict = $isConflict;
+            return $item;
+        });
+
         // Get Available Options
         $availableYears = \App\Models\BookingItem::selectRaw('YEAR(scheduled_date) as year')
             ->distinct()
@@ -146,21 +195,17 @@ class BookingController extends Controller
                     'status' => $newStatus,
                 ]);
 
-                // Handle photographer slots
-                if ($newStatus === 'cancelled') {
-                    // Release photographer slots if the new status is cancelled
-                    $this->releasePhotographerSessions($booking);
-                } elseif ($oldStatus === 'cancelled' && $newStatus !== 'cancelled') {
-                    // Re-claim photographer slots if moving away from cancelled
+                // Handle photographer slots based on new status
+                if (in_array($newStatus, ['confirmed', 'completed'])) {
+                    // Lock sessions for confirmed/completed bookings
                     foreach ($booking->items as $item) {
                         if ($item->photographer_id && $item->scheduled_date && $item->start_time && $item->end_time) {
                             $startTime = \Carbon\Carbon::parse($item->start_time);
                             $endTime = \Carbon\Carbon::parse($item->end_time);
-                            $date = $item->scheduled_date;
+                            $date = $item->scheduled_date->toDateString();
 
                             $slots = [];
                             $tempTime = clone $startTime;
-                            // Generate 30-min intervals between start and end time
                             while ($tempTime->lt($endTime)) {
                                 $slots[] = $tempTime->format('H:i:s');
                                 $tempTime->addMinutes(30);
@@ -170,10 +215,6 @@ class BookingController extends Controller
                                 \App\Models\PhotographerSession::where('photographer_id', $item->photographer_id)
                                     ->where('date', $date)
                                     ->whereIn('start_time', $slots)
-                                    ->where(function ($q) use ($item) {
-                                        $q->where('status', 'open')
-                                            ->orWhere('booking_item_id', $item->id);
-                                    })
                                     ->update([
                                         'status' => 'booked',
                                         'booking_item_id' => $item->id,
@@ -182,6 +223,9 @@ class BookingController extends Controller
                             }
                         }
                     }
+                } elseif (in_array($newStatus, ['pending', 'cancelled'])) {
+                    // Release sessions if the status is pending or cancelled
+                    $this->releasePhotographerSessions($booking);
                 }
 
                 // Auto-create/Update Photo Session status

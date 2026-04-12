@@ -214,17 +214,16 @@ class BookingController extends Controller
                     'selected_times' => $cart->selected_times,
                 ]);
 
-                // Handle photographer booking
+                // Handle photographer booking - DO NOT lock yet (keep status open)
                 if ($cart->photographer_id && $cart->session_ids) {
-                    // Old flow: pre-selected photographer and sessions
                     \App\Models\PhotographerSession::whereIn('id', $cart->session_ids)
                         ->update([
-                            'status' => 'booked',
+                            // 'status' => 'booked', // NO locking on checkout
                             'booking_item_id' => $item->id,
                             'cart_uid' => $uid,
                         ]);
                 } elseif ($cart->photographer_id && $cart->sessions_needed) {
-                    // New flow: photographer already checked/assigned, just book the sessions
+                    // New flow: photographer already checked/assigned, just link the sessions but keep them open
                     $sessionsNeeded = $cart->sessions_needed;
                     $startTime = $cart->start_time;
                     $date = $cart->scheduled_date;
@@ -238,16 +237,11 @@ class BookingController extends Controller
                         $time->addMinutes(30);
                     }
 
-                    // Book the sessions for the assigned photographer
-                    $sessionIds = \App\Models\PhotographerSession::where('photographer_id', $photographerId)
+                    \App\Models\PhotographerSession::where('photographer_id', $photographerId)
                         ->where('date', $date)
                         ->whereIn('start_time', $slots)
-                        ->where('status', 'open')
-                        ->pluck('id');
-
-                    \App\Models\PhotographerSession::whereIn('id', $sessionIds)
                         ->update([
-                            'status' => 'booked',
+                            // 'status' => 'booked', // NO locking on checkout
                             'booking_item_id' => $item->id,
                             'cart_uid' => $uid,
                         ]);
@@ -289,9 +283,11 @@ class BookingController extends Controller
                         ->where('status', 'open')
                         ->pluck('id');
 
-                    \App\Models\PhotographerSession::whereIn('id', $sessionIds)
+                    \App\Models\PhotographerSession::where('photographer_id', $photographer->id)
+                        ->where('date', $date)
+                        ->whereIn('start_time', $slots)
                         ->update([
-                            'status' => 'booked',
+                            // 'status' => 'booked', // NO locking on checkout
                             'booking_item_id' => $item->id,
                             'cart_uid' => $uid,
                         ]);
