@@ -72,6 +72,7 @@ class CartController extends Controller
             'cart_uid' => 'required|string',
             'selected_times' => 'nullable|array',
             'is_direct_buy' => 'nullable|boolean',
+            'is_direct' => 'nullable|boolean',
         ]);
 
         $package = \App\Models\PricelistPackage::with('subCategory.category')->findOrFail($request->pricelist_package_id);
@@ -101,6 +102,7 @@ class CartController extends Controller
             'quantity' => 1,
             'scheduled_date' => $request->scheduled_date,
             'is_direct_buy' => $request->is_direct_buy ?? false,
+            'is_direct' => $request->is_direct ?? false,
         ];
 
         if ($type === 'photographer') {

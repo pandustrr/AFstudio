@@ -25,12 +25,14 @@ class Cart extends Model
         'sessions_needed',
         'selected_times',
         'is_direct_buy',
+        'is_direct',
     ];
 
     protected $casts = [
         'session_ids' => 'array',
         'selected_times' => 'array',
         'is_direct_buy' => 'boolean',
+        'is_direct' => 'boolean',
     ];
 
     protected $appends = [
