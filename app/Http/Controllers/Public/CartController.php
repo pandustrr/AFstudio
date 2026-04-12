@@ -74,7 +74,6 @@ class CartController extends Controller
             'room_name' => 'nullable|string',
             'cart_uid' => 'required|string',
             'selected_times' => 'nullable|array',
-            'is_direct_buy' => 'nullable|boolean',
             'is_direct' => 'nullable|boolean',
         ]);
 
@@ -88,7 +87,6 @@ class CartController extends Controller
             'has_start_time' => $request->has('start_time'),
             'has_end_time' => $request->has('end_time'),
             'has_photographer_id' => $request->has('photographer_id'),
-            'is_direct_buy' => $request->is_direct_buy,
             'request_data' => $request->all()
         ]);
 
@@ -104,8 +102,7 @@ class CartController extends Controller
             'pricelist_package_id' => $request->pricelist_package_id,
             'quantity' => 1,
             'scheduled_date' => $request->scheduled_date,
-            'is_direct_buy' => $request->is_direct_buy ?? $request->boolean('is_direct'),
-            'is_direct' => $request->is_direct ?? $request->boolean('is_direct_buy'),
+            'is_direct' => $request->boolean('is_direct'),
         ];
 
         // If this is a direct buy, clear any previous direct buy items for this UID
@@ -405,4 +402,52 @@ class CartController extends Controller
         return redirect()->back()->with('success', 'Item removed from cart.');
     }
 
+    /**
+     * Migrate specific cart items from one UID to another.
+     */
+    public function migrate(Request $request)
+    {
+        Log::info('--- CART MIGRATION ATTEMPT ---');
+        Log::info('Payload:', $request->all());
+
+        try {
+            $request->validate([
+                'old_uid' => 'required|string',
+                'new_uid' => 'required|string',
+                'item_ids' => 'required|array',
+            ]);
+
+            $items = Cart::where('cart_uid', $request->old_uid)
+                ->whereIn('id', $request->item_ids)
+                ->get();
+
+            Log::info('Items found for migration: ' . $items->count());
+
+            foreach ($items as $item) {
+                $old = $item->cart_uid;
+                $item->update(['cart_uid' => $request->new_uid]);
+                Log::info("Migrated item {$item->id}: {$old} -> {$request->new_uid}");
+                
+                if (!empty($item->session_ids)) {
+                    $sessionCount = \App\Models\PhotographerSession::where('cart_uid', $request->old_uid)
+                        ->whereIn('id', $item->session_ids)
+                        ->update(['cart_uid' => $request->new_uid]);
+                    Log::info("Migrated {$sessionCount} sessions for item {$item->id}");
+                }
+            }
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true, 
+                    'message' => 'Migrated ' . $items->count() . ' items',
+                    'count' => $items->count()
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Migration success.');
+        } catch (\Exception $e) {
+            Log::error('Migration Error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
 }

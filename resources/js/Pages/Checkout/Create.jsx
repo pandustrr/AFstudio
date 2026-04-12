@@ -236,14 +236,50 @@ Mohon konfirmasinya ya min. Terima kasih!`;
         });
     };
 
-    const handleGenerateNewUid = () => {
+    const handleGenerateNewUid = async () => {
+        // Robust old UID detection
+        const oldUid = carts[0]?.cart_uid || uidFromUrl || localStorage.getItem('afstudio_cart_uid');
         const randomNumber = Math.floor(10000 + Math.random() * 90000);
         const newUid = `AF-${randomNumber}`;
 
-        // Simply switch to a new UID (clean cart, old cart remains with old UID)
-        localStorage.setItem('afstudio_cart_uid', newUid);
-        setData('cart_uid', newUid);
-        window.location.href = `/checkout?uid=${newUid}`;
+        const itemIds = carts.map(c => c.id);
+        
+        // Preserve other query params (like cart_item_id or cart_item_ids)
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('uid', newUid);
+        const nextUrl = currentUrl.toString();
+
+        console.log('--- UID MIGRATION DEBUG ---', { oldUid, newUid, itemIds, nextUrl });
+
+        if (itemIds.length > 0) {
+            try {
+                // Using window.axios if available, or try importing/using from window
+                const axiosInstance = window.axios || (await import('axios')).default;
+                
+                console.log('Starting migration request via axios...');
+                const response = await axiosInstance.post('/cart/migrate', {
+                    old_uid: oldUid,
+                    new_uid: newUid,
+                    item_ids: itemIds
+                });
+                
+                console.log('Migration success!', response.data);
+                localStorage.setItem('afstudio_cart_uid', newUid);
+                setData('cart_uid', newUid);
+                window.location.href = nextUrl;
+            } catch (err) {
+                console.error('Migration failed:', err.response?.data || err.message);
+                // Move forward anyway to not block user, but log it
+                localStorage.setItem('afstudio_cart_uid', newUid);
+                setData('cart_uid', newUid);
+                window.location.href = nextUrl;
+            }
+        } else {
+            console.log('No items to migrate.');
+            localStorage.setItem('afstudio_cart_uid', newUid);
+            setData('cart_uid', newUid);
+            window.location.href = nextUrl;
+        }
     };
 
     const { flash } = usePage().props;
@@ -263,7 +299,7 @@ Mohon konfirmasinya ya min. Terima kasih!`;
 
     const handleBack = () => {
         // Find direct buy item(s) to remove them if user goes back
-        const directBuyItems = (carts || []).filter(item => item.is_direct_buy);
+        const directBuyItems = (carts || []).filter(item => item.is_direct);
         
         if (directBuyItems.length > 0) {
             // Remove the first direct buy item (usually only one for direct buy flow)
@@ -802,7 +838,7 @@ Mohon konfirmasinya ya min. Terima kasih!`;
                     handleGenerateNewUid();
                 }}
                 title="Ganti User Baru?"
-                message="Anda yakin ingin membuat ID baru? Keranjang Anda di ID lama tidak akan ikut pindah (Anda akan mulai dengan keranjang kosong di ID baru)."
+                message="Anda yakin ingin membuat ID baru? Paket yang Anda pilih di halaman ini akan ikut dipindahkan ke ID baru Anda, tapi barang lain di keranjang lama Anda tidak akan ikut."
                 variant="warning"
                 confirmText="Ya, Ganti UID"
             />
