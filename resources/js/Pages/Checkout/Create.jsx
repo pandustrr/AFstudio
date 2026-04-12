@@ -274,6 +274,7 @@ Mohon konfirmasinya ya min. Terima kasih!`;
         if (!window.confirm('Hapus paket ini dari keranjang?')) return;
         
         router.delete(`/cart/${cartId}`, {
+            headers: { 'X-Cart-UID': data.cart_uid },
             preserveScroll: true,
             onError: (err) => console.error(err),
             onSuccess: () => {
@@ -282,12 +283,46 @@ Mohon konfirmasinya ya min. Terima kasih!`;
         });
     };
 
+    const handleBack = () => {
+        // Find direct buy item(s) to remove them if user goes back
+        const directBuyItems = (carts || []).filter(item => item.is_direct_buy);
+        
+        if (directBuyItems.length > 0) {
+            // Remove the first direct buy item (usually only one for direct buy flow)
+            const itemToDelete = directBuyItems[0];
+            router.delete(`/cart/${itemToDelete.id}`, {
+                headers: { 'X-Cart-UID': data.cart_uid },
+                onSuccess: () => {
+                    window.location.href = backToPricelistUrl;
+                },
+                onError: (err) => {
+                    console.error('Failed to delete direct buy item:', err);
+                    window.location.href = backToPricelistUrl;
+                }
+            });
+        } else {
+            // No direct buy item, just go back
+            window.location.href = backToPricelistUrl;
+        }
+    };
+
     return (
         <div className="min-h-screen bg-brand-white dark:bg-brand-black transition-colors duration-300 pb-20">
             <Head title="Checkout - AFSTUDIO" />
             <Navbar />
-
+            
             <div className="pt-24 md:pt-32 px-4 md:px-6 max-w-6xl mx-auto">
+                {/* Back Button */}
+                <div className="mb-6">
+                    <button
+                        onClick={handleBack}
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 hover:text-brand-red transition-all group"
+                    >
+                        <ShoppingCartIcon className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                        Kembali ke Price List
+                    </button>
+                </div>
+
                 <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
 
                     {/* Left: Booking Form */}
@@ -532,16 +567,25 @@ Mohon konfirmasinya ya min. Terima kasih!`;
                                 {errors.notes && <p className="text-red-500 text-xs font-bold">{errors.notes}</p>}
                             </div>
 
-                            <button
-                                type="submit"
-                                disabled={processing || !data.proof_file}
-                                className={`w-full py-4 font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-lg ${(processing || !data.proof_file)
-                                    ? 'bg-gray-300 dark:bg-white/10 text-black/20 dark:text-white/20 cursor-not-allowed grayscale'
-                                    : 'bg-brand-red text-white hover:bg-brand-gold hover:text-brand-black hover:scale-[1.02]'
-                                    }`}
-                            >
-                                {processing ? 'Processing...' : !data.proof_file ? 'Upload Bukti Dulu' : 'Konfirmasi ke Admin via WhatsApp'}
-                            </button>
+                            <div className="flex flex-col sm:flex-row gap-4">
+                                <button
+                                    type="button"
+                                    onClick={handleBack}
+                                    className="flex-1 py-4 bg-black/5 dark:bg-white/5 text-brand-black/40 dark:text-brand-white/40 font-black uppercase tracking-[0.2em] rounded-xl hover:bg-brand-red hover:text-white transition-all border border-black/10 dark:border-white/10"
+                                >
+                                    Batalkan Booking
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={processing || !data.proof_file}
+                                    className={`flex-2 py-4 font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-lg ${(processing || !data.proof_file)
+                                        ? 'bg-gray-300 dark:bg-white/10 text-black/20 dark:text-white/20 cursor-not-allowed grayscale'
+                                        : 'bg-brand-red text-white hover:bg-brand-gold hover:text-brand-black hover:scale-[1.02]'
+                                        }`}
+                                >
+                                    {processing ? 'Processing...' : !data.proof_file ? 'Upload Bukti Dulu' : 'Konfirmasi via WhatsApp'}
+                                </button>
+                            </div>
                         </form>
                     </div>
 

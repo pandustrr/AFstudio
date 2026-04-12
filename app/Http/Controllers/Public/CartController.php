@@ -71,6 +71,7 @@ class CartController extends Controller
             'room_name' => 'nullable|string',
             'cart_uid' => 'required|string',
             'selected_times' => 'nullable|array',
+            'is_direct_buy' => 'nullable|boolean',
         ]);
 
         $package = \App\Models\PricelistPackage::with('subCategory.category')->findOrFail($request->pricelist_package_id);
@@ -83,6 +84,7 @@ class CartController extends Controller
             'has_start_time' => $request->has('start_time'),
             'has_end_time' => $request->has('end_time'),
             'has_photographer_id' => $request->has('photographer_id'),
+            'is_direct_buy' => $request->is_direct_buy,
             'request_data' => $request->all()
         ]);
 
@@ -98,6 +100,7 @@ class CartController extends Controller
             'pricelist_package_id' => $request->pricelist_package_id,
             'quantity' => 1,
             'scheduled_date' => $request->scheduled_date,
+            'is_direct_buy' => $request->is_direct_buy ?? false,
         ];
 
         if ($type === 'photographer') {
