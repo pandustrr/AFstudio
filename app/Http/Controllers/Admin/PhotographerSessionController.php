@@ -18,7 +18,7 @@ class PhotographerSessionController extends Controller
         $month = $request->input('month');
         $day = $request->input('day');
 
-        $photographerId = Auth::id();
+        $photographerId = Auth::guard('photographer')->id();
 
         // Determine the selected date
         if ($year && $month && $day) {
@@ -429,7 +429,7 @@ class PhotographerSessionController extends Controller
             'start_time' => 'required',
         ]);
 
-        $photographerId = Auth::id();
+        $photographerId = Auth::guard('photographer')->id();
         $date = $request->date;
         $startTime = $request->start_time;
 
@@ -479,7 +479,7 @@ class PhotographerSessionController extends Controller
             'status' => 'required|in:open,off',
         ]);
 
-        $photographerId = Auth::id();
+        $photographerId = Auth::guard('photographer')->id();
         $date = $request->date;
         $startTimes = $request->start_times;
         $newStatus = $request->status;
@@ -561,7 +561,7 @@ class PhotographerSessionController extends Controller
 
     public function reservations(Request $request)
     {
-        $photographerId = Auth::id();
+        $photographerId = Auth::guard('photographer')->id();
         $statusFilter = $request->input('status', 'confirmed');
 
         // Get all booked sessions for this photographer with booking details
@@ -627,9 +627,9 @@ class PhotographerSessionController extends Controller
             'photographer_id' => 'nullable|exists:users,id',
         ]);
 
-        $photographerId = Auth::user()->role === 'admin'
-            ? ($request->photographer_id ?? Auth::id())
-            : Auth::id();
+        $photographerId = (Auth::guard('web')->check() && Auth::guard('web')->user()->role === 'admin')
+            ? ($request->photographer_id ?? Auth::guard('web')->id())
+            : Auth::guard('photographer')->id();
 
         PhotographerDateMark::updateOrCreate(
             [

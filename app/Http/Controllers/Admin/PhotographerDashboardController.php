@@ -12,7 +12,7 @@ class PhotographerDashboardController extends Controller
 {
     public function index()
     {
-        $photographerId = \Illuminate\Support\Facades\Auth::id();
+        $photographerId = \Illuminate\Support\Facades\Auth::guard('photographer')->id();
         $today = now()->toDateString();
         $tomorrow = now()->addDay()->toDateString();
 
@@ -48,7 +48,7 @@ class PhotographerDashboardController extends Controller
         // Next Upcoming Session - ONLY CONFIRMED
         $nextSession = \App\Models\PhotographerSession::with([
             'bookingItem' => function ($q) {
-                $q->withCount('sessions');
+                $q->withCount('photographerSessions as sessions_count');
             },
             'bookingItem.booking',
             'bookingItem.package'
