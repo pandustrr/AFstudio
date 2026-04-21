@@ -150,26 +150,16 @@ export default function Edit({ isOpen, onClose, photographer, rooms = [], isNew 
                             <div>
                                 <label className="block text-[10px] font-black uppercase tracking-widest text-brand-black/50 dark:text-brand-white/50 mb-2 px-1">Penugasan Room</label>
                                 <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                         <HomeIcon className="h-4 w-4 text-brand-black/20 dark:text-brand-white/20" />
                                     </div>
-                                    <select
+                                    <input
+                                        type="text"
                                         value={formData.room_name}
                                         onChange={(e) => setFormData({ ...formData, room_name: e.target.value })}
-                                        className="w-full pl-11 pr-4 py-4 bg-brand-black/5 dark:bg-black/20 border-0 rounded-2xl focus:ring-2 focus:ring-brand-gold/50 text-xs font-bold text-brand-black dark:text-brand-white transition-all appearance-none"
-                                    >
-                                        <option value="">Pilih Room (Opsional)</option>
-                                        {rooms.map(room => (
-                                            <option key={room.id} value={room.name}>{room.name}</option>
-                                        ))}
-                                        {/* Fallback jika room_name di data lama tidak ada di daftar rooms */}
-                                        {formData.room_name && !rooms.some(r => r.name === formData.room_name) && (
-                                            <option value={formData.room_name}>{formData.room_name}</option>
-                                        )}
-                                    </select>
-                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                                        <svg className="w-4 h-4 text-brand-black/20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                    </div>
+                                        placeholder="Contoh: Room A"
+                                        className={`w-full pl-11 pr-4 py-4 bg-brand-black/5 dark:bg-black/20 border-0 rounded-2xl focus:ring-2 focus:ring-brand-gold/50 text-xs font-bold text-brand-black dark:text-brand-white placeholder:text-brand-black/50 dark:placeholder:text-brand-white/50 transition-all ${pageErrors?.room_name ? 'ring-2 ring-red-500' : ''}`}
+                                    />
                                 </div>
                                 {pageErrors?.room_name && <p className="mt-1.5 px-1 text-[10px] font-black uppercase text-red-500 tracking-widest">{pageErrors.room_name}</p>}
                             </div>
