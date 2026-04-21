@@ -54,17 +54,6 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
         dp_amount: 0,
     });
 
-    // Logging for debugging "Order Summary Kosong" issues
-    React.useEffect(() => {
-        console.log('--- Checkout Data Debug ---', {
-            cartsCount: Array.isArray(carts) ? carts.length : 'not an array',
-            uidFromUrl,
-            uidInForm: data.cart_uid,
-            cartItemIdFromUrl,
-            allProps: { carts, rooms, photographers }
-        });
-    }, [carts, uidFromUrl]);
-
     const total = Array.isArray(carts)
         ? carts.reduce((sum, c) => sum + (parseFloat(c?.package?.price_numeric || 0) * c.quantity), 0)
         : 0;

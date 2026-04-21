@@ -221,14 +221,15 @@ class ScheduleController extends Controller
 
         $date = Carbon::parse($request->date)->toDateString();
 
-        // Find rooms from photographers who don't have all sessions marked as 'off' for this date
-        // Actually, just returning all rooms with photographers is simpler and safer.
-        $rooms = \App\Models\User::where('role', 'photographer')
+        // Get unique room names from photographers first
+        $roomNames = \App\Models\User::where('role', 'photographer')
             ->whereNotNull('room_name')
             ->pluck('room_name')
-            ->unique()
-            ->values()
-            ->all();
+            ->unique();
+
+        // Map room names to Room model objects with IDs
+        $rooms = \App\Models\Room::whereIn('label', $roomNames)
+            ->get(['id', 'label as name']);
 
         return response()->json([
             'rooms' => $rooms
