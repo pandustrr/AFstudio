@@ -373,20 +373,17 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         };
 
         if (mode === 'direct') {
+            // Tutup modal langsung agar user melihat transisi halaman yang natural
+            // (bukan spinner yang stuck di dalam modal)
+            onClose();
+
             router.post('/cart', payload, {
                 headers: { 'X-Cart-UID': uid },
-                onSuccess: () => {
-                    // Server menangani redirect otomatis ke /checkout untuk mode 'direct'
-                    onClose();
-                },
                 onError: (errors) => {
                     setIsSubmitting(false);
                     const firstError = Object.values(errors).join(', ');
                     setError(firstError || "Gagal memproses booking.");
                 },
-                onFinish: () => {
-                    // Kita tidak reset isSubmitting di onSuccess karena visit() akan memuat halaman baru
-                }
             });
         } else {
             processCart(uid, payload);
