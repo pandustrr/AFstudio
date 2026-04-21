@@ -210,16 +210,20 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
                             }).join("\n      - ");
                         }
 
-                        itemsMessage += `${index + 1}. ${packageObj?.name}\n   Tanggal: ${item.scheduled_date}\n   Jadwal: ${timeInfo}\n`;
+                        const formattedDate = item.scheduled_date ? item.scheduled_date.substring(0, 10) : '-';
+                        itemsMessage += `${index + 1}. ${packageObj?.name}\n   Tanggal: ${formattedDate}\n   Jadwal: ${timeInfo}\n`;
                         if (item.room_name) itemsMessage += `   Studio: ${item.room_name}\n`;
                     });
 
                     const message = `Halo Admin! Saya sudah melakukan booking dan pembayaran DP.
 
 *No. Booking: ${b.booking_code}*
+UID: ${b.guest_uid || 'N/A'}
 
 Nama: ${b.name}
 Lokasi/Venue: ${b.location}${b.venue_name ? ` (${b.venue_name})` : ''}
+
+*Link Pilih Foto:* https://afstudio.my.id/selector-photo
 
 *Detail Paket:*
 ${itemsMessage}
