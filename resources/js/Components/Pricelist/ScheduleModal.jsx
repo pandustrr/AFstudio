@@ -362,6 +362,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             start_time: startTime,
             sessions_needed: maxSessions,
             photographer_id: photographerId,
+            room_id: roomId,
             room_name: selectedRoom,
             cart_uid: uid,
             is_direct: mode === 'direct',
@@ -514,20 +515,23 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                             ))
                                                         ) : availableRooms?.map((room) => (
                                                             <button
-                                                                key={room}
+                                                                key={room.id || room.name || room}
                                                                 type="button"
                                                                 onClick={() => {
-                                                                    setSelectedRoom(room);
+                                                                    const roomName = room.name || room;
+                                                                    const rId = room.id || null;
+                                                                    setSelectedRoom(roomName);
+                                                                    setRoomId(rId);
                                                                     setAvailabilityStatus(null);
                                                                     setPhotographerId(null);
                                                                     setSlots([]);
                                                                 }}
-                                                                className={`px-4 py-3 rounded-xl border-2 transition-all font-bold text-xs uppercase tracking-wider ${selectedRoom === room
+                                                                className={`px-4 py-3 rounded-xl border-2 transition-all font-bold text-xs uppercase tracking-wider ${selectedRoom === (room.name || room)
                                                                     ? 'border-brand-gold bg-brand-gold/10 text-brand-gold shadow-lg shadow-brand-gold/10 scale-[1.02]'
                                                                     : 'border-black/5 dark:border-white/5 bg-black/5 dark:bg-white/5 text-brand-black/40 dark:text-brand-white/40 hover:border-brand-gold/30'
                                                                     }`}
                                                             >
-                                                                {room}
+                                                                {room.name || room}
                                                             </button>
                                                         ))}
                                                     </div>

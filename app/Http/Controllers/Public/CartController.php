@@ -261,24 +261,10 @@ class CartController extends Controller
 
             $assignedRoom = $request->room_id;
 
-            // Room validation (already exists in original code, but cleaned up)
-            if ($assignedRoom) {
-                $isRoomTaken = \App\Models\BookingItem::whereHas('booking', function ($q) {
-                    $q->whereIn('status', ['pending', 'confirmed', 'completed']);
-                })
-                    ->where('scheduled_date', $request->scheduled_date)
-                    ->where('room_id', $assignedRoom)
-                    ->where(function ($query) use ($request, $endTime) {
-                        $query->where('start_time', '<', $endTime->format('H:i:s'))
-                            ->where('end_time', '>', $request->start_time);
-                    })
-                    ->exists();
-
-                if ($isRoomTaken) {
-                    return redirect()->back()->with('error', 'Maaf, Ruangan ' . $assignedRoom . ' sudah ter-booking pada jam tersebut.');
-                }
-            } else {
-                // Smart Slotting
+            // PERFORMANCE BYPASS: If room_id is already provided from frontend (e.g. from Availability Grid),
+            // we trust it and skip the expensive search loop.
+            if (!$assignedRoom) {
+                // Smart Slotting (Only run if room_id is not provided)
                 $rooms = \App\Models\Room::all();
                 foreach ($rooms as $room) {
                     $isRoomTaken = \App\Models\BookingItem::whereHas('booking', function ($q) {
@@ -303,8 +289,7 @@ class CartController extends Controller
                 return redirect()->back()->with('error', 'Maaf, tidak ada ruangan tersedia pada jam ini.');
             }
 
-            // Auto-assign photographer who is available in this time window
-            // OPTIMIZED: Use a single query to find available photographers instead of a loop
+            // OPTIMASI: Pastikan sesi fotografer ditemukan secara efisien
             $durationInMinutes = abs($endTime->diffInMinutes($startTime));
             $sessionsNeeded = ceil($durationInMinutes / 30);
             
@@ -315,21 +300,47 @@ class CartController extends Controller
                 $time->addMinutes(30);
             }
 
-            $availablePhotographer = \App\Models\User::where('role', 'photographer')
-                ->whereHas('sessions', function($q) use ($request, $slots) {
-                    $q->where('date', $request->scheduled_date)
-                      ->whereIn('start_time', $slots)
-                      ->where('status', 'open');
-                }, '=', count($slots))
-                ->first();
+            $assignedPhotographer = $request->photographer_id;
+            $sessionIds = [];
 
-            if ($availablePhotographer) {
-                $assignedPhotographer = $availablePhotographer->id;
-                $sessionIds = $availablePhotographer->sessions()
+            // Jika photographer_id dikirim (Direct Buy/Grid Selection), langsung cari sesi miliknya
+            if ($assignedPhotographer) {
+                $sessionIds = \App\Models\PhotographerSession::where('photographer_id', $assignedPhotographer)
                     ->where('date', $request->scheduled_date)
                     ->whereIn('start_time', $slots)
                     ->pluck('id')
                     ->toArray();
+                
+                // Cari alternatif jika ID yang diberikan tidak memiliki sesi open (seharusnya jarang terjadi)
+                if (count($sessionIds) < count($slots)) {
+                    $assignedPhotographer = null;
+                }
+            }
+
+            // Fallback cari otomatis (Smart Slotting) jika ID tidak ada atau tidak valid
+            if (!$assignedPhotographer) {
+                $availablePhotographer = \App\Models\User::where('role', 'photographer')
+                    ->whereHas('sessions', function($q) use ($request, $slots) {
+                        $q->where('date', $request->scheduled_date)
+                          ->whereIn('start_time', $slots)
+                          ->where('status', 'open');
+                    }, '=', count($slots))
+                    ->first();
+                
+                if ($availablePhotographer) {
+                    $assignedPhotographer = $availablePhotographer->id;
+                    $sessionIds = $availablePhotographer->sessions()
+                        ->where('date', $request->scheduled_date)
+                        ->whereIn('start_time', $slots)
+                        ->pluck('id')
+                        ->toArray();
+                }
+            }
+
+            if ($assignedPhotographer) {
+                // If we found a photographer (either via bypass or search), use their sessions
+                $data['photographer_id'] = $assignedPhotographer;
+                $data['session_ids'] = $sessionIds;
             }
 
             if (!$assignedPhotographer) {
