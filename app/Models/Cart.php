@@ -65,7 +65,13 @@ class Cart extends Model
 
     public function getAdjustedSessionsAttribute()
     {
-        $sessions = $this->photographerSessions->sortBy('start_time');
+        // Optimization: Use pre-loaded relation if available to avoid N+1 queries
+        $sessions = $this->relationLoaded('photographerSessions') 
+                    ? $this->photographerSessions 
+                    : $this->photographerSessions()->get();
+        
+        $sessions = $sessions->sortBy('start_time');
+
         return $sessions->map(function($s) {
             return [
                 'id' => $s->id,
