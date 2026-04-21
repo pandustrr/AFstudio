@@ -304,35 +304,32 @@ class CartController extends Controller
             }
 
             // Auto-assign photographer who is available in this time window
-            $assignedPhotographer = null;
-            $sessionIds = [];
-            $photographers = \App\Models\User::where('role', 'photographer')->get();
+            // OPTIMIZED: Use a single query to find available photographers instead of a loop
+            $durationInMinutes = abs($endTime->diffInMinutes($startTime));
+            $sessionsNeeded = ceil($durationInMinutes / 30);
+            
+            $slots = [];
+            $time = $startTime->copy();
+            for ($i = 0; $i < $sessionsNeeded; $i++) {
+                $slots[] = $time->format('H:i:s');
+                $time->addMinutes(30);
+            }
 
-            foreach ($photographers as $photographer) {
-                // Calculate sessions needed (30 minutes per session)
-                $durationInMinutes = abs($endTime->diffInMinutes($startTime));
-                $sessionsNeeded = ceil($durationInMinutes / 30);
+            $availablePhotographer = \App\Models\User::where('role', 'photographer')
+                ->whereHas('sessions', function($q) use ($request, $slots) {
+                    $q->where('date', $request->scheduled_date)
+                      ->whereIn('start_time', $slots)
+                      ->where('status', 'open');
+                }, '=', count($slots))
+                ->first();
 
-                // Generate required time slots (H:i:s format)
-                $slots = [];
-                $time = $startTime->copy();
-                for ($i = 0; $i < $sessionsNeeded; $i++) {
-                    $slots[] = $time->format('H:i:s');
-                    $time->addMinutes(30);
-                }
-
-                // Check if photographer has all required sessions available
-                $availableSessions = $photographer->sessions()
+            if ($availablePhotographer) {
+                $assignedPhotographer = $availablePhotographer->id;
+                $sessionIds = $availablePhotographer->sessions()
                     ->where('date', $request->scheduled_date)
                     ->whereIn('start_time', $slots)
-                    ->where('status', 'open')
-                    ->get();
-
-                if ($availableSessions->count() === count($slots)) {
-                    $assignedPhotographer = $photographer->id;
-                    $sessionIds = $availableSessions->pluck('id')->toArray();
-                    break;
-                }
+                    ->pluck('id')
+                    ->toArray();
             }
 
             if (!$assignedPhotographer) {
@@ -383,6 +380,12 @@ class CartController extends Controller
             $cart = $existing;
         } else {
             $cart = Cart::create($data);
+        }
+
+        // OPTIMASI: Jika ini adalah Direct Buy, langsung arahkan ke checkout dari server
+        // Ini memangkas 1 round-trip (POST -> Back -> Visit Checkout menjadi hanya POST -> Redirect Checkout)
+        if ($request->boolean('is_direct')) {
+            return redirect()->to("/checkout?uid={$cart->cart_uid}&cart_item_id={$cart->id}");
         }
 
         // Flash ID barang yang baru dibuat agar frontend bisa mengisolasinya
