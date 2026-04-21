@@ -221,15 +221,24 @@ class ScheduleController extends Controller
 
         $date = Carbon::parse($request->date)->toDateString();
 
-        // Get unique room names from photographers first
+        // Ambil nama ruangan unik dari tabel fotografer (User)
         $roomNames = \App\Models\User::where('role', 'photographer')
             ->whereNotNull('room_name')
             ->pluck('room_name')
-            ->unique();
+            ->unique()
+            ->values();
 
-        // Map room names to Room model objects with IDs
-        $rooms = \App\Models\Room::whereIn('label', $roomNames)
-            ->get(['id', 'label as name']);
+        // Cari ID yang cocok di tabel Room (jika ada)
+        $rooms = $roomNames->map(function($name) {
+            $room = \App\Models\Room::where('label', $name)
+                ->orWhere('name', $name)
+                ->first();
+            
+            return [
+                'id' => $room ? $room->id : null,
+                'name' => $name
+            ];
+        });
 
         return response()->json([
             'rooms' => $rooms
