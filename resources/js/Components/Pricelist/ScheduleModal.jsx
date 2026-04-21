@@ -24,24 +24,9 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     const [isLoadingGrid, setIsLoadingGrid] = useState(false);
     const [isLoadingRooms, setIsLoadingRooms] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [submittingMessage, setSubmittingMessage] = useState('Memproses...');
 
     const rooms = initialRooms;
-    const messages = ['Menyiapkan data...', 'Menyimpan jadwal...', 'Mengarahkan ke checkout...'];
 
-    useEffect(() => {
-        let interval;
-        if (isSubmitting) {
-            let i = 0;
-            interval = setInterval(() => {
-                i = (i + 1) % messages.length;
-                setSubmittingMessage(messages[i]);
-            }, 1000);
-        } else {
-            setSubmittingMessage('Memproses...');
-        }
-        return () => clearInterval(interval);
-    }, [isSubmitting]);
     const formatPrice = (price) => {
         if (!price) return '';
         const numericPrice = typeof price === 'string' ? parseFloat(price.replace(/[^0-9.-]+/g, "")) : price;
@@ -796,7 +781,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                     {isSubmitting ? (
                                                         <>
                                                             <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                                            {submittingMessage}
+                                                            Memproses...
                                                         </>
                                                     ) : (
                                                         (packageData?.allow_split_session && mode === 'direct') ? 'Selesaikan Pilihan Sesi' : (mode === 'direct' ? 'Lanjut ke Booking' : 'Tambah ke Keranjang')
