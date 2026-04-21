@@ -353,6 +353,8 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         setIsSubmitting(true);
         setError(null);
 
+        const uid = getOrCreateUID();
+
         const payload = {
             pricelist_package_id: packageData.id,
             quantity: 1,
