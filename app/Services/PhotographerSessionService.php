@@ -18,33 +18,37 @@ class PhotographerSessionService
     public static function generateDefaultSessions($photographerId, $daysAhead = 60)
     {
         $times = self::getTimeSlots();
-        $sessionsCreated = 0;
+        $sessions = [];
+        $now = now();
 
         // Generate sessions from today to N days ahead
         for ($dayOffset = 0; $dayOffset < $daysAhead; $dayOffset++) {
-            $date = Carbon::now()->addDays($dayOffset)->toDateString();
+            $date = $now->copy()->addDays($dayOffset)->toDateString();
 
-            // Create sessions for each time slot
             foreach ($times as $time) {
-                // Check if session already exists
-                $exists = PhotographerSession::where('photographer_id', $photographerId)
-                    ->where('date', $date)
-                    ->where('start_time', $time . ':00')
-                    ->exists();
-
-                if (!$exists) {
-                    PhotographerSession::create([
-                        'photographer_id' => $photographerId,
-                        'date' => $date,
-                        'start_time' => $time . ':00',
-                        'status' => 'open', // Default: TERSEDIA
-                    ]);
-                    $sessionsCreated++;
-                }
+                $sessions[] = [
+                    'photographer_id' => $photographerId,
+                    'date' => $date,
+                    'start_time' => $time . ':00',
+                    'status' => 'open',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
             }
         }
 
-        return $sessionsCreated;
+        // Use bulk insert for performance
+        // We use chunk to avoid database packet size limits if the array is too large
+        $chunks = array_chunk($sessions, 500);
+        $totalCreated = 0;
+        
+        foreach ($chunks as $chunk) {
+            // Note: insert doesn't trigger model events, but we don't have any for this model
+            PhotographerSession::insert($chunk);
+            $totalCreated += count($chunk);
+        }
+
+        return $totalCreated;
     }
 
     /**

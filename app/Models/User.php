@@ -26,6 +26,7 @@ class User extends Authenticatable
         'phone',
         'room_name',
         'inactive_dates',
+        'sort_order',
     ];
 
 

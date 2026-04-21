@@ -50,9 +50,17 @@ class Cart extends Model
     public function photographerSessions()
     {
         // Many-to-many style lookup based on session IDs or date/time
+        // selected_times are stored as H:i format, but DB uses H:i:s — normalize to H:i:s
+        $times = $this->selected_times ?: [$this->start_time];
+        $normalizedTimes = array_map(function ($t) {
+            if (!$t) return $t;
+            // If already H:i:s, keep as-is; otherwise append :00
+            return strlen($t) === 5 ? $t . ':00' : $t;
+        }, $times);
+
         return $this->hasMany(PhotographerSession::class, 'photographer_id', 'photographer_id')
                     ->where('date', $this->scheduled_date)
-                    ->whereIn('start_time', $this->selected_times ?: [$this->start_time]);
+                    ->whereIn('start_time', $normalizedTimes);
     }
 
     public function getAdjustedSessionsAttribute()

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { XMarkIcon, KeyIcon, UserIcon, EyeIcon, EyeSlashIcon, HomeIcon, CalendarIcon, CheckCircleIcon, NoSymbolIcon } from '@heroicons/react/24/outline';
 import CustomCalendar from '@/Components/CustomCalendar';
 
 export default function Edit({ isOpen, onClose, photographer, rooms = [], isNew = false }) {
+    const { errors: pageErrors } = usePage().props;
     const [showPassword, setShowPassword] = useState(false);
     const [showOldPassword, setShowOldPassword] = useState(false);
     const [processing, setProcessing] = useState(false);
@@ -121,10 +122,11 @@ export default function Edit({ isOpen, onClose, photographer, rooms = [], isNew 
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         placeholder="Nama Fotografer"
-                                        className="w-full pl-11 pr-4 py-4 bg-brand-black/5 dark:bg-black/20 border-0 rounded-2xl focus:ring-2 focus:ring-brand-gold/50 text-xs font-bold text-brand-black dark:text-brand-white placeholder:text-brand-black/50 dark:placeholder:text-brand-white/50 transition-all"
+                                        className={`w-full pl-11 pr-4 py-4 bg-brand-black/5 dark:bg-black/20 border-0 rounded-2xl focus:ring-2 focus:ring-brand-gold/50 text-xs font-bold text-brand-black dark:text-brand-white placeholder:text-brand-black/50 dark:placeholder:text-brand-white/50 transition-all ${pageErrors?.name ? 'ring-2 ring-red-500' : ''}`}
                                         required
                                     />
                                 </div>
+                                {pageErrors?.name && <p className="mt-1.5 px-1 text-[10px] font-black uppercase text-red-500 tracking-widest">{pageErrors.name}</p>}
                             </div>
 
                             <div>
@@ -138,26 +140,38 @@ export default function Edit({ isOpen, onClose, photographer, rooms = [], isNew 
                                         value={formData.username}
                                         onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                                         placeholder="username_fg"
-                                        className="w-full pl-11 pr-4 py-4 bg-brand-black/5 dark:bg-black/20 border-0 rounded-2xl focus:ring-2 focus:ring-brand-gold/50 text-xs font-mono font-bold text-brand-black dark:text-brand-white placeholder:text-brand-black/50 dark:placeholder:text-brand-white/50 transition-all uppercase"
+                                        className={`w-full pl-11 pr-4 py-4 bg-brand-black/5 dark:bg-black/20 border-0 rounded-2xl focus:ring-2 focus:ring-brand-gold/50 text-xs font-mono font-bold text-brand-black dark:text-brand-white placeholder:text-brand-black/50 dark:placeholder:text-brand-white/50 transition-all uppercase ${pageErrors?.username ? 'ring-2 ring-red-500' : ''}`}
                                         required
                                     />
                                 </div>
+                                {pageErrors?.username && <p className="mt-1.5 px-1 text-[10px] font-black uppercase text-red-500 tracking-widest">{pageErrors.username}</p>}
                             </div>
 
                             <div>
                                 <label className="block text-[10px] font-black uppercase tracking-widest text-brand-black/50 dark:text-brand-white/50 mb-2 px-1">Penugasan Room</label>
                                 <div className="relative group">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
                                         <HomeIcon className="h-4 w-4 text-brand-black/20 dark:text-brand-white/20" />
                                     </div>
-                                    <input
-                                        type="text"
+                                    <select
                                         value={formData.room_name}
                                         onChange={(e) => setFormData({ ...formData, room_name: e.target.value })}
-                                        placeholder="Contoh: Room A"
-                                        className="w-full pl-11 pr-4 py-4 bg-brand-black/5 dark:bg-black/20 border-0 rounded-2xl focus:ring-2 focus:ring-brand-gold/50 text-xs font-bold text-brand-black dark:text-brand-white placeholder:text-brand-black/50 dark:placeholder:text-brand-white/50 transition-all"
-                                    />
+                                        className="w-full pl-11 pr-4 py-4 bg-brand-black/5 dark:bg-black/20 border-0 rounded-2xl focus:ring-2 focus:ring-brand-gold/50 text-xs font-bold text-brand-black dark:text-brand-white transition-all appearance-none"
+                                    >
+                                        <option value="">Pilih Room (Opsional)</option>
+                                        {rooms.map(room => (
+                                            <option key={room.id} value={room.name}>{room.name}</option>
+                                        ))}
+                                        {/* Fallback jika room_name di data lama tidak ada di daftar rooms */}
+                                        {formData.room_name && !rooms.some(r => r.name === formData.room_name) && (
+                                            <option value={formData.room_name}>{formData.room_name}</option>
+                                        )}
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                        <svg className="w-4 h-4 text-brand-black/20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
                                 </div>
+                                {pageErrors?.room_name && <p className="mt-1.5 px-1 text-[10px] font-black uppercase text-red-500 tracking-widest">{pageErrors.room_name}</p>}
                             </div>
                         </div>
 
@@ -272,7 +286,7 @@ export default function Edit({ isOpen, onClose, photographer, rooms = [], isNew 
                                         value={formData.password}
                                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                         placeholder="••••••••"
-                                        className="w-full pl-11 pr-12 py-4 bg-brand-black/5 dark:bg-black/20 border-0 rounded-2xl focus:ring-2 focus:ring-brand-gold/50 text-xs font-bold text-brand-black dark:text-brand-white placeholder:text-brand-black/50 dark:placeholder:text-brand-white/50 transition-all"
+                                        className={`w-full pl-11 pr-12 py-4 bg-brand-black/5 dark:bg-black/20 border-0 rounded-2xl focus:ring-2 focus:ring-brand-gold/50 text-xs font-bold text-brand-black dark:text-brand-white placeholder:text-brand-black/50 dark:placeholder:text-brand-white/50 transition-all ${pageErrors?.password ? 'ring-2 ring-red-500' : ''}`}
                                         required={!photographer}
                                     />
                                     <button
@@ -283,6 +297,7 @@ export default function Edit({ isOpen, onClose, photographer, rooms = [], isNew 
                                         {showPassword ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                                     </button>
                                 </div>
+                                {pageErrors?.password && <p className="mt-1.5 px-1 text-[10px] font-black uppercase text-red-500 tracking-widest">{pageErrors.password}</p>}
                             </div>
 
                             <div>
@@ -296,9 +311,10 @@ export default function Edit({ isOpen, onClose, photographer, rooms = [], isNew 
                                         value={formData.phone}
                                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                         placeholder="628123456789"
-                                        className="w-full pl-11 pr-4 py-4 bg-brand-black/5 dark:bg-black/20 border-0 rounded-2xl focus:ring-2 focus:ring-brand-gold/50 text-xs font-bold text-brand-black dark:text-brand-white placeholder:text-brand-black/50 dark:placeholder:text-brand-white/50 transition-all"
+                                        className={`w-full pl-11 pr-4 py-4 bg-brand-black/5 dark:bg-black/20 border-0 rounded-2xl focus:ring-2 focus:ring-brand-gold/50 text-xs font-bold text-brand-black dark:text-brand-white placeholder:text-brand-black/50 dark:placeholder:text-brand-white/50 transition-all ${pageErrors?.phone ? 'ring-2 ring-red-500' : ''}`}
                                     />
                                 </div>
+                                {pageErrors?.phone && <p className="mt-1.5 px-1 text-[10px] font-black uppercase text-red-500 tracking-widest">{pageErrors.phone}</p>}
                             </div>
                         </div>
 
