@@ -375,13 +375,8 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         if (mode === 'direct') {
             router.post('/cart', payload, {
                 headers: { 'X-Cart-UID': uid },
-                onSuccess: (page) => {
-                    const itemId = page.props.flash?.last_added_id;
-                    if (itemId) {
-                        router.visit(`/checkout?uid=${uid}&cart_item_id=${itemId}`);
-                    } else {
-                        router.visit(`/checkout?uid=${uid}`);
-                    }
+                onSuccess: () => {
+                    // Server menangani redirect otomatis ke /checkout untuk mode 'direct'
                     onClose();
                 },
                 onError: (errors) => {
