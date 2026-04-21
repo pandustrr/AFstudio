@@ -19,6 +19,7 @@ class PhotographerController extends Controller
                 ->orderBy('sort_order', 'asc')
                 ->orderBy('id', 'asc')
                 ->get(),
+            'rooms' => \App\Models\Room::select('id', 'name')->get(),
         ]);
     }
 
@@ -94,21 +95,19 @@ class PhotographerController extends Controller
         // Validasi inactive_dates sebagai array (bisa kosong jika semua diaktifkan kembali)
         $newInactiveDates = $request->input('inactive_dates', []);
 
-        // 1. Ambil semua sesi fotografer yang ada
-        $sessions = \App\Models\PhotographerSession::where('photographer_id', $photographer->id)
-            ->where('status', '!=', 'booked')
-            ->get();
-
-        foreach ($sessions as $session) {
-            $isNowInactive = in_array($session->date, $newInactiveDates);
-            $currentStatus = $session->status;
-
-            if ($isNowInactive && $currentStatus === 'open') {
-                $session->update(['status' => 'off']);
-            } elseif (!$isNowInactive && $currentStatus === 'off') {
-                $session->update(['status' => 'open']);
-            }
+        // 1. Matikan sesi yang masuk dalam daftar inactive_dates (jika statusnya 'open')
+        if (!empty($newInactiveDates)) {
+            \App\Models\PhotographerSession::where('photographer_id', $photographer->id)
+                ->where('status', 'open')
+                ->whereIn('date', $newInactiveDates)
+                ->update(['status' => 'off']);
         }
+
+        // 2. Hidupkan kembali sesi yang TIDAK ada dalam daftar inactive_dates (jika statusnya 'off')
+        \App\Models\PhotographerSession::where('photographer_id', $photographer->id)
+            ->where('status', 'off')
+            ->whereNotIn('date', $newInactiveDates)
+            ->update(['status' => 'open']);
 
         return back()->with('success', 'Photographer updated successfully');
     }
