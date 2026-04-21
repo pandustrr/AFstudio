@@ -81,16 +81,46 @@ class BookingController extends Controller
         }
 
         $carts = $query->get();
-        $totalFoundInDb = $carts->count();
 
         // Filter out items where package might be missing (e.g. deleted)
         $carts = $carts->filter(function ($cart) {
             return $cart->package !== null;
         });
 
+        // BULK LOAD SESSIONS (Optimisasi N+1 Query)
+        // Kita memuat semua sesi untuk semua item di keranjang dalam satu tarikan query
+        if ($carts->isNotEmpty()) {
+            $photographerIds = $carts->pluck('photographer_id')->filter()->unique();
+            $dates = $carts->pluck('scheduled_date')->filter()->unique();
+            
+            if ($photographerIds->isNotEmpty()) {
+                $allSessions = \App\Models\PhotographerSession::whereIn('photographer_id', $photographerIds)
+                    ->whereIn('date', $dates)
+                    ->get();
+                    
+                foreach ($carts as $cart) {
+                    if (!$cart->photographer_id) continue;
+                    
+                    $times = $cart->selected_times ?: [$cart->start_time];
+                    $normalizedTimes = array_map(function($t) {
+                        if (!$t) return $t;
+                        return strlen($t) === 5 ? $t . ':00' : $t;
+                    }, $times);
+                    
+                    $matchedSessions = $allSessions->filter(function($s) use ($cart, $normalizedTimes) {
+                        return $s->photographer_id == $cart->photographer_id && 
+                               $s->date == $cart->scheduled_date && 
+                               in_array($s->start_time, $normalizedTimes);
+                    });
+                    
+                    $cart->setRelation('photographerSessions', $matchedSessions);
+                }
+            }
+        }
+
         return Inertia::render('Checkout/Create', [
             'carts' => $carts->values(),
-            'rooms' => \App\Models\Room::all(),
+            'rooms' => \App\Models\Room::all(['id', 'label']), // Hanya ambil kolom perlu
             'photographers' => \App\Models\User::where('role', 'photographer')->get(['id', 'name']),
         ]);
     }
