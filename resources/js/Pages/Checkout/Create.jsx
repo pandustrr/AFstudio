@@ -54,6 +54,17 @@ export default function CheckoutCreate({ carts = [], rooms = [], photographers =
         dp_amount: 0,
     });
 
+    // Logging for debugging "Order Summary Kosong" issues
+    React.useEffect(() => {
+        console.log('--- Checkout Data Debug ---', {
+            cartsCount: Array.isArray(carts) ? carts.length : 'not an array',
+            uidFromUrl,
+            uidInForm: data.cart_uid,
+            cartItemIdFromUrl,
+            allProps: { carts, rooms, photographers }
+        });
+    }, [carts, uidFromUrl]);
+
     const total = Array.isArray(carts)
         ? carts.reduce((sum, c) => sum + (parseFloat(c?.package?.price_numeric || 0) * c.quantity), 0)
         : 0;
@@ -688,14 +699,20 @@ Mohon konfirmasinya ya min. Terima kasih!`;
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="py-12 text-center border-2 border-dashed border-black/5 dark:border-white/5 rounded-3xl">
-                                        <ShoppingCartIcon className="w-12 h-12 text-brand-black/10 dark:text-brand-white/10 mx-auto mb-4" />
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-4">Keranjang Kosong</p>
+                                    <div className="py-20 text-center border-2 border-dashed border-black/5 dark:border-white/10 rounded-3xl bg-black/5 dark:bg-white/5">
+                                        <div className="relative inline-block mb-6">
+                                            <ShoppingCartIcon className="w-16 h-16 text-brand-black/10 dark:text-brand-white/10 mx-auto" />
+                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-brand-red rounded-full animate-ping"></div>
+                                        </div>
+                                        <h3 className="text-sm font-black uppercase tracking-widest text-brand-black dark:text-brand-white mb-2">Order Summary Kosong</h3>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-brand-black/40 dark:text-brand-white/40 mb-8 max-w-[200px] mx-auto leading-relaxed">
+                                            Silakan pilih kembali jadwal di Price List.
+                                        </p>
                                         <Link 
                                             href={backToPricelistUrl} 
-                                            className="inline-block px-6 py-3 bg-brand-gold text-brand-black text-[9px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand-gold/20"
+                                            className="inline-block px-8 py-4 bg-brand-red text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-brand-red/20"
                                         >
-                                            Pilih Kategori
+                                            Kembali ke Price List
                                         </Link>
                                     </div>
                                 )}
