@@ -124,8 +124,32 @@ class CartController extends Controller
                     ->pluck('id')
                     ->toArray();
 
+                // AUTO-GENERATE: Support future dates where sessions don't exist yet
                 if (count($sessionIds) !== count($request->selected_times)) {
-                    return redirect()->back()->with('error', 'Beberapa sesi tidak valid atau sudah tidak tersedia.');
+                    // Check conflicts
+                    $hasConflict = \App\Models\PhotographerSession::where('photographer_id', $request->photographer_id)
+                        ->where('date', $request->scheduled_date)
+                        ->whereIn('start_time', collect($request->selected_times)->map(fn($t) => $t . ':00'))
+                        ->whereIn('status', ['booked', 'off'])
+                        ->exists();
+
+                    if (!$hasConflict) {
+                        foreach ($request->selected_times as $timeStr) {
+                            $session = \App\Models\PhotographerSession::updateOrCreate(
+                                [
+                                    'photographer_id' => $request->photographer_id,
+                                    'date' => $request->scheduled_date,
+                                    'start_time' => $timeStr . ':00',
+                                ],
+                                ['status' => 'open']
+                            );
+                            if (!in_array($session->id, $sessionIds)) {
+                                $sessionIds[] = $session->id;
+                            }
+                        }
+                    } else {
+                        return redirect()->back()->with('error', 'Beberapa slot waktu sudah tidak tersedia.');
+                    }
                 }
 
                 $data['photographer_id'] = $request->photographer_id;
@@ -152,14 +176,13 @@ class CartController extends Controller
                 
                 $data['sessions_needed'] = count($sessionIds);
             } elseif ($request->has('sessions_needed')) {
-                // Auto-assign flow
+                // Auto-assign photographer-specific flow
                 if (!$request->start_time || !$request->sessions_needed) {
                     return redirect()->back()->with('error', 'Silakan pilih waktu mulai.');
                 }
  
                 $sessionsNeeded = $request->sessions_needed;
                 
-                // Get the actual session records to check for overrides
                 $slots = [];
                 $t = \Carbon\Carbon::createFromTimeString($request->start_time);
                 for ($i = 0; $i < $sessionsNeeded; $i++) {
@@ -167,9 +190,40 @@ class CartController extends Controller
                     $t->addMinutes(30);
                 }
  
-                $sessions = \App\Models\PhotographerSession::where('photographer_id', $request->photographer_id)
+                $sessionIds = \App\Models\PhotographerSession::where('photographer_id', $request->photographer_id)
                     ->where('date', $request->scheduled_date)
                     ->whereIn('start_time', $slots)
+                    ->pluck('id')
+                    ->toArray();
+
+                // AUTO-GENERATE for photographer auto-assign
+                if (count($sessionIds) < $sessionsNeeded) {
+                    $hasConflict = \App\Models\PhotographerSession::where('photographer_id', $request->photographer_id)
+                        ->where('date', $request->scheduled_date)
+                        ->whereIn('start_time', $slots)
+                        ->whereIn('status', ['booked', 'off'])
+                        ->exists();
+
+                    if (!$hasConflict) {
+                        foreach ($slots as $slotTime) {
+                            $session = \App\Models\PhotographerSession::updateOrCreate(
+                                [
+                                    'photographer_id' => $request->photographer_id,
+                                    'date' => $request->scheduled_date,
+                                    'start_time' => $slotTime,
+                                ],
+                                ['status' => 'open']
+                            );
+                            if (!in_array($session->id, $sessionIds)) {
+                                $sessionIds[] = $session->id;
+                            }
+                        }
+                    } else {
+                        return redirect()->back()->with('error', 'Slot waktu sudah tidak tersedia.');
+                    }
+                }
+
+                $sessions = \App\Models\PhotographerSession::whereIn('id', $sessionIds)
                     ->orderBy('start_time')
                     ->get();
                 
@@ -189,7 +243,7 @@ class CartController extends Controller
                 $data['sessions_needed'] = $sessionsNeeded;
                 $data['photographer_id'] = $request->photographer_id;
                 $data['room_name'] = $request->room_name;
-                $data['selected_times'] = $request->selected_times;
+                $data['selected_times'] = collect($slots)->map(fn($t) => substr($t, 0, 5))->toArray();
             } else {
                 // Old flow: photographer_id + session_ids (legacy support)
                 if (!$request->photographer_id || empty($request->session_ids)) {

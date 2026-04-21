@@ -383,6 +383,12 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                 onFinish: () => {
                     setIsSubmitting(false);
                 },
+                onSuccess: (page) => {
+                    if (page.props.flash?.error) {
+                        setIsSubmitting(false);
+                        alert(page.props.flash.error);
+                    }
+                },
                 onError: (errors) => {
                     setIsSubmitting(false);
                     const firstError = Object.values(errors)[0];
