@@ -105,11 +105,13 @@ class CartController extends Controller
             'is_direct' => $request->boolean('is_direct'),
         ];
 
-        // If this is a direct buy, clear any previous direct buy items for this UID
+        // STABILISASI ID: Menggunakan ID yang sudah ada jika ini adalah Direct Buy
+        // Ini mencegah "Order Summary Kosong" karena ID yang patah saat pindah halaman
+        $existingDirect = null;
         if ($request->boolean('is_direct')) {
-            Cart::where('cart_uid', $request->cart_uid)
+            $existingDirect = Cart::where('cart_uid', $request->cart_uid)
                 ->where('is_direct', true)
-                ->delete();
+                ->first();
         }
 
         if ($type === 'photographer') {
@@ -371,7 +373,12 @@ class CartController extends Controller
             return $existingTimes === $newTimes;
         })->first();
 
-        if ($existing) {
+        // Jika ini adalah Direct Buy, kita SELALU mengupdate item direct yang sudah ada
+        // agar ID-nya tetap sama (mencegah broken summary link)
+        if ($data['is_direct'] && $existingDirect) {
+            $existingDirect->update($data);
+            $cart = $existingDirect;
+        } elseif ($existing) {
             $existing->update($data);
             $cart = $existing;
         } else {

@@ -45,7 +45,15 @@ class BookingController extends Controller
 
         // Prioritas filter: Jika ada UID, gunakan UID. Jika tidak ada dan login, gunakan user_id.
         if ($uid) {
-            $query->where('cart_uid', $uid);
+            $query->where(function($q) use ($uid, $cartItemId) {
+                $q->where('cart_uid', $uid);
+                // TOLERANSI: Jika ada ID spesifik (Direct Buy), izinkan akses meskipun UID meleset (misal ganti browser/session)
+                if ($cartItemId) {
+                    $q->orWhere(function($sq) use ($cartItemId) {
+                        $sq->where('id', $cartItemId)->where('is_direct', true);
+                    });
+                }
+            });
         } elseif (Auth::check()) {
             $query->where('user_id', Auth::id());
         } else {
@@ -73,16 +81,15 @@ class BookingController extends Controller
         }
 
         $carts = $query->get();
+        $totalFoundInDb = $carts->count();
 
         // Filter out items where package might be missing (e.g. deleted)
         $carts = $carts->filter(function ($cart) {
             return $cart->package !== null;
         });
 
-        // Removed redirect block to allow rendering with empty cart for new UID sessions
-
         return Inertia::render('Checkout/Create', [
-            'carts' => $carts,
+            'carts' => $carts->values(),
             'rooms' => \App\Models\Room::all(),
             'photographers' => \App\Models\User::where('role', 'photographer')->get(['id', 'name']),
         ]);

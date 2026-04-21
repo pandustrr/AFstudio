@@ -23,6 +23,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
     const [sessionGrid, setSessionGrid] = useState([]);
     const [isLoadingGrid, setIsLoadingGrid] = useState(false);
     const [isLoadingRooms, setIsLoadingRooms] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const rooms = initialRooms;
 
@@ -349,9 +350,8 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
             return;
         }
 
+        setIsSubmitting(true);
         setError(null);
-
-        const uid = getOrCreateUID();
 
         const payload = {
             pricelist_package_id: packageData.id,
@@ -385,8 +385,12 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                     onClose();
                 },
                 onError: (errors) => {
+                    setIsSubmitting(false);
                     const firstError = Object.values(errors).join(', ');
                     setError(firstError || "Gagal memproses booking.");
+                },
+                onFinish: () => {
+                    // Kita tidak reset isSubmitting di onSuccess karena visit() akan memuat halaman baru
                 }
             });
         } else {
@@ -411,6 +415,7 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                 }
             },
             onError: (errors) => {
+                setIsSubmitting(false);
                 const firstError = Object.values(errors).join(', ');
                 setError(firstError || "Gagal menambahkan ke keranjang.");
             }
@@ -774,11 +779,18 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
                                                         (packageData?.allow_split_session
                                                             ? (selectedSplitTimes.length < maxSessions)
                                                             : (!startTime || availabilityStatus !== 'available')) ||
-                                                        loading
+                                                        loading || isSubmitting
                                                     }
-                                                    className="w-full py-5 bg-brand-black dark:bg-brand-white text-white dark:text-brand-black font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl disabled:opacity-50 mt-4"
+                                                    className="w-full py-5 bg-brand-black dark:bg-brand-white text-white dark:text-brand-black font-black uppercase tracking-widest rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl disabled:opacity-50 mt-4 flex items-center justify-center gap-2"
                                                 >
-                                                    {(packageData?.allow_split_session && mode === 'direct') ? 'Selesaikan Pilihan Sesi' : (mode === 'direct' ? 'Lanjut ke Booking' : 'Tambah ke Keranjang')}
+                                                    {isSubmitting ? (
+                                                        <>
+                                                            <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                                            Memproses...
+                                                        </>
+                                                    ) : (
+                                                        (packageData?.allow_split_session && mode === 'direct') ? 'Selesaikan Pilihan Sesi' : (mode === 'direct' ? 'Lanjut ke Booking' : 'Tambah ke Keranjang')
+                                                    )}
                                                 </button>
                                             )}
                                         </div>
