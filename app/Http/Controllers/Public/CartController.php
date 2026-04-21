@@ -305,35 +305,71 @@ class CartController extends Controller
 
             // Jika photographer_id dikirim (Direct Buy/Grid Selection), langsung cari sesi miliknya
             if ($assignedPhotographer) {
-                $sessionIds = \App\Models\PhotographerSession::where('photographer_id', $assignedPhotographer)
+                $existingSessions = \App\Models\PhotographerSession::where('photographer_id', $assignedPhotographer)
                     ->where('date', $request->scheduled_date)
                     ->whereIn('start_time', $slots)
-                    ->pluck('id')
-                    ->toArray();
+                    ->get();
                 
-                // Cari alternatif jika ID yang diberikan tidak memiliki sesi open (seharusnya jarang terjadi)
+                $sessionIds = $existingSessions->pluck('id')->toArray();
+                
+                // AUTO-GENERATE: Jika sesi belum ada di database untuk tanggal depan (misal: bulan depan)
+                // Kita buatkan record-nya secara otomatis jika tidak ada konflik
                 if (count($sessionIds) < count($slots)) {
-                    $assignedPhotographer = null;
+                    // Cek apakah ada konflik (booked/off) di jam tersebut
+                    $hasConflict = \App\Models\PhotographerSession::where('photographer_id', $assignedPhotographer)
+                        ->where('date', $request->scheduled_date)
+                        ->whereIn('start_time', $slots)
+                        ->whereIn('status', ['booked', 'off'])
+                        ->exists();
+
+                    if (!$hasConflict) {
+                        foreach ($slots as $slotTime) {
+                            $session = \App\Models\PhotographerSession::updateOrCreate(
+                                [
+                                    'photographer_id' => $assignedPhotographer,
+                                    'date' => $request->scheduled_date,
+                                    'start_time' => $slotTime,
+                                ],
+                                ['status' => 'open']
+                            );
+                            if (!in_array($session->id, $sessionIds)) {
+                                $sessionIds[] = $session->id;
+                            }
+                        }
+                    } else {
+                        $assignedPhotographer = null;
+                    }
                 }
             }
 
             // Fallback cari otomatis (Smart Slotting) jika ID tidak ada atau tidak valid
             if (!$assignedPhotographer) {
+                // Perluasan: Cari fotografer yang tidak punya konflik 'booked'/'off' pada slot ini
+                // Meskipun mereka belum punya record sesi di tanggal tersebut (Virtual Availability)
                 $availablePhotographer = \App\Models\User::where('role', 'photographer')
-                    ->whereHas('sessions', function($q) use ($request, $slots) {
+                    ->whereDoesntHave('sessions', function($q) use ($request, $slots) {
                         $q->where('date', $request->scheduled_date)
                           ->whereIn('start_time', $slots)
-                          ->where('status', 'open');
-                    }, '=', count($slots))
+                          ->whereIn('status', ['booked', 'off']);
+                    })
                     ->first();
                 
                 if ($availablePhotographer) {
                     $assignedPhotographer = $availablePhotographer->id;
-                    $sessionIds = $availablePhotographer->sessions()
-                        ->where('date', $request->scheduled_date)
-                        ->whereIn('start_time', $slots)
-                        ->pluck('id')
-                        ->toArray();
+                    $sessionIds = [];
+                    
+                    // Create sessions for this auto-assigned photographer
+                    foreach ($slots as $slotTime) {
+                        $session = \App\Models\PhotographerSession::updateOrCreate(
+                            [
+                                'photographer_id' => $assignedPhotographer,
+                                'date' => $request->scheduled_date,
+                                'start_time' => $slotTime,
+                            ],
+                            ['status' => 'open']
+                        );
+                        $sessionIds[] = $session->id;
+                    }
                 }
             }
 

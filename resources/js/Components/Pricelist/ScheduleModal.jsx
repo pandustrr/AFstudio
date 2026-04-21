@@ -376,17 +376,18 @@ export default function ScheduleModal({ isOpen, onClose, packageData, rooms: ini
         };
 
         if (mode === 'direct') {
-            // Tutup modal langsung agar user melihat transisi halaman yang natural
-            // (bukan spinner yang stuck di dalam modal)
             onClose();
 
             router.post('/cart', payload, {
                 headers: { 'X-Cart-UID': uid },
+                onFinish: () => {
+                    setIsSubmitting(false);
+                },
                 onError: (errors) => {
                     setIsSubmitting(false);
-                    const firstError = Object.values(errors).join(', ');
-                    setError(firstError || "Gagal memproses booking.");
-                },
+                    const firstError = Object.values(errors)[0];
+                    alert(firstError || "Gagal memproses booking.");
+                }
             });
         } else {
             processCart(uid, payload);
