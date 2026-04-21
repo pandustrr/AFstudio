@@ -23,17 +23,34 @@ class BookingController extends Controller
             return $this->show($code);
         }
 
-        $uid = $request->header('X-Cart-UID') ?? $request->query('uid');
-        $cartItemId = $request->query('cart_item_id');
-        $cartItemIdsStr = $request->query('cart_item_ids');
+        // Robust UID detection (checking header, query, and input)
+        $uid = $request->header('X-Cart-UID') 
+               ?? $request->query('uid') 
+               ?? $request->input('uid') 
+               ?? $request->input('cart_uid');
+               
+        $cartItemId = $request->query('cart_item_id') ?? $request->input('cart_item_id');
+        $cartItemIdsStr = $request->query('cart_item_ids') ?? $request->input('cart_item_ids');
 
+        // Base query
         $query = Cart::with(['package.subCategory.category']);
 
-        // Jika ada UID, filter berdasarkan UID
+        // LOGGING DEBUG: Melacak kendala data tidak terbaca di produksi
+        \Illuminate\Support\Facades\Log::info('Checkout Attempt', [
+            'uid_found' => $uid,
+            'cart_item_id' => $cartItemId,
+            'user_id' => Auth::id(),
+            'ip' => $request->ip()
+        ]);
+
+        // Prioritas filter: Jika ada UID, gunakan UID. Jika tidak ada dan login, gunakan user_id.
         if ($uid) {
             $query->where('cart_uid', $uid);
         } elseif (Auth::check()) {
             $query->where('user_id', Auth::id());
+        } else {
+            // Jika tidak ada identitas sama sekali, paksa query kosong
+            $query->whereRaw('1 = 0');
         }
 
         // ISOLASI: Jika ada instruksi cart_item_id tunggal (dari Langsung Beli)
