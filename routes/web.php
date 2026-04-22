@@ -231,6 +231,10 @@ Route::get('/clear-everything', function () {
     }
 });
 
+// System Maintenance Routes
+Route::get('/system/clear-server', [\App\Http\Controllers\SystemController::class, 'clearServerCache']);
+Route::get('/system/clear-device', [\App\Http\Controllers\SystemController::class, 'clearDeviceCache']);
+
 Route::get('/debug-controller', function () {
     $class = \App\Http\Controllers\Admin\BookingController::class;
     $reflection = new \ReflectionClass($class);
