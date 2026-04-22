@@ -238,11 +238,20 @@
                                         </td>
                                     </tr>
                                     @endforeach
+                                @elseif(isset($item->selected_times) && is_array($item->selected_times))
+                                    @foreach($item->selected_times as $index => $time)
+                                    <tr>
+                                        <td style="border:none; padding: 0;">Sesi {{ $index + 1 }}:</td>
+                                        <td style="border:none; padding: 0; text-align: right; font-family: monospace;">
+                                            {{ str_replace(':', '.', $time) }}-{{ str_replace(':', '.', \Carbon\Carbon::parse($time)->addMinutes(30)->format('H:i')) }}
+                                        </td>
+                                    </tr>
+                                    @endforeach
                                 @else
                                     <tr>
                                         <td style="border:none; padding: 0;">Sesi 1:</td>
                                         <td style="border:none; padding: 0; text-align: right; font-family: monospace;">
-                                            {{ str_replace(':', '.', substr($item->adjusted_start_time, 0, 5)) }}-{{ str_replace(':', '.', substr($item->adjusted_end_time, 0, 5)) }}
+                                            {{ str_replace(':', '.', substr($item->start_time, 0, 5)) }}-{{ str_replace(':', '.', substr($item->end_time, 0, 5)) }}
                                         </td>
                                     </tr>
                                 @endif

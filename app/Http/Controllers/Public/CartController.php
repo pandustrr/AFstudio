@@ -242,6 +242,7 @@ class CartController extends Controller
                 $data['end_time'] = $endTimeStr;
                 $data['sessions_needed'] = $sessionsNeeded;
                 $data['photographer_id'] = $request->photographer_id;
+                $data['session_ids'] = $sessionIds;
                 $data['room_name'] = $request->room_name;
                 $data['selected_times'] = collect($slots)->map(fn($t) => substr($t, 0, 5))->toArray();
             } else {
