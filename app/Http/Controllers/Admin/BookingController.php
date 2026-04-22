@@ -205,7 +205,7 @@ class BookingController extends Controller
                             $date = $item->scheduled_date->toDateString();
 
                             $slots = [];
-                            $selectedTimes = is_array($item->selected_times) ? $item->selected_times : json_decode($item->selected_times, true) ?: [];
+                            $selectedTimes = (is_array($item->selected_times) ? $item->selected_times : json_decode($item->selected_times, true)) ?: [];
                             
                             foreach ($selectedTimes as $t) {
                                 // Normalize H:i to H:i:s
