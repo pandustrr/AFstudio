@@ -205,10 +205,16 @@ class BookingController extends Controller
                             $date = $item->scheduled_date->toDateString();
 
                             $slots = [];
-                            $tempTime = clone $startTime;
-                            while ($tempTime->lt($endTime)) {
-                                $slots[] = $tempTime->format('H:i:s');
-                                $tempTime->addMinutes(30);
+                            $selectedTimes = is_array($item->selected_times) ? $item->selected_times : json_decode($item->selected_times, true) ?: [];
+                            
+                            foreach ($selectedTimes as $t) {
+                                // Normalize H:i to H:i:s
+                                $slots[] = strlen($t) === 5 ? $t . ':00' : $t;
+                            }
+
+                            // Fallback to start_time if selected_times is empty (old data compatibility)
+                            if (empty($slots) && $item->start_time) {
+                                $slots[] = $item->start_time;
                             }
 
                             if (!empty($slots)) {
