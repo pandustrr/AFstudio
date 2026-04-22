@@ -283,7 +283,7 @@ class BookingController extends Controller
                     $date = $cart->scheduled_date;
                     $photographerId = $cart->photographer_id;
 
-                    // Generate consecutive time slots
+                    // Generate consecutive time slots with seconds normalization
                     $slots = [];
                     $time = \Carbon\Carbon::createFromTimeString($startTime);
                     for ($i = 0; $i < $sessionsNeeded; $i++) {
