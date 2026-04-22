@@ -36,6 +36,22 @@ class BookingItem extends Model
     public function getAdjustedSessionsAttribute()
     {
         $sessions = $this->photographerSessions->sortBy('start_time');
+
+        // FALLBACK: If sessions records were never created or linked (future dates)
+        if ($sessions->isEmpty() && !empty($this->selected_times)) {
+            return collect($this->selected_times)->sort()->map(function($t) {
+                $startTime = strlen($t) === 5 ? $t . ':00' : $t;
+                return [
+                    'id' => null,
+                    'start_time' => $startTime,
+                    'end_time' => \Carbon\Carbon::parse($startTime)->addMinutes(30)->format('H:i:s'),
+                    'adjusted_start_time' => $startTime,
+                    'adjusted_end_time' => \Carbon\Carbon::parse($startTime)->addMinutes(30)->format('H:i:s'),
+                    'is_customized' => false
+                ];
+            })->values()->toArray();
+        }
+
         return $sessions->map(function($s) {
             return [
                 'id' => $s->id,

@@ -72,6 +72,23 @@ class Cart extends Model
         
         $sessions = $sessions->sortBy('start_time');
 
+        // FALLBACK: If sessions records don't exist in DB yet (for future months like June)
+        // We generate virtual adjusted sessions from selected_times for the UI
+        if ($sessions->isEmpty() && !empty($this->selected_times)) {
+            return collect($this->selected_times)->sort()->map(function($t) {
+                // Determine if it's already H:i:s or just H:i
+                $startTime = strlen($t) === 5 ? $t . ':00' : $t;
+                return [
+                    'id' => null,
+                    'start_time' => $startTime,
+                    'end_time' => \Carbon\Carbon::parse($startTime)->addMinutes(30)->format('H:i:s'),
+                    'adjusted_start_time' => $startTime,
+                    'adjusted_end_time' => \Carbon\Carbon::parse($startTime)->addMinutes(30)->format('H:i:s'),
+                    'is_customized' => false
+                ];
+            })->values()->toArray();
+        }
+
         return $sessions->map(function($s) {
             return [
                 'id' => $s->id,
