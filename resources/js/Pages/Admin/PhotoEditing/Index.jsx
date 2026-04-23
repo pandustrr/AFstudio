@@ -198,7 +198,9 @@ export default function Index({ sessions, filters, options }) {
                                     <td className="px-8 py-6">
                                         <div className="text-xs font-bold text-brand-black dark:text-brand-white">
                                             {(() => {
-                                                const dObj = new Date(session.created_at);
+                                                const item = session.booking?.items?.[0];
+                                                const dateStr = item?.scheduled_date || session.created_at;
+                                                const dObj = new Date(dateStr);
                                                 return dObj.toLocaleDateString('id-ID', {
                                                     day: 'numeric',
                                                     month: 'long',
@@ -207,10 +209,16 @@ export default function Index({ sessions, filters, options }) {
                                             })()}
                                         </div>
                                         <div className="text-[10px] font-mono text-brand-black/40 dark:text-brand-white/40 font-bold tracking-widest mt-1">
-                                            {new Date(session.created_at).toLocaleTimeString('id-ID', {
-                                                hour: '2-digit',
-                                                minute: '2-digit'
-                                            }).replace('.', ':')} WIB
+                                            {(() => {
+                                                const item = session.booking?.items?.[0];
+                                                if (item?.start_time) {
+                                                    return item.start_time.substring(0, 5).replace(':', '.') + ' WIB';
+                                                }
+                                                return new Date(session.created_at).toLocaleTimeString('id-ID', {
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                }).replace('.', ':') + ' WIB';
+                                            })()}
                                         </div>
                                     </td>
                                     <td className="px-8 py-6">

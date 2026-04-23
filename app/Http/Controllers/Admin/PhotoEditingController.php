@@ -31,29 +31,55 @@ class PhotoEditingController extends Controller
             });
         }
 
-        // Apply Filters
+        // Apply Filters based on Scheduled Date (from Booking Items)
         if ($year) {
-            $query->whereYear('created_at', $year);
+            $query->whereHas('booking.items', function($q) use ($year) {
+                $q->whereYear('scheduled_date', $year);
+            });
         }
         if ($month) {
-            $query->whereMonth('created_at', $month);
+            $query->whereHas('booking.items', function($q) use ($month) {
+                $q->whereMonth('scheduled_date', $month);
+            });
         }
         if ($day) {
-            $query->whereDay('created_at', $day);
+            $query->whereHas('booking.items', function($q) use ($day) {
+                $q->whereDay('scheduled_date', $day);
+            });
         }
         if ($status && $status !== 'all') {
             $query->where('status', $status);
         }
 
-        $sessions = $query->latest()->get();
+        // Sort by Scheduled Date (Descending) - we use a subquery to sort by the related booking item date
+        $sessions = $query->select('photo_sessions.*')
+            ->leftJoin('bookings', 'photo_sessions.uid', '=', 'bookings.guest_uid')
+            ->leftJoin('booking_items', function($join) {
+                $join->on('bookings.id', '=', 'booking_items.booking_id')
+                     ->whereRaw('booking_items.id = (SELECT id FROM booking_items WHERE booking_id = bookings.id LIMIT 1)');
+            })
+            ->orderByRaw('COALESCE(booking_items.scheduled_date, photo_sessions.created_at) DESC')
+            ->get();
 
         // Get Available Options
         // Years: Always available
-        $availableYears = PhotoEditing::selectRaw('YEAR(created_at) as year')
+        // Get Available Options based on Scheduled Date
+        // Years
+        $availableYears = \App\Models\BookingItem::whereHas('booking.photoEditing')
+            ->selectRaw('YEAR(scheduled_date) as year')
             ->distinct()
             ->orderBy('year', 'desc')
             ->pluck('year')
             ->toArray();
+            
+        // Fallback to PhotoEditing created_at years if no booking items found
+        if (empty($availableYears)) {
+            $availableYears = PhotoEditing::selectRaw('YEAR(created_at) as year')
+                ->distinct()
+                ->orderBy('year', 'desc')
+                ->pluck('year')
+                ->toArray();
+        }
 
         // Ensure current filtered year is in options
         if ($year && !in_array((int)$year, $availableYears)) {
@@ -64,8 +90,9 @@ class PhotoEditingController extends Controller
         // Months: Available if Year is selected
         $availableMonths = [];
         if ($year) {
-            $availableMonths = PhotoEditing::whereYear('created_at', $year)
-                ->selectRaw('MONTH(created_at) as month')
+            $availableMonths = \App\Models\BookingItem::whereHas('booking.photoEditing')
+                ->whereYear('scheduled_date', $year)
+                ->selectRaw('MONTH(scheduled_date) as month')
                 ->distinct()
                 ->orderBy('month', 'desc')
                 ->pluck('month')
@@ -81,9 +108,10 @@ class PhotoEditingController extends Controller
         // Days: Available if Year and Month are selected
         $availableDays = [];
         if ($year && $month) {
-            $availableDays = PhotoEditing::whereYear('created_at', $year)
-                ->whereMonth('created_at', $month)
-                ->selectRaw('DAY(created_at) as day')
+            $availableDays = \App\Models\BookingItem::whereHas('booking.photoEditing')
+                ->whereYear('scheduled_date', $year)
+                ->whereMonth('scheduled_date', $month)
+                ->selectRaw('DAY(scheduled_date) as day')
                 ->distinct()
                 ->orderBy('day', 'desc')
                 ->pluck('day')
