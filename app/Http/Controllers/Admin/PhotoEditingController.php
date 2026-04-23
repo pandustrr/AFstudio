@@ -55,15 +55,17 @@ class PhotoEditingController extends Controller
 
         // Sort by Scheduled Date (Descending) in PHP for better stability (avoiding SQL 500 error)
         $sessions = $sessions->sortByDesc(function ($session) {
-            $item = $session->booking?->items?->first();
-            if ($item && $item->scheduled_date) {
-                // Return Y-m-d H:i:s for proper string sorting
-                $date = $item->scheduled_date instanceof \Carbon\Carbon 
-                    ? $item->scheduled_date->toDateString() 
-                    : substr($item->scheduled_date, 0, 10);
-                return $date . ' ' . ($item->start_time ?? '00:00:00');
+            try {
+                $item = $session->booking ? $session->booking->items->first() : null;
+                if ($item && $item->scheduled_date) {
+                    $datePart = is_string($item->scheduled_date) ? substr($item->scheduled_date, 0, 10) : $item->scheduled_date->format('Y-m-d');
+                    $timePart = $item->start_time ?: '00:00:00';
+                    return $datePart . ' ' . $timePart;
+                }
+            } catch (\Exception $e) {
+                // Fallback on any error during date processing
             }
-            return $session->created_at->toDateTimeString();
+            return $session->created_at ? $session->created_at->toDateTimeString() : '0000-00-00 00:00:00';
         })->values();
 
         // Get Available Options
