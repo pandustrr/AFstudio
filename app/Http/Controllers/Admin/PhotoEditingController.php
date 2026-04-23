@@ -70,7 +70,7 @@ class PhotoEditingController extends Controller
         // Years: Always available
         // Get Available Options based on Scheduled Date
         // Years
-        $availableYears = \App\Models\BookingItem::whereHas('booking.photoEditing')
+        $availableYears = \App\Models\BookingItem::whereHas('booking.photoSession')
             ->selectRaw('YEAR(scheduled_date) as year')
             ->distinct()
             ->orderBy('year', 'desc')
@@ -95,7 +95,7 @@ class PhotoEditingController extends Controller
         // Months: Available if Year is selected
         $availableMonths = [];
         if ($year) {
-            $availableMonths = \App\Models\BookingItem::whereHas('booking.photoEditing')
+            $availableMonths = \App\Models\BookingItem::whereHas('booking.photoSession')
                 ->whereYear('scheduled_date', $year)
                 ->selectRaw('MONTH(scheduled_date) as month')
                 ->distinct()
@@ -113,7 +113,7 @@ class PhotoEditingController extends Controller
         // Days: Available if Year and Month are selected
         $availableDays = [];
         if ($year && $month) {
-            $availableDays = \App\Models\BookingItem::whereHas('booking.photoEditing')
+            $availableDays = \App\Models\BookingItem::whereHas('booking.photoSession')
                 ->whereYear('scheduled_date', $year)
                 ->whereMonth('scheduled_date', $month)
                 ->selectRaw('DAY(scheduled_date) as day')
