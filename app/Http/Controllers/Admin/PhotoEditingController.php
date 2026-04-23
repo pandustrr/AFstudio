@@ -51,15 +51,20 @@ class PhotoEditingController extends Controller
             $query->where('status', $status);
         }
 
-        // Sort by Scheduled Date (Descending) - we use a subquery to sort by the related booking item date
-        $sessions = $query->select('photo_sessions.*')
-            ->leftJoin('bookings', 'photo_sessions.uid', '=', 'bookings.guest_uid')
-            ->leftJoin('booking_items', function($join) {
-                $join->on('bookings.id', '=', 'booking_items.booking_id')
-                     ->whereRaw('booking_items.id = (SELECT id FROM booking_items WHERE booking_id = bookings.id LIMIT 1)');
-            })
-            ->orderByRaw('COALESCE(booking_items.scheduled_date, photo_sessions.created_at) DESC')
-            ->get();
+        $sessions = $query->latest()->get();
+
+        // Sort by Scheduled Date (Descending) in PHP for better stability (avoiding SQL 500 error)
+        $sessions = $sessions->sortByDesc(function ($session) {
+            $item = $session->booking?->items?->first();
+            if ($item && $item->scheduled_date) {
+                // Return Y-m-d H:i:s for proper string sorting
+                $date = $item->scheduled_date instanceof \Carbon\Carbon 
+                    ? $item->scheduled_date->toDateString() 
+                    : substr($item->scheduled_date, 0, 10);
+                return $date . ' ' . ($item->start_time ?? '00:00:00');
+            }
+            return $session->created_at->toDateTimeString();
+        })->values();
 
         // Get Available Options
         // Years: Always available
