@@ -19,62 +19,75 @@ class PhotoSelectorController extends Controller
      */
     public function show(Request $request, $uid)
     {
-        $session = PhotoEditing::where('uid', $uid)->with(['editRequests', 'booking.items.package'])->first();
+        try {
+            $session = PhotoEditing::where('uid', $uid)->with(['editRequests', 'booking.items.package'])->first();
 
-        if (!$session) {
+            if (!$session) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'UID tidak ditemukan. Silakan cek kembali atau hubungi admin.'
+                ], 404);
+            }
+
+            // Calculate total photos already requested
+            $requestedPhotoIds = $session->editRequests->flatMap(function ($request) {
+                return collect($request->selected_photos)->pluck('id');
+            })->unique()->values()->all();
+
+            $requestedCount = count($requestedPhotoIds);
+
+            // Get max editing quota from package
+            $maxEditingQuota = 0;
+            if ($session->booking && $session->booking->items->isNotEmpty()) {
+                $maxEditingQuota = ($session->booking->items->first()->package->max_editing_quota ?? 0) + ($session->extra_editing_quota ?? 0);
+            }
+
+            // Fetch associated booking info (if any)
+            $booking = \App\Models\Booking::where('guest_uid', $uid)->with('items.package')->first();
+            $bookingDetail = null;
+            if ($booking && $booking->items->isNotEmpty()) {
+                $item = $booking->items->first();
+                $bookingDetail = [
+                    'booking_code' => $booking->booking_code,
+                    'package_name' => $item->package->name ?? 'Paket tidak ditemukan',
+                    'scheduled_date' => $item->scheduled_date ? (is_string($item->scheduled_date) ? $item->scheduled_date : $item->scheduled_date->format('Y-m-d')) : null,
+                    'start_time' => $item->start_time,
+                    'end_time' => $item->end_time,
+                    'room_id' => $item->room_id,
+                    'review_template' => $item->package->review_template ?? null,
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'uid' => $session->uid,
+                    'customer_name' => $session->customer_name,
+                    'has_raw' => !empty($session->raw_folder_id) && $session->is_raw_accessible,
+                    'has_edited' => !empty($session->edited_folder_id) && $session->is_edited_accessible,
+                    'status' => $session->status,
+                    'requested_count' => $requestedCount,
+                    'max_editing_quota' => $maxEditingQuota,
+                    'quota_request' => $session->quota_request,
+                    'extra_editing_quota' => $session->extra_editing_quota,
+                    'requested_photo_ids' => $requestedPhotoIds,
+                    'cancelled_photo_ids' => collect($session->cancelled_photos ?? [])->pluck('id')->all(),
+                    'edit_quota_remaining' => max(0, $maxEditingQuota - $requestedCount),
+                    'booking' => $bookingDetail,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Error in PhotoSelectorController@show: " . $e->getMessage(), [
+                'uid' => $uid,
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'UID tidak ditemukan. Silakan cek kembali atau hubungi admin.'
-            ], 404);
+                'message' => 'Terjadi kesalahan sistem saat mengecek UID.',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        // Calculate total photos already requested
-        $requestedPhotoIds = $session->editRequests->flatMap(function ($request) {
-            return collect($request->selected_photos)->pluck('id');
-        })->unique()->values()->all();
-
-        $requestedCount = count($requestedPhotoIds);
-
-        // Get max editing quota from package
-        $maxEditingQuota = 0;
-        if ($session->booking && $session->booking->items->isNotEmpty()) {
-            $maxEditingQuota = ($session->booking->items->first()->package->max_editing_quota ?? 0) + ($session->extra_editing_quota ?? 0);
-        }
-
-        // Fetch associated booking info (if any)
-        $booking = \App\Models\Booking::where('guest_uid', $uid)->with('items.package')->first();
-        $bookingDetail = null;
-        if ($booking && $booking->items->isNotEmpty()) {
-            $item = $booking->items->first();
-            $bookingDetail = [
-                'booking_code' => $booking->booking_code,
-            'package_name' => $item->package->name,
-                'scheduled_date' => $item->scheduled_date, // Raw string YYYY-MM-DD
-                'start_time' => $item->start_time,
-                'end_time' => $item->end_time,
-                'room_id' => $item->room_id,
-                'review_template' => $item->package->review_template,
-            ];
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'uid' => $session->uid,
-                'customer_name' => $session->customer_name,
-                'has_raw' => !empty($session->raw_folder_id) && $session->is_raw_accessible,
-                'has_edited' => !empty($session->edited_folder_id) && $session->is_edited_accessible,
-                'status' => $session->status,
-                'requested_count' => $requestedCount,
-                'max_editing_quota' => $maxEditingQuota,
-                'quota_request' => $session->quota_request,
-                'extra_editing_quota' => $session->extra_editing_quota,
-                'requested_photo_ids' => $requestedPhotoIds,
-                'cancelled_photo_ids' => collect($session->cancelled_photos ?? [])->pluck('id')->all(),
-                'edit_quota_remaining' => max(0, $maxEditingQuota - $requestedCount),
-                'booking' => $bookingDetail,
-            ]
-        ]);
     }
 
     /**
