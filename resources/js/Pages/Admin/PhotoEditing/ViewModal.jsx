@@ -1,12 +1,18 @@
+import React, { useState } from 'react';
 import { XMarkIcon, ChatBubbleLeftRightIcon, PhoneIcon, ChartBarIcon, PhotoIcon } from '@heroicons/react/24/outline';
 
 export default function ViewModal({ session, onClose }) {
+    const [rowsPerColumn, setRowsPerColumn] = useState(20);
+    
     if (!session) return null;
+
+    // Calculate height based on rows: ~27px per item (py-1.5 + text + border)
+    const containerHeight = rowsPerColumn * 27;
 
     return (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
             <div className="absolute inset-0" onClick={onClose}></div>
-            <div className="relative bg-white dark:bg-brand-black border border-black/10 dark:border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] dark:shadow-[0_35px_60px_-15px_rgba(0,0,0,0.6)] animate-fade-in">
+            <div className="relative bg-white dark:bg-brand-black border border-black/10 dark:border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] dark:shadow-[0_35px_60px_-15px_rgba(0,0,0,0.6)] animate-fade-in">
                 <div className="sticky top-0 bg-white/80 dark:bg-brand-black/80 backdrop-blur-md px-8 py-6 border-b border-black/5 dark:border-white/5 flex justify-between items-center z-10">
                     <div>
                         <h2 className="text-xl font-black text-brand-black dark:text-brand-white uppercase tracking-tighter">Requests Customer : {session.uid}</h2>
@@ -125,8 +131,24 @@ export default function ViewModal({ session, onClose }) {
                         return (
                             <div className="bg-black/2 dark:bg-white/2 border border-black/5 dark:border-white/5 rounded-2xl overflow-hidden">
                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 bg-white/50 dark:bg-white/5 border-b border-black/5 dark:border-white/5">
-                                    <div className="text-xs font-black uppercase tracking-widest text-brand-gold">
-                                        Request Photos List ({sortedPhotos.length})
+                                    <div className="flex flex-col gap-2">
+                                        <div className="text-xs font-black uppercase tracking-widest text-brand-gold">
+                                            Request Photos List ({sortedPhotos.length})
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[8px] font-black text-brand-black/40 dark:text-brand-white/40 uppercase tracking-widest mr-1">Rows:</span>
+                                            {[10, 15, 20].map((num) => (
+                                                <button
+                                                    key={num}
+                                                    onClick={() => setRowsPerColumn(num)}
+                                                    className={`px-2 py-0.5 rounded text-[8px] font-black transition-all ${rowsPerColumn === num 
+                                                        ? 'bg-brand-gold text-brand-black shadow-sm' 
+                                                        : 'bg-black/5 dark:bg-white/5 text-brand-black/40 dark:text-brand-white/40 hover:bg-black/10'}`}
+                                                >
+                                                    {num}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                     <button
                                         onClick={() => {
@@ -140,7 +162,7 @@ export default function ViewModal({ session, onClose }) {
                                     </button>
                                 </div>
                                 <div className="overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-brand-gold/20 scrollbar-track-transparent">
-                                    <div className="flex flex-col flex-wrap h-[540px] content-start gap-x-2">
+                                    <div className="flex flex-col flex-wrap content-start gap-x-2" style={{ height: `${containerHeight}px` }}>
                                         {sortedPhotos.map((photo, pIdx) => (
                                             <div key={pIdx} className="flex items-center gap-2 px-3 py-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-all group w-[160px] shrink-0 border-b border-black/5 dark:border-white/5">
                                                 <PhotoIcon className="w-3.5 h-3.5 text-brand-black/20 dark:text-brand-white/20 group-hover:text-brand-gold transition-colors shrink-0" />
