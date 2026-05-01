@@ -139,8 +139,8 @@ export default function ViewModal({ session, onClose }) {
                                         Copy Full List
                                     </button>
                                 </div>
-                                <div className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-brand-gold/20 scrollbar-track-transparent">
-                                    <div className="flex flex-col flex-wrap h-[380px] content-start gap-x-2">
+                                <div className="overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-brand-gold/20 scrollbar-track-transparent">
+                                    <div className="flex flex-col flex-wrap h-[540px] content-start gap-x-2">
                                         {sortedPhotos.map((photo, pIdx) => (
                                             <div key={pIdx} className="flex items-center gap-2 px-3 py-1.5 hover:bg-black/5 dark:hover:bg-white/5 transition-all group w-[160px] shrink-0 border-b border-black/5 dark:border-white/5">
                                                 <PhotoIcon className="w-3.5 h-3.5 text-brand-black/20 dark:text-brand-white/20 group-hover:text-brand-gold transition-colors shrink-0" />
