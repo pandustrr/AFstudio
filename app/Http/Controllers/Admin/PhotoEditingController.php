@@ -48,7 +48,11 @@ class PhotoEditingController extends Controller
             });
         }
         if ($status && $status !== 'all') {
-            $query->where('status', $status);
+            if ($status === 'request_edit') {
+                $query->where('status', 'processing')->whereHas('editRequests');
+            } else {
+                $query->where('status', $status);
+            }
         }
 
         $sessions = $query->latest()->get();

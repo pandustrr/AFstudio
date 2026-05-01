@@ -269,16 +269,20 @@ export default function Index({ sessions, filters, options }) {
                                     </td>
                                     <td className="px-8 py-6">
                                         {(() => {
-                                            const s = session.booking?.status || session.status;
+                                            const s = session.status;
+                                            const hasRequests = session.edit_requests_count > 0;
+                                            
                                             const colors = {
                                                 'done': 'bg-green-100 text-green-700',
-                                                'completed': 'bg-green-100 text-green-700',
-                                                'processing': 'bg-brand-gold/20 text-brand-gold',
-                                                'request_edit': 'bg-purple-100 text-purple-700',
-                                                'confirmed': 'bg-blue-100 text-blue-700',
+                                                'processing': hasRequests ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700',
                                                 'pending': 'bg-black/5 dark:bg-white/5 text-brand-black/40 dark:text-brand-white/40'
                                             };
-                                            const label = s === 'processing' || s === 'request_edit' ? 'Request Edit' : (s === 'completed' || s === 'done' ? 'Done' : s);
+                                            
+                                            let label = s.charAt(0).toUpperCase() + s.slice(1);
+                                            if (s === 'processing') {
+                                                label = hasRequests ? 'Req Edit' : 'Processing';
+                                            }
+                                            
                                             return (
                                                 <span className={`inline-block px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest ${colors[s] || 'bg-gray-100'}`}>
                                                     {label}
