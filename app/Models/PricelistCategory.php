@@ -13,7 +13,17 @@ class PricelistCategory extends Model
     {
         parent::boot();
         static::creating(function ($category) {
-            $category->slug = Str::slug($category->name);
+            $slug = Str::slug($category->name);
+            $count = 1;
+            $originalSlug = $slug;
+
+            // Check if slug already exists and increment if it does
+            while (static::where('slug', $slug)->exists()) {
+                $slug = $originalSlug . '-' . $count;
+                $count++;
+            }
+
+            $category->slug = $slug;
         });
     }
 
