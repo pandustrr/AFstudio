@@ -129,6 +129,64 @@ class PhotoSelectorController extends Controller
     }
 
     /**
+     * Proxy-download a full-quality file from Google Drive using the service account.
+     * Validates that the fileId belongs to a folder owned by the given UID.
+     */
+    public function download(Request $request, $uid, $fileId)
+    {
+        $session = PhotoEditing::where('uid', $uid)->first();
+
+        if (!$session) {
+            return response()->json(['error' => 'UID tidak ditemukan'], 404);
+        }
+
+        // Verify the file belongs to one of the session's accessible folders
+        $allowedFolderIds = array_filter([
+            $session->is_raw_accessible    ? $session->raw_folder_id    : null,
+            $session->is_edited_accessible ? $session->edited_folder_id : null,
+        ]);
+
+        if (empty($allowedFolderIds)) {
+            return response()->json(['error' => 'Tidak ada folder yang dapat diakses'], 403);
+        }
+
+        try {
+            // Verify file actually lives in one of the allowed folders
+            $service = $this->getDriveService();
+            $file = $service->files->get($fileId, [
+                'fields' => 'id, name, mimeType, size, parents'
+            ]);
+
+            $parents = $file->getParents() ?? [];
+            $extractedIds = array_map(
+                fn($id) => $this->extractFolderId($id),
+                $allowedFolderIds
+            );
+
+            $isAllowed = !empty(array_intersect($parents, $extractedIds));
+
+            if (!$isAllowed) {
+                Log::warning("Unauthorized download attempt", [
+                    'uid'      => $uid,
+                    'fileId'   => $fileId,
+                    'parents'  => $parents,
+                    'expected' => $extractedIds,
+                ]);
+                return response()->json(['error' => 'File tidak ditemukan pada sesi ini'], 403);
+            }
+
+            return $this->streamFileToResponse($fileId);
+
+        } catch (\Exception $e) {
+            Log::error("Download error for UID {$uid} / file {$fileId}: " . $e->getMessage());
+            return response()->json([
+                'error'   => 'Gagal mengunduh file',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Store edit request
      */
     public function storeEditRequest(Request $request, $uid)

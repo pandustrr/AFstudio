@@ -56,6 +56,7 @@ Route::post('/api/referral-codes/validate', [\App\Http\Controllers\Admin\Referra
 Route::prefix('api/photo-selector')->group(function () {
     Route::get('/sessions/{uid}', [PhotoSelectorController::class, 'show']);
     Route::get('/sessions/{uid}/photos', [PhotoSelectorController::class, 'getPhotos']);
+    Route::get('/sessions/{uid}/download/{fileId}', [PhotoSelectorController::class, 'download']);
     Route::post('/sessions/{uid}/edit-request', [PhotoSelectorController::class, 'storeEditRequest']);
     Route::post('/sessions/{uid}/review', [PhotoSelectorController::class, 'storeReview']);
     Route::post('/sessions/{uid}/quota-request', [PhotoSelectorController::class, 'storeQuotaRequest']);

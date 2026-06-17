@@ -103,6 +103,8 @@ export default function SelectorPhoto() {
         variant: 'danger'
     });
     const [isDownloading, setIsDownloading] = useState(false);
+    const [downloadQueue, setDownloadQueue] = useState([]); // [{id, name, status: 'queued'|'downloading'|'done'|'failed'}]
+    const [showDownloadPanel, setShowDownloadPanel] = useState(false);
 
     // Dynamic Review Template Logic
     const reviewTemplateArray = sessionData?.booking?.review_template || [];
@@ -552,71 +554,87 @@ export default function SelectorPhoto() {
         setIsSelectionMode(true);
     };
 
-    const triggerDownload = (downloadLink) => {
-        if (!downloadLink) return;
-
-        // Use iframe method for multi-download to avoid multiple tabs and popup blockers
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = downloadLink;
-        document.body.appendChild(iframe);
-
-        // Cleanup iframe after it has likely started the download process
-        setTimeout(() => {
-            if (document.body.contains(iframe)) {
-                document.body.removeChild(iframe);
+    // Download a single file via backend proxy (full-quality, service account)
+    const fetchDownload = async (photo, onStatusChange) => {
+        const url = `/api/photo-selector/sessions/${uid}/download/${photo.id}`;
+        onStatusChange(photo.id, 'downloading');
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
             }
-        }, 15000);
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = photo.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+            onStatusChange(photo.id, 'done');
+        } catch (err) {
+            console.error('Download failed for', photo.name, err);
+            onStatusChange(photo.id, 'failed');
+        }
+    };
+
+    // Start a sequential download queue with progress panel
+    const startDownloadQueue = (photos) => {
+        if (isDownloading || photos.length === 0) return;
+
+        // Show ConfirmModal before starting
+        setConfirmModal({
+            isOpen: true,
+            title: 'Download Foto',
+            message: `Anda akan mendownload ${photos.length} foto ke perangkat. Pastikan memori dan koneksi internet Anda mencukupi.`,
+            variant: 'warning',
+            onConfirm: () => {
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+
+                const queue = photos.map(p => ({ id: p.id, name: p.name }));
+                setDownloadQueue(queue.map(p => ({ ...p, status: 'queued' })));
+                setShowDownloadPanel(true);
+                setIsDownloading(true);
+
+                const updateStatus = (photoId, status) => {
+                    setDownloadQueue(prev =>
+                        prev.map(p => p.id === photoId ? { ...p, status } : p)
+                    );
+                };
+
+                const runNext = async (index) => {
+                    if (index >= queue.length) {
+                        setIsDownloading(false);
+                        return;
+                    }
+                    await fetchDownload(queue[index], updateStatus);
+                    // Small gap between downloads to avoid overwhelming the server
+                    setTimeout(() => runNext(index + 1), 800);
+                };
+
+                runNext(0);
+            }
+        });
     };
 
     const handleDownloadAll = () => {
         if (drivePhotos.length === 0 || isDownloading) return;
-
-        if (confirm(`Download semua ${drivePhotos.length} foto secara otomatis? \n\nCatatan: Harap klik "IZINKAN/ALLOW" jika browser meminta izin untuk mendownload banyak file agar proses tidak terhenti.`)) {
-            setIsDownloading(true);
-            let index = 0;
-
-            const nextDownload = () => {
-                if (index < drivePhotos.length) {
-                    const photo = drivePhotos[index];
-                    triggerDownload(photo.downloadLink);
-                    index++;
-                    setTimeout(nextDownload, 2000);
-                } else {
-                    setTimeout(() => {
-                        setIsDownloading(false);
-                        alert(`Selesai! ${drivePhotos.length} foto telah diproses.`);
-                    }, 1000);
-                }
-            };
-
-            nextDownload();
-        }
+        startDownloadQueue(drivePhotos);
     };
 
     const handleDownloadSelected = () => {
         if (selectedPhotos.length === 0 || isDownloading) return;
+        startDownloadQueue(selectedPhotos);
+    };
 
-        if (confirm(`Download ${selectedPhotos.length} foto pilihan Anda secara otomatis? \n\nCatatan: Harap klik "IZINKAN/ALLOW" jika browser meminta izin untuk mendownload banyak file agar proses tidak terhenti.`)) {
-            setIsDownloading(true);
-            let index = 0;
-
-            const nextDownload = () => {
-                if (index < selectedPhotos.length) {
-                    const photo = selectedPhotos[index];
-                    triggerDownload(photo.downloadLink);
-                    index++;
-                    setTimeout(nextDownload, 2000);
-                } else {
-                    setTimeout(() => {
-                        setIsDownloading(false);
-                        alert(`Selesai! ${selectedPhotos.length} foto telah diproses.`);
-                    }, 1000);
-                }
-            };
-
-            nextDownload();
-        }
+    const handleRetryDownload = (photo) => {
+        const updateStatus = (photoId, status) => {
+            setDownloadQueue(prev =>
+                prev.map(p => p.id === photoId ? { ...p, status } : p)
+            );
+        };
+        fetchDownload(photo, updateStatus);
     };
 
     const handleDriveSelection = (folderType) => {
@@ -970,28 +988,100 @@ export default function SelectorPhoto() {
                                                     </div>
                                                     {isDownloading && (
                                                         <div className="flex items-center gap-2 bg-brand-gold/10 px-3 py-1 rounded-full border border-brand-gold/20 animate-pulse">
-                                                            <div className="w-2 h-2 bg-brand-gold rounded-full"></div>
+                                                            <div className="w-2 h-2 bg-brand-gold rounded-full animate-ping"></div>
                                                             <p className="text-[8px] font-black text-brand-gold uppercase tracking-widest">
-                                                                Proses Download Berjalan...
+                                                                {downloadQueue.filter(p => p.status === 'done').length}/{downloadQueue.length} Foto
                                                             </p>
                                                         </div>
                                                     )}
                                                 </div>
 
-                                                {/* Persistent Disclaimer */}
-                                                <div className="mb-6 p-4 bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-2xl">
-                                                    <div className="flex items-start gap-4">
-                                                        <div className="w-10 h-10 bg-brand-gold/10 rounded-full flex items-center justify-center shrink-0">
-                                                            <span className="text-brand-gold text-lg">💡</span>
+                                                {/* Download Progress Panel */}
+                                                {showDownloadPanel && downloadQueue.length > 0 && (
+                                                    <div className="mb-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                                                        {/* Panel Header */}
+                                                        <div className="flex items-center justify-between px-4 py-3 border-b border-black/5 dark:border-white/5">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm">📥</span>
+                                                                <p className="text-[10px] font-black text-brand-black dark:text-brand-white uppercase tracking-widest">
+                                                                    {isDownloading ? 'Sedang Mendownload...' : 'Download Selesai'}
+                                                                </p>
+                                                            </div>
+                                                            {!isDownloading && (
+                                                                <button
+                                                                    onClick={() => { setShowDownloadPanel(false); setDownloadQueue([]); }}
+                                                                    className="text-brand-black/30 dark:text-brand-white/30 hover:text-brand-red transition-colors p-1"
+                                                                >
+                                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                                                                </button>
+                                                            )}
                                                         </div>
-                                                        <div>
-                                                            <p className="text-[10px] font-black text-brand-gold uppercase tracking-widest mb-1">Tips Download Banyak Foto</p>
-                                                            <p className="text-[9px] font-bold text-brand-black/40 dark:text-brand-white/40 leading-relaxed uppercase tracking-wide">
-                                                                Jika muncul notifikasi di browser, harap klik <span className="text-brand-gold underline underline-offset-2">"Izinkan / Allow"</span> agar sistem bisa mendownload semua foto Anda secara otomatis satu per satu.
-                                                            </p>
+
+                                                        {/* Overall Progress Bar */}
+                                                        <div className="px-4 py-3 border-b border-black/5 dark:border-white/5">
+                                                            <div className="flex justify-between items-center mb-1.5">
+                                                                <p className="text-[9px] font-bold text-brand-black/50 dark:text-brand-white/50 uppercase tracking-widest">
+                                                                    {downloadQueue.filter(p => p.status === 'done').length} / {downloadQueue.length} Foto
+                                                                </p>
+                                                                <p className="text-[9px] font-black text-brand-red uppercase tracking-widest">
+                                                                    {downloadQueue.filter(p => p.status === 'failed').length > 0
+                                                                        ? `${downloadQueue.filter(p => p.status === 'failed').length} Gagal`
+                                                                        : ''}
+                                                                </p>
+                                                            </div>
+                                                            <div className="w-full h-1.5 bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className="h-full bg-brand-gold rounded-full transition-all duration-500"
+                                                                    style={{
+                                                                        width: `${Math.round(
+                                                                            (downloadQueue.filter(p => p.status === 'done' || p.status === 'failed').length / downloadQueue.length) * 100
+                                                                        )}%`
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Per-file List */}
+                                                        <div className="max-h-44 overflow-y-auto divide-y divide-black/5 dark:divide-white/5">
+                                                            {downloadQueue.map((item) => (
+                                                                <div key={item.id} className="flex items-center justify-between px-4 py-2 gap-3">
+                                                                    <p className="text-[9px] font-mono text-brand-black/70 dark:text-brand-white/70 truncate flex-1">{item.name}</p>
+                                                                    <div className="shrink-0 flex items-center gap-1.5">
+                                                                        {item.status === 'queued' && (
+                                                                            <span className="text-[8px] font-black text-brand-black/30 dark:text-brand-white/30 uppercase tracking-widest">Menunggu</span>
+                                                                        )}
+                                                                        {item.status === 'downloading' && (
+                                                                            <div className="flex items-center gap-1">
+                                                                                <div className="w-3 h-3 border-2 border-brand-gold/30 border-t-brand-gold rounded-full animate-spin" />
+                                                                                <span className="text-[8px] font-black text-brand-gold uppercase tracking-widest">Download...</span>
+                                                                            </div>
+                                                                        )}
+                                                                        {item.status === 'done' && (
+                                                                            <div className="flex items-center gap-1">
+                                                                                <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                                                                                    <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                                                                                </div>
+                                                                                <span className="text-[8px] font-black text-green-500 uppercase tracking-widest">Selesai</span>
+                                                                            </div>
+                                                                        )}
+                                                                        {item.status === 'failed' && (
+                                                                            <div className="flex items-center gap-1.5">
+                                                                                <div className="w-4 h-4 bg-brand-red rounded-full flex items-center justify-center">
+                                                                                    <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                                                                                </div>
+                                                                                <span className="text-[8px] font-black text-brand-red uppercase tracking-widest">Gagal</span>
+                                                                                <button
+                                                                                    onClick={() => handleRetryDownload(item)}
+                                                                                    className="text-[8px] font-black text-brand-gold underline uppercase tracking-widest hover:no-underline"
+                                                                                >Coba Lagi</button>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
                                                         </div>
                                                     </div>
-                                                </div>
+                                                )}
                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
                                                     {drivePhotos.map((photo, index) => {
                                                         const isSelected = selectedPhotos.some(p => p.id === photo.id);

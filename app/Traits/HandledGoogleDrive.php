@@ -5,6 +5,7 @@ namespace App\Traits;
 use Google\Client;
 use Google\Service\Drive;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Response;
 
 trait HandledGoogleDrive
 {
@@ -62,5 +63,52 @@ trait HandledGoogleDrive
                 'isImage' => str_contains($file->mimeType, 'image/'),
             ];
         });
+    }
+
+    protected function getFileMetadata($fileId)
+    {
+        $service = $this->getDriveService();
+        return $service->files->get($fileId, [
+            'fields' => 'id, name, mimeType, size'
+        ]);
+    }
+
+    /**
+     * Stream full-quality file from Google Drive using service account.
+     * Streams in 8KB chunks to keep memory usage low.
+     */
+    protected function streamFileToResponse($fileId)
+    {
+        $service = $this->getDriveService();
+        $file    = $this->getFileMetadata($fileId);
+
+        $mimeType = $file->getMimeType() ?: 'application/octet-stream';
+        $fileName = $file->getName();
+        $fileSize = $file->getSize();
+
+        // Download from Drive using alt=media (raw bytes)
+        $driveResponse = $service->files->get($fileId, ['alt' => 'media']);
+        $body          = $driveResponse->getBody();
+
+        $headers = [
+            'Content-Type'        => $mimeType,
+            'Content-Disposition' => 'attachment; filename="' . addslashes($fileName) . '"',
+            'Cache-Control'       => 'no-cache, no-store, must-revalidate',
+            'Pragma'              => 'no-cache',
+            'Expires'             => '0',
+        ];
+
+        // Include Content-Length so browser can show download progress bar
+        if ($fileSize) {
+            $headers['Content-Length'] = $fileSize;
+        }
+
+        return response()->stream(function () use ($body) {
+            // Stream in 8KB chunks — memory safe for large files
+            while (!$body->eof()) {
+                echo $body->read(8192);
+                flush();
+            }
+        }, 200, $headers);
     }
 }
