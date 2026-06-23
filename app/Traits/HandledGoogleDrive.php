@@ -26,6 +26,12 @@ trait HandledGoogleDrive
     {
         if (empty($input)) return null;
 
+        // Sanitize: strip any leading garbage before the URL (e.g. "4.  https://...")
+        // This handles cases where admins accidentally add prefixes like "4. " or "3. "
+        if (preg_match('/(https?:\/\/\S+)/', $input, $urlMatch)) {
+            $input = $urlMatch[1];
+        }
+
         // If it looks like a full URL with /folders/ID
         if (preg_match('/folders\/([a-zA-Z0-9-_]+)/', $input, $matches)) {
             return $matches[1];
