@@ -151,26 +151,35 @@ class PhotoSelectorController extends Controller
         }
 
         try {
-            // Verify file actually lives in one of the allowed folders
+            // Verify file actually lives in one of the allowed folders.
+            // NOTE: We use a folder-query approach instead of checking file->getParents(),
+            // because service accounts do NOT get 'parents' returned for files they don't own —
+            // they only have access via folder sharing, so getParents() returns empty array.
             $service = $this->getDriveService();
-            $file = $service->files->get($fileId, [
-                'fields' => 'id, name, mimeType, size, parents'
-            ]);
 
-            $parents = $file->getParents() ?? [];
-            $extractedIds = array_map(
+            $extractedIds = array_values(array_filter(array_map(
                 fn($id) => $this->extractFolderId($id),
                 $allowedFolderIds
-            );
+            )));
 
-            $isAllowed = !empty(array_intersect($parents, $extractedIds));
+            $isAllowed = false;
+            foreach ($extractedIds as $folderId) {
+                $results = $service->files->listFiles([
+                    'q'        => "'{$folderId}' in parents and id = '{$fileId}' and trashed = false",
+                    'fields'   => 'files(id)',
+                    'pageSize' => 1,
+                ]);
+                if (count($results->getFiles()) > 0) {
+                    $isAllowed = true;
+                    break;
+                }
+            }
 
             if (!$isAllowed) {
                 Log::warning("Unauthorized download attempt", [
                     'uid'      => $uid,
                     'fileId'   => $fileId,
-                    'parents'  => $parents,
-                    'expected' => $extractedIds,
+                    'folders'  => $extractedIds,
                 ]);
                 return response()->json(['error' => 'File tidak ditemukan pada sesi ini'], 403);
             }
