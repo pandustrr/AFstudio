@@ -1100,7 +1100,7 @@ export default function SelectorPhoto() {
                                                                             : 'border-transparent hover:border-black/20 dark:hover:border-white/20'
                                                                         }`}
                                                                 >
-                                                                    <img src={photo.thumbnail?.replace('=s220', '=s300')} alt={photo.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                                                                    <img src={photo.thumbnailUrl || photo.thumbnail} alt={photo.name} className="w-full h-full object-cover" />
 
                                                                     {isSelected && (
                                                                         <div className="absolute top-2 right-2 w-5 h-5 bg-brand-red rounded-full flex items-center justify-center z-10 shadow-lg animate-in zoom-in duration-300">
@@ -1221,7 +1221,7 @@ export default function SelectorPhoto() {
                                                 <div className="grid grid-cols-5 gap-2 max-h-24 overflow-y-auto scrollbar-none">
                                                     {selectedPhotos.map((photo, i) => (
                                                         <div key={i} className="aspect-square bg-black/20 rounded-md overflow-hidden opacity-50">
-                                                            <img src={drivePhotos.find(p => p.id === photo.id)?.thumbnail} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                                                            <img src={drivePhotos.find(p => p.id === photo.id)?.thumbnailUrl || drivePhotos.find(p => p.id === photo.id)?.thumbnail} alt="" className="w-full h-full object-cover" />
                                                         </div>
                                                     ))}
                                                 </div>
@@ -1390,7 +1390,7 @@ export default function SelectorPhoto() {
                         <button onClick={handlePrev} className="fixed left-6 p-4 text-white hover:text-brand-gold z-110 bg-white/5 rounded-full"><svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg></button>
                         <div className="w-full h-full flex flex-col items-center justify-center p-4" onClick={e => e.stopPropagation()}>
                             <img
-                                src={drivePhotos[previewIndex].thumbnail.replace('s220', 's0')}
+                                src={drivePhotos[previewIndex].thumbnailUrl || drivePhotos[previewIndex].thumbnail}
                                 alt={drivePhotos[previewIndex].name}
                                 referrerPolicy="no-referrer"
                                 className="max-w-5xl max-h-[80vh] object-contain rounded-lg shadow-2xl"
