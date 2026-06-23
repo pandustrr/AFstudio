@@ -135,7 +135,7 @@ class PhotoSelectorController extends Controller
     public function proxyThumbnail(Request $request, $fileId)
     {
         try {
-            return $this->proxyThumbnail($fileId);
+            return $this->streamThumbnailProxy($fileId);
         } catch (\Exception $e) {
             Log::error("Thumbnail proxy error for file {$fileId}: " . $e->getMessage());
             return response()->json(['error' => 'Gagal memuat thumbnail'], 500);
@@ -183,9 +183,9 @@ class PhotoSelectorController extends Controller
             $parents   = $file->getParents() ?? [];
             $isAllowed = !empty(array_intersect($parents, $extractedIds));
 
-            // Fallback: if parents is empty (service account shared-folder limitation),
-            // verify by listing the folder and checking file membership
-            if (!$isAllowed && empty($parents)) {
+            // Fallback: verify by searching the file within the allowed folders.
+            // This handles cases where service account returns empty/mismatched parents.
+            if (!$isAllowed) {
                 foreach ($extractedIds as $folderId) {
                     $results = $service->files->listFiles([
                         'q'        => "'{$folderId}' in parents and trashed = false",

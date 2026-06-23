@@ -76,15 +76,13 @@ trait HandledGoogleDrive
     }
 
     /**
-     * Proxy a thumbnail (=s300 size) from Google Drive through the server.
-     * Needed because thumbnailLink URLs require Google authentication and
-     * cannot be loaded directly by the browser.
+     * Proxy a thumbnail from Google Drive through the server.
+     * Needed because thumbnailLink URLs require Google authentication.
      */
-    protected function proxyThumbnail($fileId)
+    protected function streamThumbnailProxy($fileId)
     {
         $service = $this->getDriveService();
 
-        // Get the thumbnail via Drive API (authenticated)
         $file = $service->files->get($fileId, [
             'fields'            => 'id, thumbnailLink',
             'supportsAllDrives' => true,
@@ -95,10 +93,8 @@ trait HandledGoogleDrive
             return response()->json(['error' => 'Thumbnail not available'], 404);
         }
 
-        // Replace size token to get a reasonable preview size
         $thumbUrl = preg_replace('/=s\d+$/', '=s400', $thumbUrl);
 
-        // Fetch thumbnail using the service account's HTTP client (authenticated)
         $httpClient = $service->getClient()->authorize();
         $response   = $httpClient->get($thumbUrl);
 
