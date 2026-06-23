@@ -56,11 +56,12 @@ trait HandledGoogleDrive
 
         return collect($files)->map(function ($file) {
             return [
-                'id' => $file->id,
-                'name' => $file->name,
-                'thumbnail' => $file->thumbnailLink,
+                'id'           => $file->id,
+                'name'         => $file->name,
+                'thumbnail'    => $file->thumbnailLink,  // used as fallback
+                'thumbnailUrl' => url("/api/photo-selector/thumbnail/{$file->id}"),
                 'downloadLink' => $file->webContentLink,
-                'isImage' => str_contains($file->mimeType, 'image/'),
+                'isImage'      => str_contains($file->mimeType, 'image/'),
             ];
         });
     }
@@ -69,7 +70,49 @@ trait HandledGoogleDrive
     {
         $service = $this->getDriveService();
         return $service->files->get($fileId, [
-            'fields' => 'id, name, mimeType, size'
+            'fields'            => 'id, name, mimeType, size',
+            'supportsAllDrives' => true,
+        ]);
+    }
+
+    /**
+     * Proxy a thumbnail (=s300 size) from Google Drive through the server.
+     * Needed because thumbnailLink URLs require Google authentication and
+     * cannot be loaded directly by the browser.
+     */
+    protected function proxyThumbnail($fileId)
+    {
+        $service = $this->getDriveService();
+
+        // Get the thumbnail via Drive API (authenticated)
+        $file = $service->files->get($fileId, [
+            'fields'            => 'id, thumbnailLink',
+            'supportsAllDrives' => true,
+        ]);
+
+        $thumbUrl = $file->getThumbnailLink();
+        if (!$thumbUrl) {
+            return response()->json(['error' => 'Thumbnail not available'], 404);
+        }
+
+        // Replace size token to get a reasonable preview size
+        $thumbUrl = preg_replace('/=s\d+$/', '=s400', $thumbUrl);
+
+        // Fetch thumbnail using the service account's HTTP client (authenticated)
+        $httpClient = $service->getClient()->authorize();
+        $response   = $httpClient->get($thumbUrl);
+
+        $contentType = $response->getHeaderLine('Content-Type') ?: 'image/jpeg';
+        $body        = $response->getBody();
+
+        return response()->stream(function () use ($body) {
+            while (!$body->eof()) {
+                echo $body->read(8192);
+                flush();
+            }
+        }, 200, [
+            'Content-Type'  => $contentType,
+            'Cache-Control' => 'public, max-age=3600',
         ]);
     }
 

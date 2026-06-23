@@ -129,6 +129,20 @@ class PhotoSelectorController extends Controller
     }
 
     /**
+     * Proxy thumbnail image from Google Drive through the server.
+     * Browser cannot load Drive thumbnailLinks directly (requires Google auth).
+     */
+    public function proxyThumbnail(Request $request, $fileId)
+    {
+        try {
+            return $this->proxyThumbnail($fileId);
+        } catch (\Exception $e) {
+            Log::error("Thumbnail proxy error for file {$fileId}: " . $e->getMessage());
+            return response()->json(['error' => 'Gagal memuat thumbnail'], 500);
+        }
+    }
+
+    /**
      * Proxy-download a full-quality file from Google Drive using the service account.
      * Validates that the fileId belongs to a folder owned by the given UID.
      */
@@ -152,9 +166,7 @@ class PhotoSelectorController extends Controller
 
         try {
             // Verify file actually lives in one of the allowed folders.
-            // NOTE: We use a folder-query approach instead of checking file->getParents(),
-            // because service accounts do NOT get 'parents' returned for files they don't own —
-            // they only have access via folder sharing, so getParents() returns empty array.
+            // Use supportsAllDrives so the API returns parents for shared folder files.
             $service = $this->getDriveService();
 
             $extractedIds = array_values(array_filter(array_map(
@@ -162,24 +174,39 @@ class PhotoSelectorController extends Controller
                 $allowedFolderIds
             )));
 
-            $isAllowed = false;
-            foreach ($extractedIds as $folderId) {
-                $results = $service->files->listFiles([
-                    'q'        => "'{$folderId}' in parents and id = '{$fileId}' and trashed = false",
-                    'fields'   => 'files(id)',
-                    'pageSize' => 1,
-                ]);
-                if (count($results->getFiles()) > 0) {
-                    $isAllowed = true;
-                    break;
+            // Try to get file with parents field (supportsAllDrives needed for shared folders)
+            $file = $service->files->get($fileId, [
+                'fields'            => 'id, name, mimeType, size, parents',
+                'supportsAllDrives' => true,
+            ]);
+
+            $parents   = $file->getParents() ?? [];
+            $isAllowed = !empty(array_intersect($parents, $extractedIds));
+
+            // Fallback: if parents is empty (service account shared-folder limitation),
+            // verify by listing the folder and checking file membership
+            if (!$isAllowed && empty($parents)) {
+                foreach ($extractedIds as $folderId) {
+                    $results = $service->files->listFiles([
+                        'q'        => "'{$folderId}' in parents and trashed = false",
+                        'fields'   => 'files(id)',
+                        'pageSize' => 1000,
+                    ]);
+                    foreach ($results->getFiles() as $f) {
+                        if ($f->getId() === $fileId) {
+                            $isAllowed = true;
+                            break 2;
+                        }
+                    }
                 }
             }
 
             if (!$isAllowed) {
                 Log::warning("Unauthorized download attempt", [
-                    'uid'      => $uid,
-                    'fileId'   => $fileId,
-                    'folders'  => $extractedIds,
+                    'uid'     => $uid,
+                    'fileId'  => $fileId,
+                    'parents' => $parents,
+                    'folders' => $extractedIds,
                 ]);
                 return response()->json(['error' => 'File tidak ditemukan pada sesi ini'], 403);
             }
