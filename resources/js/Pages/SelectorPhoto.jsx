@@ -59,6 +59,8 @@ export default function SelectorPhoto() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [previewIndex, setPreviewIndex] = useState(null);
+    const [previewFullQualityUrl, setPreviewFullQualityUrl] = useState(null);
+    const [isLoadingFullQuality, setIsLoadingFullQuality] = useState(false);
     const [sessionData, setSessionData] = useState(null);
 
     // Sync step with history popstate
@@ -579,6 +581,29 @@ export default function SelectorPhoto() {
                 throw new Error('File kosong diterima — koneksi mungkin terputus.');
             }
 
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+            // ── Layer 1: Web Share API (HP modern — simpan langsung ke Photos/Gallery)
+            if (isMobile && navigator.canShare) {
+                try {
+                    const file = new File([blob], photo.name, { type: blob.type || 'image/jpeg' });
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({ files: [file], title: photo.name });
+                        onStatusChange(photo.id, 'done');
+                        return;
+                    }
+                } catch (shareErr) {
+                    // User menutup share sheet → tetap anggap selesai
+                    if (shareErr.name === 'AbortError') {
+                        onStatusChange(photo.id, 'done');
+                        return;
+                    }
+                    // Share gagal → lanjut ke layer 2
+                    console.warn('Web Share failed, falling back to blob download:', shareErr.message);
+                }
+            }
+
+            // ── Layer 2: Blob + anchor download (Desktop & HP lama/fallback)
             const blobUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = blobUrl;
@@ -588,21 +613,31 @@ export default function SelectorPhoto() {
             document.body.removeChild(a);
             setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
             onStatusChange(photo.id, 'done');
+
         } catch (err) {
+            if (err.name === 'AbortError') {
+                onStatusChange(photo.id, 'done');
+                return;
+            }
             console.error('Download failed for', photo.name, err);
             onStatusChange(photo.id, 'failed');
         }
     };
 
-    // Start a sequential download queue with progress panel
+    // Start download queue — on mobile collects all blobs first, then shares in one go.
+    // On desktop (or fallback) downloads sequentially as before.
     const startDownloadQueue = (photos) => {
         if (isDownloading || photos.length === 0) return;
 
-        // Show ConfirmModal before starting
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const useBulkShare = isMobile && typeof navigator.share === 'function';
+
         setConfirmModal({
             isOpen: true,
             title: 'Download Foto',
-            message: `Anda akan mendownload ${photos.length} foto ke perangkat. Pastikan memori dan koneksi internet Anda mencukupi.`,
+            message: useBulkShare
+                ? `${photos.length} foto akan dikumpulkan lalu muncul 1 menu simpan untuk semua foto sekaligus.`
+                : `Anda akan mendownload ${photos.length} foto ke perangkat. Pastikan memori dan koneksi internet Anda mencukupi.`,
             variant: 'warning',
             onConfirm: () => {
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
@@ -618,17 +653,93 @@ export default function SelectorPhoto() {
                     );
                 };
 
-                const runNext = async (index) => {
-                    if (index >= queue.length) {
-                        setIsDownloading(false);
-                        return;
-                    }
-                    await fetchDownload(queue[index], updateStatus);
-                    // Small gap between downloads to avoid overwhelming the server
-                    setTimeout(() => runNext(index + 1), 800);
-                };
+                if (useBulkShare) {
+                    // ── MOBILE PATH: kumpulkan semua blob dulu, lalu share sekaligus
+                    (async () => {
+                        const collected = [];
 
-                runNext(0);
+                        for (const photo of queue) {
+                            updateStatus(photo.id, 'downloading');
+                            try {
+                                const response = await fetch(`/api/photo-selector/sessions/${uid}/download/${photo.id}`);
+                                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                                const contentType = response.headers.get('content-type') || '';
+                                if (contentType.includes('application/json') || contentType.includes('text/html')) {
+                                    throw new Error('Server error');
+                                }
+
+                                const blob = await response.blob();
+                                if (blob.size === 0) throw new Error('File kosong');
+
+                                const file = new File([blob], photo.name, { type: blob.type || 'image/jpeg' });
+                                collected.push({ file, id: photo.id, name: photo.name });
+                                updateStatus(photo.id, 'done');
+                            } catch (err) {
+                                console.error('Gagal mengumpulkan', photo.name, err);
+                                updateStatus(photo.id, 'failed');
+                            }
+                        }
+
+                        if (collected.length === 0) {
+                            setIsDownloading(false);
+                            return;
+                        }
+
+                        // Coba share semua sekaligus, jika browser tolak → bagi per batch 10
+                        const shareFiles = async (files) => {
+                            const allFiles = files.map(f => f.file);
+                            try {
+                                if (navigator.canShare && navigator.canShare({ files: allFiles })) {
+                                    await navigator.share({ files: allFiles, title: 'Foto AF Studio' });
+                                    return;
+                                }
+                            } catch (err) {
+                                if (err.name === 'AbortError') return; // user tutup share sheet
+                            }
+
+                            // Fallback: share per batch 10 file
+                            const BATCH = 10;
+                            for (let i = 0; i < files.length; i += BATCH) {
+                                const batch = files.slice(i, i + BATCH).map(f => f.file);
+                                try {
+                                    if (navigator.canShare && navigator.canShare({ files: batch })) {
+                                        await navigator.share({ files: batch, title: `Foto ${i + 1}–${Math.min(i + BATCH, files.length)}` });
+                                    } else {
+                                        // Fallback blob download jika share tidak support
+                                        for (const item of files.slice(i, i + BATCH)) {
+                                            const blobUrl = URL.createObjectURL(item.file);
+                                            const a = document.createElement('a');
+                                            a.href = blobUrl;
+                                            a.download = item.name;
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            document.body.removeChild(a);
+                                            setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+                                            await new Promise(r => setTimeout(r, 500));
+                                        }
+                                    }
+                                } catch (batchErr) {
+                                    if (batchErr.name !== 'AbortError') console.warn('Batch share gagal:', batchErr);
+                                }
+                            }
+                        };
+
+                        await shareFiles(collected);
+                        setIsDownloading(false);
+                    })();
+                } else {
+                    // ── DESKTOP PATH: sequential blob download seperti sebelumnya
+                    const runNext = async (index) => {
+                        if (index >= queue.length) {
+                            setIsDownloading(false);
+                            return;
+                        }
+                        await fetchDownload(queue[index], updateStatus);
+                        setTimeout(() => runNext(index + 1), 800);
+                    };
+                    runNext(0);
+                }
             }
         });
     };
@@ -673,17 +784,54 @@ export default function SelectorPhoto() {
         window.history.back();
     };
 
+    // Reset full quality when navigating between photos
+    const resetFullQuality = () => {
+        if (previewFullQualityUrl) {
+            URL.revokeObjectURL(previewFullQualityUrl);
+            setPreviewFullQualityUrl(null);
+        }
+        setIsLoadingFullQuality(false);
+    };
+
     const handlePrev = (e) => {
         e.stopPropagation();
+        resetFullQuality();
         setPreviewIndex(prev => (prev > 0 ? prev - 1 : drivePhotos.length - 1));
     };
 
     const handleNext = (e) => {
         e.stopPropagation();
+        resetFullQuality();
         setPreviewIndex(prev => (prev < drivePhotos.length - 1 ? prev + 1 : 0));
     };
 
-    const closePreview = () => setPreviewIndex(null);
+    const closePreview = () => {
+        resetFullQuality();
+        setPreviewIndex(null);
+    };
+
+    // Fetch original full-quality file and display as blob URL in preview
+    const loadFullQuality = async () => {
+        if (!drivePhotos[previewIndex] || isLoadingFullQuality || previewFullQualityUrl) return;
+        setIsLoadingFullQuality(true);
+        try {
+            const photo = drivePhotos[previewIndex];
+            const response = await fetch(`/api/photo-selector/sessions/${uid}/download/${photo.id}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json') || contentType.includes('text/html')) {
+                throw new Error('Server error');
+            }
+            const blob = await response.blob();
+            if (blob.size === 0) throw new Error('File kosong');
+            const url = URL.createObjectURL(blob);
+            setPreviewFullQualityUrl(url);
+        } catch (err) {
+            console.error('Gagal load full quality:', err);
+        } finally {
+            setIsLoadingFullQuality(false);
+        }
+    };
 
     // Keyboard navigation
     React.useEffect(() => {
@@ -1416,18 +1564,52 @@ export default function SelectorPhoto() {
                         <div className="w-full h-full flex flex-col items-center justify-center p-4" onClick={e => e.stopPropagation()}>
                             <img
                                 src={
-                                    drivePhotos[previewIndex].thumbnailUrl
-                                        // Request higher resolution (1600px) for the fullscreen preview
+                                    previewFullQualityUrl ||
+                                    (drivePhotos[previewIndex].thumbnailUrl
                                         ? `${drivePhotos[previewIndex].thumbnailUrl}?size=1600`
-                                        : drivePhotos[previewIndex].thumbnail
+                                        : drivePhotos[previewIndex].thumbnail)
                                 }
                                 alt={drivePhotos[previewIndex].name}
                                 referrerPolicy="no-referrer"
                                 className="max-w-5xl max-h-[80vh] object-contain rounded-lg shadow-2xl"
                             />
-                            <div className="mt-8 text-center bg-black/40 px-6 py-3 rounded-full border border-white/10">
-                                <p className="text-white font-mono text-xs mb-1 uppercase tracking-widest">{drivePhotos[previewIndex].name}</p>
-                                <p className="text-white/40 text-[10px] font-bold">{previewIndex + 1} / {drivePhotos.length}</p>
+                            <div className="mt-4 flex flex-col items-center gap-3">
+                                {/* Full Quality Button */}
+                                {!previewFullQualityUrl ? (
+                                    <button
+                                        onClick={loadFullQuality}
+                                        disabled={isLoadingFullQuality}
+                                        className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-brand-gold/20 border border-white/20 hover:border-brand-gold/50 text-white text-[10px] font-black uppercase tracking-widest rounded-full transition-all disabled:opacity-50"
+                                    >
+                                        {isLoadingFullQuality ? (
+                                            <>
+                                                <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                                </svg>
+                                                Memuat Kualitas Penuh...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                                </svg>
+                                                Lihat Full Quality
+                                            </>
+                                        )}
+                                    </button>
+                                ) : (
+                                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-gold/20 border border-brand-gold/40 text-brand-gold text-[10px] font-black uppercase tracking-widest rounded-full">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Kualitas Penuh
+                                    </span>
+                                )}
+                                <div className="text-center bg-black/40 px-6 py-3 rounded-full border border-white/10">
+                                    <p className="text-white font-mono text-xs mb-1 uppercase tracking-widest">{drivePhotos[previewIndex].name}</p>
+                                    <p className="text-white/40 text-[10px] font-bold">{previewIndex + 1} / {drivePhotos.length}</p>
+                                </div>
                             </div>
                         </div>
                         <button onClick={handleNext} className="fixed right-6 p-4 text-white hover:text-brand-gold z-110 bg-white/5 rounded-full"><svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg></button>
