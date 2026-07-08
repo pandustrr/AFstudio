@@ -563,7 +563,22 @@ export default function SelectorPhoto() {
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
+
+            // Validate that server returned actual file content, not an error page
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json') || contentType.includes('text/html')) {
+                const errText = await response.text();
+                console.error('Server returned non-image response:', errText.slice(0, 200));
+                throw new Error('Server gagal mengirim file — coba lagi.');
+            }
+
             const blob = await response.blob();
+
+            // Guard against empty blobs (e.g. server timeout / partial response)
+            if (blob.size === 0) {
+                throw new Error('File kosong diterima — koneksi mungkin terputus.');
+            }
+
             const blobUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = blobUrl;
@@ -1100,7 +1115,17 @@ export default function SelectorPhoto() {
                                                                             : 'border-transparent hover:border-black/20 dark:hover:border-white/20'
                                                                         }`}
                                                                 >
-                                                                    <img src={photo.thumbnailUrl || photo.thumbnail} alt={photo.name} className="w-full h-full object-cover" />
+                                                                    {/* Skeleton placeholder shown while image loads */}
+                                                                    <div className="absolute inset-0 bg-black/10 dark:bg-white/5 animate-pulse" />
+                                                                    <img
+                                                                        src={photo.thumbnailUrl || photo.thumbnail}
+                                                                        alt={photo.name}
+                                                                        loading="lazy"
+                                                                        className="w-full h-full object-cover relative z-[1] transition-opacity duration-300"
+                                                                        onLoad={(e) => { e.target.style.opacity = '1'; e.target.previousSibling.style.display = 'none'; }}
+                                                                        onError={(e) => { e.target.style.opacity = '0.2'; e.target.previousSibling.style.display = 'none'; }}
+                                                                        style={{ opacity: 0 }}
+                                                                    />
 
                                                                     {isSelected && (
                                                                         <div className="absolute top-2 right-2 w-5 h-5 bg-brand-red rounded-full flex items-center justify-center z-10 shadow-lg animate-in zoom-in duration-300">
@@ -1221,7 +1246,7 @@ export default function SelectorPhoto() {
                                                 <div className="grid grid-cols-5 gap-2 max-h-24 overflow-y-auto scrollbar-none">
                                                     {selectedPhotos.map((photo, i) => (
                                                         <div key={i} className="aspect-square bg-black/20 rounded-md overflow-hidden opacity-50">
-                                                            <img src={drivePhotos.find(p => p.id === photo.id)?.thumbnailUrl || drivePhotos.find(p => p.id === photo.id)?.thumbnail} alt="" className="w-full h-full object-cover" />
+                                                            <img src={drivePhotos.find(p => p.id === photo.id)?.thumbnailUrl || drivePhotos.find(p => p.id === photo.id)?.thumbnail} alt="" className="w-full h-full object-cover" loading="lazy" />
                                                         </div>
                                                     ))}
                                                 </div>
@@ -1390,7 +1415,12 @@ export default function SelectorPhoto() {
                         <button onClick={handlePrev} className="fixed left-6 p-4 text-white hover:text-brand-gold z-110 bg-white/5 rounded-full"><svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg></button>
                         <div className="w-full h-full flex flex-col items-center justify-center p-4" onClick={e => e.stopPropagation()}>
                             <img
-                                src={drivePhotos[previewIndex].thumbnailUrl || drivePhotos[previewIndex].thumbnail}
+                                src={
+                                    drivePhotos[previewIndex].thumbnailUrl
+                                        // Request higher resolution (1600px) for the fullscreen preview
+                                        ? `${drivePhotos[previewIndex].thumbnailUrl}?size=1600`
+                                        : drivePhotos[previewIndex].thumbnail
+                                }
                                 alt={drivePhotos[previewIndex].name}
                                 referrerPolicy="no-referrer"
                                 className="max-w-5xl max-h-[80vh] object-contain rounded-lg shadow-2xl"

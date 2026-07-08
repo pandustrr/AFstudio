@@ -135,7 +135,9 @@ class PhotoSelectorController extends Controller
     public function proxyThumbnail(Request $request, $fileId)
     {
         try {
-            return $this->streamThumbnailProxy($fileId);
+            // Allow callers to request a specific pixel size (e.g. ?size=1600 for preview modal)
+            $size = min(max((int) $request->query('size', 800), 100), 2000);
+            return $this->streamThumbnailProxy($fileId, $size);
         } catch (\Exception $e) {
             Log::error("Thumbnail proxy error for file {$fileId}: " . $e->getMessage());
             return response()->json(['error' => 'Gagal memuat thumbnail'], 500);

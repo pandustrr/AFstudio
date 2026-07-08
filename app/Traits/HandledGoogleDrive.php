@@ -79,7 +79,7 @@ trait HandledGoogleDrive
      * Proxy a thumbnail from Google Drive through the server.
      * Needed because thumbnailLink URLs require Google authentication.
      */
-    protected function streamThumbnailProxy($fileId)
+    protected function streamThumbnailProxy($fileId, int $size = 800)
     {
         $service = $this->getDriveService();
 
@@ -93,7 +93,7 @@ trait HandledGoogleDrive
             return response()->json(['error' => 'Thumbnail not available'], 404);
         }
 
-        $thumbUrl = preg_replace('/=s\d+$/', '=s400', $thumbUrl);
+        $thumbUrl = preg_replace('/=s\d+$/', "=s{$size}", $thumbUrl);
 
         $httpClient = $service->getClient()->authorize();
         $response   = $httpClient->get($thumbUrl);
@@ -108,7 +108,7 @@ trait HandledGoogleDrive
             }
         }, 200, [
             'Content-Type'  => $contentType,
-            'Cache-Control' => 'public, max-age=3600',
+            'Cache-Control' => 'public, max-age=300',
         ]);
     }
 
