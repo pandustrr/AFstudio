@@ -61,6 +61,8 @@ export default function SelectorPhoto() {
     const [previewIndex, setPreviewIndex] = useState(null);
     const [previewFullQualityUrl, setPreviewFullQualityUrl] = useState(null);
     const [isLoadingFullQuality, setIsLoadingFullQuality] = useState(false);
+    // Progressive preview: lo = 800px (instant from grid cache), hi = 1600px (background upgrade)
+    const [previewSrcState, setPreviewSrcState] = useState({ lo: null, hi: null });
     const [sessionData, setSessionData] = useState(null);
 
     // Sync step with history popstate
@@ -845,6 +847,38 @@ export default function SelectorPhoto() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [previewIndex]);
 
+    // Progressive preview loading: show 800px immediately (cached from grid), upgrade to 1600px in background
+    React.useEffect(() => {
+        if (previewIndex === null || !drivePhotos[previewIndex]) {
+            setPreviewSrcState({ lo: null, hi: null });
+            return;
+        }
+
+        const photo = drivePhotos[previewIndex];
+        const loSrc = photo.thumbnailUrl || photo.thumbnail; // 800px — same as grid, likely already cached
+        const hiSrc = photo.thumbnailUrl ? `${photo.thumbnailUrl}?size=1600` : null;
+
+        // Step 1: Show 800px immediately (no waiting, from grid cache)
+        setPreviewSrcState({ lo: loSrc, hi: null });
+
+        // Step 2: Load 1600px silently in background
+        if (hiSrc) {
+            const hiImg = new Image();
+            hiImg.onload = () => setPreviewSrcState(prev => ({ ...prev, hi: hiSrc }));
+            hiImg.src = hiSrc;
+        }
+
+        // Step 3: Preload adjacent photos (N-1 and N+1) at 800px so next navigation is instant
+        [-1, 1].forEach(offset => {
+            const adj = drivePhotos[previewIndex + offset];
+            if (adj?.thumbnailUrl) {
+                const adjImg = new Image();
+                adjImg.src = adj.thumbnailUrl; // 800px default
+            }
+        });
+
+    }, [previewIndex, drivePhotos]);
+
     return (
         <GuestLayout>
             <Head title="Selector Photo" />
@@ -1562,17 +1596,25 @@ export default function SelectorPhoto() {
                         </button>
                         <button onClick={handlePrev} className="fixed left-6 p-4 text-white hover:text-brand-gold z-110 bg-white/5 rounded-full"><svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg></button>
                         <div className="w-full h-full flex flex-col items-center justify-center p-4" onClick={e => e.stopPropagation()}>
-                            <img
-                                src={
-                                    previewFullQualityUrl ||
-                                    (drivePhotos[previewIndex].thumbnailUrl
-                                        ? `${drivePhotos[previewIndex].thumbnailUrl}?size=1600`
-                                        : drivePhotos[previewIndex].thumbnail)
-                                }
-                                alt={drivePhotos[previewIndex].name}
-                                referrerPolicy="no-referrer"
-                                className="max-w-5xl max-h-[80vh] object-contain rounded-lg shadow-2xl"
-                            />
+                            <div className="relative">
+                                <img
+                                    key={previewIndex}
+                                    src={previewFullQualityUrl || previewSrcState.hi || previewSrcState.lo}
+                                    alt={drivePhotos[previewIndex].name}
+                                    referrerPolicy="no-referrer"
+                                    className="max-w-5xl max-h-[80vh] object-contain rounded-lg shadow-2xl animate-in fade-in duration-200"
+                                />
+                                {/* Subtle HD loading indicator — only shown while upgrading to 1600px */}
+                                {!previewFullQualityUrl && previewSrcState.lo && !previewSrcState.hi && (
+                                    <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/50 px-2 py-1 rounded-full">
+                                        <svg className="w-2.5 h-2.5 text-white/60 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                        </svg>
+                                        <span className="text-white/50 text-[9px] font-bold uppercase tracking-wider">HD</span>
+                                    </div>
+                                )}
+                            </div>
                             <div className="mt-4 flex flex-col items-center gap-3">
                                 {/* Full Quality Button */}
                                 {!previewFullQualityUrl ? (
