@@ -632,7 +632,7 @@ export default function SelectorPhoto() {
             isOpen: true,
             title: 'Download Foto',
             message: isMobile
-                ? `${photos.length} foto akan diproses satu per satu. Untuk tiap foto akan muncul menu simpan — mohon pilih "Simpan ke File" atau "Google Photos" agar foto benar-benar tersimpan.`
+                ? `${photos.length} foto akan diproses satu per satu. Untuk tiap foto akan muncul menu simpan — pilih "Google Photos" agar foto masuk ke Galeri, atau "Simpan ke File" jika hanya ingin masuk folder Download.`
                 : `Anda akan mendownload ${photos.length} foto ke perangkat. Pastikan memori dan koneksi internet Anda mencukupi.`,
             variant: 'warning',
             onConfirm: () => {
