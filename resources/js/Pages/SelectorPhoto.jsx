@@ -585,7 +585,7 @@ export default function SelectorPhoto() {
 
             const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-            // ── Layer 1: Web Share API (HP modern — simpan langsung ke Photos/Gallery)
+            // ── Layer 1: Web Share API (HP modern — user pilih "Simpan ke File/Photos")
             if (isMobile && navigator.canShare) {
                 try {
                     const file = new File([blob], photo.name, { type: blob.type || 'image/jpeg' });
@@ -595,17 +595,14 @@ export default function SelectorPhoto() {
                         return;
                     }
                 } catch (shareErr) {
-                    // User menutup share sheet → tetap anggap selesai
-                    if (shareErr.name === 'AbortError') {
-                        onStatusChange(photo.id, 'done');
-                        return;
-                    }
-                    // Share gagal → lanjut ke layer 2
-                    console.warn('Web Share failed, falling back to blob download:', shareErr.message);
+                    // Share dibatalkan/gagal (termasuk AbortError) → JANGAN anggap selesai,
+                    // paksa fallback ke download browser asli (Layer 2) supaya file tetap
+                    // pasti masuk ke Downloads Chrome, bukan hilang begitu saja.
+                    console.warn('Web Share dibatalkan/gagal, fallback ke blob download:', shareErr.message);
                 }
             }
 
-            // ── Layer 2: Blob + anchor download (Desktop & HP lama/fallback)
+            // ── Layer 2: Blob + anchor download (Desktop, HP lama, & fallback dari Layer 1)
             const blobUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = blobUrl;
@@ -617,28 +614,25 @@ export default function SelectorPhoto() {
             onStatusChange(photo.id, 'done');
 
         } catch (err) {
-            if (err.name === 'AbortError') {
-                onStatusChange(photo.id, 'done');
-                return;
-            }
             console.error('Download failed for', photo.name, err);
             onStatusChange(photo.id, 'failed');
         }
     };
 
-    // Start download queue — on mobile collects all blobs first, then shares in one go.
-    // On desktop (or fallback) downloads sequentially as before.
+    // Start download queue — setiap foto diproses satu per satu secara berurutan:
+    // fetch → simpan (share sheet di HP / blob-download di desktop) → baru lanjut ke foto berikutnya.
+    // Ini memastikan status 'done' baru muncul setelah foto itu benar-benar tersimpan,
+    // bukan sekadar berhasil diambil dari server.
     const startDownloadQueue = (photos) => {
         if (isDownloading || photos.length === 0) return;
 
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        const useBulkShare = isMobile && typeof navigator.share === 'function';
 
         setConfirmModal({
             isOpen: true,
             title: 'Download Foto',
-            message: useBulkShare
-                ? `${photos.length} foto akan dikumpulkan lalu muncul 1 menu simpan untuk semua foto sekaligus.`
+            message: isMobile
+                ? `${photos.length} foto akan diproses satu per satu. Untuk tiap foto akan muncul menu simpan — mohon pilih "Simpan ke File" atau "Google Photos" agar foto benar-benar tersimpan.`
                 : `Anda akan mendownload ${photos.length} foto ke perangkat. Pastikan memori dan koneksi internet Anda mencukupi.`,
             variant: 'warning',
             onConfirm: () => {
@@ -655,93 +649,15 @@ export default function SelectorPhoto() {
                     );
                 };
 
-                if (useBulkShare) {
-                    // ── MOBILE PATH: kumpulkan semua blob dulu, lalu share sekaligus
-                    (async () => {
-                        const collected = [];
-
-                        for (const photo of queue) {
-                            updateStatus(photo.id, 'downloading');
-                            try {
-                                const response = await fetch(`/api/photo-selector/sessions/${uid}/download/${photo.id}`);
-                                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-                                const contentType = response.headers.get('content-type') || '';
-                                if (contentType.includes('application/json') || contentType.includes('text/html')) {
-                                    throw new Error('Server error');
-                                }
-
-                                const blob = await response.blob();
-                                if (blob.size === 0) throw new Error('File kosong');
-
-                                const file = new File([blob], photo.name, { type: blob.type || 'image/jpeg' });
-                                collected.push({ file, id: photo.id, name: photo.name });
-                                updateStatus(photo.id, 'done');
-                            } catch (err) {
-                                console.error('Gagal mengumpulkan', photo.name, err);
-                                updateStatus(photo.id, 'failed');
-                            }
-                        }
-
-                        if (collected.length === 0) {
-                            setIsDownloading(false);
-                            return;
-                        }
-
-                        // Coba share semua sekaligus, jika browser tolak → bagi per batch 10
-                        const shareFiles = async (files) => {
-                            const allFiles = files.map(f => f.file);
-                            try {
-                                if (navigator.canShare && navigator.canShare({ files: allFiles })) {
-                                    await navigator.share({ files: allFiles, title: 'Foto AF Studio' });
-                                    return;
-                                }
-                            } catch (err) {
-                                if (err.name === 'AbortError') return; // user tutup share sheet
-                            }
-
-                            // Fallback: share per batch 10 file
-                            const BATCH = 10;
-                            for (let i = 0; i < files.length; i += BATCH) {
-                                const batch = files.slice(i, i + BATCH).map(f => f.file);
-                                try {
-                                    if (navigator.canShare && navigator.canShare({ files: batch })) {
-                                        await navigator.share({ files: batch, title: `Foto ${i + 1}–${Math.min(i + BATCH, files.length)}` });
-                                    } else {
-                                        // Fallback blob download jika share tidak support
-                                        for (const item of files.slice(i, i + BATCH)) {
-                                            const blobUrl = URL.createObjectURL(item.file);
-                                            const a = document.createElement('a');
-                                            a.href = blobUrl;
-                                            a.download = item.name;
-                                            document.body.appendChild(a);
-                                            a.click();
-                                            document.body.removeChild(a);
-                                            setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-                                            await new Promise(r => setTimeout(r, 500));
-                                        }
-                                    }
-                                } catch (batchErr) {
-                                    if (batchErr.name !== 'AbortError') console.warn('Batch share gagal:', batchErr);
-                                }
-                            }
-                        };
-
-                        await shareFiles(collected);
+                const runNext = async (index) => {
+                    if (index >= queue.length) {
                         setIsDownloading(false);
-                    })();
-                } else {
-                    // ── DESKTOP PATH: sequential blob download seperti sebelumnya
-                    const runNext = async (index) => {
-                        if (index >= queue.length) {
-                            setIsDownloading(false);
-                            return;
-                        }
-                        await fetchDownload(queue[index], updateStatus);
-                        setTimeout(() => runNext(index + 1), 800);
-                    };
-                    runNext(0);
-                }
+                        return;
+                    }
+                    await fetchDownload(queue[index], updateStatus);
+                    setTimeout(() => runNext(index + 1), 800);
+                };
+                runNext(0);
             }
         });
     };
