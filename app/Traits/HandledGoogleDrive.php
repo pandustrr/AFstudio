@@ -43,18 +43,41 @@ trait HandledGoogleDrive
     protected function listPhotosFromFolder($folderId)
     {
         $folderId = $this->extractFolderId($folderId);
-        $service = $this->getDriveService();
+        $service  = $this->getDriveService();
 
-        $optParams = [
-            'pageSize' => 1000,
-            'fields' => 'nextPageToken, files(id, name, thumbnailLink, webContentLink, mimeType)',
-            'q' => "'{$folderId}' in parents and trashed = false and (mimeType contains 'image/')"
-        ];
+        // Allow longer execution time when fetching large folders with many pagination pages.
+        // Each Google Drive API page returns max ~100 files; we loop until nextPageToken is null.
+        set_time_limit(0);
 
-        $results = $service->files->listFiles($optParams);
-        $files = $results->getFiles();
+        $allFiles  = [];
+        $pageToken = null;
+        $hardCap   = 2000; // Safety cap — prevents infinite loop if API behaves unexpectedly
 
-        return collect($files)->map(function ($file) {
+        do {
+            $optParams = [
+                'pageSize' => 1000,
+                'fields'   => 'nextPageToken, files(id, name, thumbnailLink, webContentLink, mimeType)',
+                'q'        => "'{$folderId}' in parents and trashed = false and (mimeType contains 'image/')",
+            ];
+
+            // Pass the page token on subsequent iterations to fetch the next batch
+            if ($pageToken) {
+                $optParams['pageToken'] = $pageToken;
+            }
+
+            $results = $service->files->listFiles($optParams);
+            $files   = $results->getFiles();
+
+            if ($files) {
+                $allFiles = array_merge($allFiles, (array) $files);
+            }
+
+            // Get the token for the next page; null means we have fetched everything
+            $pageToken = $results->getNextPageToken();
+
+        } while ($pageToken !== null && count($allFiles) < $hardCap);
+
+        return collect($allFiles)->map(function ($file) {
             return [
                 'id'           => $file->id,
                 'name'         => $file->name,
