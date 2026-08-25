@@ -107,8 +107,15 @@ export default function SelectorPhoto() {
         variant: 'danger'
     });
     const [isDownloading, setIsDownloading] = useState(false);
-    const [downloadQueue, setDownloadQueue] = useState([]); // [{id, name, status: 'queued'|'downloading'|'done'|'failed'}]
+    const [downloadQueue, setDownloadQueue] = useState([]); // [{id, name, status: 'queued'|'downloading'|'retrying'|'done'|'failed', reason?}]
     const [showDownloadPanel, setShowDownloadPanel] = useState(false);
+    const [savedFailedPhotos, setSavedFailedPhotos] = useState([]); // foto gagal tersimpan (sessionStorage) untuk di-download ulang
+
+    // Muat daftar foto yang gagal tersimpan dari sessionStorage saat UID tersedia
+    useEffect(() => {
+        if (!uid) return;
+        setSavedFailedPhotos(loadFailedPhotos());
+    }, [uid]);
 
     // Dynamic Review Template Logic
     const reviewTemplateArray = sessionData?.booking?.review_template || [];
@@ -558,65 +565,156 @@ export default function SelectorPhoto() {
         setIsSelectionMode(true);
     };
 
-    // Download a single file via backend proxy (full-quality, service account)
+    // Kategorikan error fetch/stream menjadi alasan yang mudah dibaca (frontend only).
+    const describeError = (err) => {
+        const msg = (err && err.message) ? err.message : '';
+        if (/HTTP \d{3}/.test(msg)) {
+            const code = msg.match(/HTTP (\d{3})/)[1];
+            if (String(code).startsWith('42')) return `Situs/Drive sibuk (HTTP ${code})`;
+            return `Gagal dari server (HTTP ${code})`;
+        }
+        if (/429|quota|rate.?limit/i.test(msg)) return 'Kuota Google Drive terlampaui (429)';
+        if (/Failed to fetch|NetworkError|network|load failed/i.test(msg)) return 'Koneksi terputus';
+        if (/abort|timeout|time out|waktu/i.test(msg)) return 'Waktu tunggu habis';
+        if (/kosong/i.test(msg)) return 'File kosong diterima';
+        if (/non-image|gagal mengirim/i.test(msg)) return 'Server gagal mengirim file';
+        return msg || 'Gagal tidak diketahui';
+    };
+
+    // Simpan/muat daftar foto yang gagal ke sessionStorage agar bisa di-download ulang
+    // walau panel ditutup atau halaman di-refresh. (Hanya di browser user — tanpa ubah backend.)
+    const STORAGE_PREFIX = 'photo_selector_failed_';
+    const saveFailedPhotos = (failedItems) => {
+        try {
+            if (!uid) return;
+            if (failedItems && failedItems.length > 0) {
+                sessionStorage.setItem(STORAGE_PREFIX + uid, JSON.stringify(failedItems.map(f => ({ id: f.id, name: f.name }))));
+            } else {
+                sessionStorage.removeItem(STORAGE_PREFIX + uid);
+            }
+        } catch (e) { console.warn('Gagal menyimpan daftar unduhan yang gagal:', e); }
+    };
+    const loadFailedPhotos = () => {
+        try {
+            if (!uid) return [];
+            const raw = sessionStorage.getItem(STORAGE_PREFIX + uid);
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) { return []; }
+    };
+
+    // Download a single file via backend proxy (full-quality, service account).
+    // Dilengkapi auto-retry dengan jeda menaik untuk menyerap kegagalan transien
+    // (burst quota Google Drive, koneksi putus sesaat, hosting lambat) sebelum ditandai gagal.
+    const RETRY_DELAYS = [2000, 5000]; // jeda (ms) sebelum percobaan ke-2 dan ke-3
     const fetchDownload = async (photo, onStatusChange) => {
         const url = `/api/photo-selector/sessions/${uid}/download/${photo.id}`;
-        onStatusChange(photo.id, 'downloading');
-        try {
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
+        let lastError = null;
 
-            // Validate that server returned actual file content, not an error page
-            const contentType = response.headers.get('content-type') || '';
-            if (contentType.includes('application/json') || contentType.includes('text/html')) {
-                const errText = await response.text();
-                console.error('Server returned non-image response:', errText.slice(0, 200));
-                throw new Error('Server gagal mengirim file — coba lagi.');
-            }
-
-            const blob = await response.blob();
-
-            // Guard against empty blobs (e.g. server timeout / partial response)
-            if (blob.size === 0) {
-                throw new Error('File kosong diterima — koneksi mungkin terputus.');
-            }
-
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-            // ── Layer 1: Web Share API (HP modern — user pilih "Simpan ke File/Photos")
-            if (isMobile && navigator.canShare) {
-                try {
-                    const file = new File([blob], photo.name, { type: blob.type || 'image/jpeg' });
-                    if (navigator.canShare({ files: [file] })) {
-                        await navigator.share({ files: [file], title: photo.name });
-                        onStatusChange(photo.id, 'done');
-                        return;
-                    }
-                } catch (shareErr) {
-                    // Share dibatalkan/gagal (termasuk AbortError) → JANGAN anggap selesai,
-                    // paksa fallback ke download browser asli (Layer 2) supaya file tetap
-                    // pasti masuk ke Downloads Chrome, bukan hilang begitu saja.
-                    console.warn('Web Share dibatalkan/gagal, fallback ke blob download:', shareErr.message);
+        const tryOnce = async (attempt) => {
+            // attempt 0 = 'downloading'; percobaan ulang = 'retrying'
+            onStatusChange(photo.id, attempt === 0 ? 'downloading' : 'retrying');
+            // Jedah otomatis mencegah antrian menggantung selamanya jika request macet.
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 300000); // 5 menit
+            try {
+                const response = await fetch(url, { signal: controller.signal });
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
                 }
-            }
+
+                // Validasi: server mengirim konten file asli, bukan halaman error
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('application/json') || contentType.includes('text/html')) {
+                    const errText = await response.text();
+                    console.error('Server returned non-image response:', errText.slice(0, 200));
+                    throw new Error('Server gagal mengirim file');
+                }
+
+                const blob = await response.blob();
+
+                // Lindungi dari blob kosong (timeout server / respons terpotong)
+                if (blob.size === 0) {
+                    throw new Error('File kosong diterima');
+                }
+
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+                // ── Layer 1: Web Share API (HP modern — user pilih "Simpan ke File/Photos")
+                if (isMobile && navigator.canShare) {
+                    try {
+                        const file = new File([blob], photo.name, { type: blob.type || 'image/jpeg' });
+                        if (navigator.canShare({ files: [file] })) {
+                            await navigator.share({ files: [file], title: photo.name });
+                            onStatusChange(photo.id, 'done');
+                            return true;
+                        }
+                    } catch (shareErr) {
+                        // Share dibatalkan/gagal (termasuk AbortError) → JANGAN anggap selesai,
+                        // paksa fallback ke download browser asli (Layer 2) supaya file tetap
+                        // pasti masuk ke Downloads Chrome, bukan hilang begitu saja.
+                        console.warn('Web Share dibatalkan/gagal, fallback ke blob download:', shareErr.message);
+                    }
+                }
 
             // ── Layer 2: Blob + anchor download (Desktop, HP lama, & fallback dari Layer 1)
-            const blobUrl = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = photo.name;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-            onStatusChange(photo.id, 'done');
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = photo.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+                onStatusChange(photo.id, 'done');
+                return true;
+            } catch (err) {
+                lastError = err;
+                return false;
+            } finally {
+                clearTimeout(timer);
+            }
+        };
 
-        } catch (err) {
-            console.error('Download failed for', photo.name, err);
-            onStatusChange(photo.id, 'failed');
+        let success = false;
+        for (let attempt = 0; attempt < 1 + RETRY_DELAYS.length; attempt++) {
+            success = await tryOnce(attempt);
+            if (success) return;
+            if (attempt < RETRY_DELAYS.length) {
+                onStatusChange(photo.id, 'retrying');
+                await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
+            }
         }
+
+        console.error('Download gagal permanen untuk', photo.name, lastError);
+        onStatusChange(photo.id, 'failed', describeError(lastError));
+    };
+
+    // Runner antrian yang bisa dipakai ulang (download massal, retry massal, maupun retry tunggal).
+    // Menyimpan daftar yang gagal ke sessionStorage saat seluruh antrian selesai.
+    const runList = (items) => {
+        setIsDownloading(true);
+        const failedById = {};
+        const updateStatus = (photoId, status, reason) => {
+            if (status === 'done') delete failedById[photoId];
+            else if (status === 'failed') failedById[photoId] = true;
+            setDownloadQueue(prev =>
+                prev.map(p => p.id === photoId ? { ...p, status, ...(reason ? { reason } : {}) } : p)
+            );
+        };
+        const runNext = async (index) => {
+            if (index >= items.length) {
+                setIsDownloading(false);
+                const stillFailed = items.filter(i => failedById[i.id]).map(i => ({ id: i.id, name: i.name }));
+                saveFailedPhotos(stillFailed);
+                setSavedFailedPhotos(loadFailedPhotos());
+                return;
+            }
+            const item = items[index];
+            updateStatus(item.id, 'queued');
+            await fetchDownload(item, updateStatus);
+            setTimeout(() => runNext(index + 1), 800);
+        };
+        runNext(0);
     };
 
     // Start download queue — setiap foto diproses satu per satu secara berurutan:
@@ -641,23 +739,7 @@ export default function SelectorPhoto() {
                 const queue = photos.map(p => ({ id: p.id, name: p.name }));
                 setDownloadQueue(queue.map(p => ({ ...p, status: 'queued' })));
                 setShowDownloadPanel(true);
-                setIsDownloading(true);
-
-                const updateStatus = (photoId, status) => {
-                    setDownloadQueue(prev =>
-                        prev.map(p => p.id === photoId ? { ...p, status } : p)
-                    );
-                };
-
-                const runNext = async (index) => {
-                    if (index >= queue.length) {
-                        setIsDownloading(false);
-                        return;
-                    }
-                    await fetchDownload(queue[index], updateStatus);
-                    setTimeout(() => runNext(index + 1), 800);
-                };
-                runNext(0);
+                runList(queue);
             }
         });
     };
@@ -672,13 +754,31 @@ export default function SelectorPhoto() {
         startDownloadQueue(selectedPhotos);
     };
 
+    // Retry tunggal satu foto dari daftar gagal (lewat runner agar konsisten).
     const handleRetryDownload = (photo) => {
-        const updateStatus = (photoId, status) => {
-            setDownloadQueue(prev =>
-                prev.map(p => p.id === photoId ? { ...p, status } : p)
-            );
-        };
-        fetchDownload(photo, updateStatus);
+        if (isDownloading) return;
+        runList([{ id: photo.id, name: photo.name }]);
+    };
+
+    // Retry massal semua foto yang gagal.
+    const handleRetryAllFailed = () => {
+        if (isDownloading) return;
+        const failed = downloadQueue.filter(p => p.status === 'failed');
+        if (failed.length === 0) return;
+        runList(failed.map(p => ({ id: p.id, name: p.name })));
+    };
+
+    // Pulihkan daftar gagal tersimpan (sessionStorage) ke panel untuk di-download ulang.
+    const handleRestoreFailed = () => {
+        if (!savedFailedPhotos.length || isDownloading) return;
+        const items = savedFailedPhotos.map(f => ({
+            ...f,
+            status: 'failed',
+            reason: 'Belum berhasil diunduh sebelumnya'
+        }));
+        setDownloadQueue(items);
+        setShowDownloadPanel(true);
+        setSavedFailedPhotos([]);
     };
 
     const handleDriveSelection = (folderType) => {
@@ -1109,6 +1209,21 @@ export default function SelectorPhoto() {
                                                     )}
                                                 </div>
 
+                                                {/* Banner: ada unduhan gagal tersimpan dari sesi sebelumnya */}
+                                                {!isDownloading && !showDownloadPanel && savedFailedPhotos.length > 0 && (
+                                                    <div className="mb-6 flex items-center justify-between gap-3 bg-brand-red/10 border border-brand-red/30 rounded-2xl px-4 py-3 animate-in fade-in">
+                                                        <p className="text-[9px] font-black text-brand-red uppercase tracking-widest">
+                                                            🔁 {savedFailedPhotos.length} foto belum tersimpan dari unduhan sebelumnya
+                                                        </p>
+                                                        <button
+                                                            onClick={handleRestoreFailed}
+                                                            className="px-3 py-1.5 bg-brand-red text-white rounded-lg text-[8px] font-black uppercase tracking-widest hover:brightness-90 transition-all whitespace-nowrap"
+                                                        >
+                                                            Download Ulang
+                                                        </button>
+                                                    </div>
+                                                )}
+
                                                 {/* Download Progress Panel */}
                                                 {showDownloadPanel && downloadQueue.length > 0 && (
                                                     <div className="mb-6 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
@@ -1122,7 +1237,13 @@ export default function SelectorPhoto() {
                                                             </div>
                                                             {!isDownloading && (
                                                                 <button
-                                                                    onClick={() => { setShowDownloadPanel(false); setDownloadQueue([]); }}
+                                                                    onClick={() => {
+                                                                        const failedItems = downloadQueue.filter(p => p.status === 'failed');
+                                                                        saveFailedPhotos(failedItems.map(f => ({ id: f.id, name: f.name })));
+                                                                        setSavedFailedPhotos(loadFailedPhotos());
+                                                                        setShowDownloadPanel(false);
+                                                                        setDownloadQueue([]);
+                                                                    }}
                                                                     className="text-brand-black/30 dark:text-brand-white/30 hover:text-brand-red transition-colors p-1"
                                                                 >
                                                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -1154,6 +1275,21 @@ export default function SelectorPhoto() {
                                                             </div>
                                                         </div>
 
+                                                        {/* Retry All Failed */}
+                                                        {!isDownloading && downloadQueue.filter(p => p.status === 'failed').length > 0 && (
+                                                            <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-black/5 dark:border-white/5 bg-brand-red/5">
+                                                                <p className="text-[9px] font-black text-brand-red uppercase tracking-widest">
+                                                                    {downloadQueue.filter(p => p.status === 'failed').length} foto belum tersimpan
+                                                                </p>
+                                                                <button
+                                                                    onClick={handleRetryAllFailed}
+                                                                    className="px-3 py-1.5 bg-brand-red text-white rounded-lg text-[8px] font-black uppercase tracking-widest hover:brightness-90 transition-all shadow-sm whitespace-nowrap"
+                                                                >
+                                                                    Download Ulang Semua ({downloadQueue.filter(p => p.status === 'failed').length})
+                                                                </button>
+                                                            </div>
+                                                        )}
+
                                                         {/* Per-file List */}
                                                         <div className="max-h-44 overflow-y-auto divide-y divide-black/5 dark:divide-white/5">
                                                             {downloadQueue.map((item) => (
@@ -1169,6 +1305,12 @@ export default function SelectorPhoto() {
                                                                                 <span className="text-[8px] font-black text-brand-gold uppercase tracking-widest">Download...</span>
                                                                             </div>
                                                                         )}
+                                                                        {item.status === 'retrying' && (
+                                                                            <div className="flex items-center gap-1">
+                                                                                <div className="w-3 h-3 border-2 border-brand-gold/40 border-t-brand-gold rounded-full animate-spin" />
+                                                                                <span className="text-[8px] font-black text-brand-gold uppercase tracking-widest">Mencoba ulang...</span>
+                                                                            </div>
+                                                                        )}
                                                                         {item.status === 'done' && (
                                                                             <div className="flex items-center gap-1">
                                                                                 <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
@@ -1178,15 +1320,20 @@ export default function SelectorPhoto() {
                                                                             </div>
                                                                         )}
                                                                         {item.status === 'failed' && (
-                                                                            <div className="flex items-center gap-1.5">
-                                                                                <div className="w-4 h-4 bg-brand-red rounded-full flex items-center justify-center">
-                                                                                    <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                                                                            <div className="flex flex-col items-end gap-0.5">
+                                                                                <div className="flex items-center gap-1.5">
+                                                                                    <div className="w-4 h-4 bg-brand-red rounded-full flex items-center justify-center">
+                                                                                        <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                                                                                    </div>
+                                                                                    <span className="text-[8px] font-black text-brand-red uppercase tracking-widest">Gagal</span>
+                                                                                    <button
+                                                                                        onClick={() => handleRetryDownload(item)}
+                                                                                        className="text-[8px] font-black text-brand-gold underline uppercase tracking-widest hover:no-underline"
+                                                                                    >Coba Lagi</button>
                                                                                 </div>
-                                                                                <span className="text-[8px] font-black text-brand-red uppercase tracking-widest">Gagal</span>
-                                                                                <button
-                                                                                    onClick={() => handleRetryDownload(item)}
-                                                                                    className="text-[8px] font-black text-brand-gold underline uppercase tracking-widest hover:no-underline"
-                                                                                >Coba Lagi</button>
+                                                                                {item.reason && (
+                                                                                    <span className="text-[7px] text-brand-red/60 font-mono truncate max-w-[140px]" title={item.reason}>{item.reason}</span>
+                                                                                )}
                                                                             </div>
                                                                         )}
                                                                     </div>
